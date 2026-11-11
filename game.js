@@ -269,7 +269,7 @@ function refreshHud() {
   if ($('keys').dataset.k !== String(k)) { $('keys').innerHTML = h; $('keys').dataset.k = String(k); }
   $('keys').setAttribute('aria-label', 'カギ ' + k + 'こ');
   $('btnDig').hidden = !(data.letter && !data.cleared);
-  $('btnSound').textContent = store.sound ? 'おと あり' : 'おと なし';
+  $('btnSound').setAttribute('aria-label', store.sound ? 'おとを けす' : 'おとを だす');
   $('btnSound').setAttribute('aria-pressed', String(store.sound));
 }
 
