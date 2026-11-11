@@ -66,10 +66,10 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .play{flex:1;min-height:0;display:grid;gap:8px;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto auto;grid-template-areas:"field field" "talk talk" "pad act"}
 .field{grid-area:field;position:relative;min-width:0;min-height:0}
 #cv{position:absolute;left:50%;bottom:0;transform:translateX(-50%);border:3px solid var(--ink);border-radius:16px;background:#BDE7AE;touch-action:none;cursor:pointer}
-.pad{grid-area:pad;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:2px;justify-self:start;
+.pad{grid-area:pad;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,46px);gap:6px 3px;justify-self:start;padding-bottom:4px;
   grid-template-areas:". up ." "left . right" ". down ."}
-.pad button{border:3px solid var(--ink);border-radius:14px;background:var(--surface);font-size:18px;padding:0;line-height:1}
-.pad button:active,.pad button.on{background:var(--lav)}
+.pad button{border:3px solid var(--ink);border-radius:16px;background:#D7C6F8;box-shadow:0 4px 0 var(--ink);font-size:18px;padding:0;line-height:1}
+.pad button:active,.pad button.on{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);background:var(--lav)}
 .pad [data-dir=up]{grid-area:up}.pad [data-dir=left]{grid-area:left}.pad [data-dir=right]{grid-area:right}.pad [data-dir=down]{grid-area:down}
 .act{grid-area:act;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:10px;min-width:96px}
 .cmd{width:96px;min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:4px 6px;
@@ -144,8 +144,8 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
   .slot-main .who,.slot-main .state{white-space:nowrap}
   .slot-main canvas{width:48px}
   .slot-main .state{min-height:0}
-  .pad{grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px)}
-  .pad button{font-size:15px;border-radius:12px}
+  .pad{grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,38px);gap:5px 3px}
+  .pad button{font-size:15px;border-radius:13px}
   .act{min-width:84px;gap:6px}
   .cmd{width:84px;min-height:54px;font-size:14px}
   .cmd svg{width:26px;height:26px}
