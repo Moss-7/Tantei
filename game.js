@@ -122,30 +122,58 @@ function starShape(c, x, y, R, fill, stroke) {
 }
 function num(c, t, x, y, size, col) { c.font = '400 ' + size + 'px "Mochiy Pop One","Zen Maru Gothic",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = col; c.fillText(t, x, y); }
 
-function drawGirl(c, cx, by, s, face = 1, bob = 0) {
-  c.save(); c.translate(cx, by); c.scale(s * face, s);
-  const hair = '#7A4B3A', skin = '#FFE2CF';
+function drawGirl(c, cx, by, s, dir = 'down', bob = 0) {
+  c.save(); c.translate(cx, by); c.scale(dir === 'left' ? -s : s, s);
+  const hair = '#7A4B3A', skin = '#FFE2CF', ink = '#3A2D58';
   el(c, 0, 0, 10, 3, 'rgba(40,20,70,.18)');
   c.translate(0, -bob);
-  ci(c, -11, -19, 5, hair); ci(c, 11, -19, 5, hair);
-  rr(c, -5, -5, 4, 5, 1, '#6B4A3A'); rr(c, 1, -5, 4, 5, 1, '#6B4A3A');
-  poly(c, [[-6, -15], [6, -15], [9.5, -4], [-9.5, -4]], '#B79CED');
-  poly(c, [[-8.8, -6.5], [8.8, -6.5], [9.5, -4], [-9.5, -4]], '#D7C6F8');
-  ln(c, 8, -10, 13, -13, '#C98A3C', 2);
-  ci(c, 15.5, -16, 4.5, 'rgba(215,244,255,.9)', '#F2B63C', 1.8);
-  ci(c, 0, -22, 9, skin);
-  c.beginPath(); c.arc(0, -23, 9.6, PI, 0); c.closePath(); c.fillStyle = hair; c.fill();
-  ci(c, -3.5, -19.5, 1.3, '#3A2D58'); ci(c, 3.5, -19.5, 1.3, '#3A2D58');
-  ci(c, -6, -17, 1.8, 'rgba(255,120,160,.45)'); ci(c, 6, -17, 1.8, 'rgba(255,120,160,.45)');
-  c.beginPath(); c.arc(0, -17.6, 2, 0.15 * PI, 0.85 * PI); c.strokeStyle = '#B5566B'; c.lineWidth = 1; c.stroke();
-  poly(c, [[0, -13.5], [-4, -15.5], [-4, -11.5]], '#FF7EB6'); poly(c, [[0, -13.5], [4, -15.5], [4, -11.5]], '#FF7EB6');
-  el(c, 0, -28, 11.5, 3.4, '#E2AD5E');
-  c.beginPath(); c.arc(0, -28, 8, PI, 0); c.closePath(); c.fillStyle = '#F0C583'; c.fill();
-  rr(c, -8, -30.6, 16, 2.6, 1, '#FF7EB6');
-  ci(c, 0, -36, 1.8, '#E2AD5E');
+  const legs = () => { rr(c, -5, -5, 4, 5, 1, '#6B4A3A'); rr(c, 1, -5, 4, 5, 1, '#6B4A3A'); };
+  const coat = w => { poly(c, [[-w * .63, -15], [w * .63, -15], [w, -4], [-w, -4]], '#B79CED'); poly(c, [[-w * .93, -6.5], [w * .93, -6.5], [w, -4], [-w, -4]], '#D7C6F8'); };
+  const lens = (hx, gx) => { ln(c, hx, -10, gx - 2.5, -13, '#C98A3C', 2); ci(c, gx, -16, 4.5, 'rgba(215,244,255,.9)', '#F2B63C', 1.8); };
+  const hat = dx => { el(c, dx, -28, 11.5, 3.4, '#E2AD5E'); c.beginPath(); c.arc(0, -28, 8, PI, 0); c.closePath(); c.fillStyle = '#F0C583'; c.fill(); rr(c, -8, -30.6, 16, 2.6, 1, '#FF7EB6'); ci(c, 0, -36, 1.8, '#E2AD5E'); };
+  if (dir === 'up') {            // うしろすがた
+    lens(8, 15.5);
+    ci(c, -11, -19, 5, hair); ci(c, 11, -19, 5, hair);
+    legs(); coat(9.5);
+    ci(c, 0, -22, 9.4, hair);
+    ci(c, -9.5, -21, 1.6, '#FF7EB6'); ci(c, 9.5, -21, 1.6, '#FF7EB6');
+    hat(0);
+    poly(c, [[0, -29.3], [-4, -31.5], [-4, -27]], '#FF5FA2'); poly(c, [[0, -29.3], [4, -31.5], [4, -27]], '#FF5FA2');
+  } else if (dir === 'down') {   // しょうめん
+    ci(c, -11, -19, 5, hair); ci(c, 11, -19, 5, hair);
+    legs(); coat(9.5); lens(8, 15.5);
+    ci(c, 0, -22, 9, skin);
+    c.beginPath(); c.arc(0, -23, 9.6, PI, 0); c.closePath(); c.fillStyle = hair; c.fill();
+    ci(c, -3.5, -19.5, 1.3, ink); ci(c, 3.5, -19.5, 1.3, ink);
+    ci(c, -6, -17, 1.8, 'rgba(255,120,160,.45)'); ci(c, 6, -17, 1.8, 'rgba(255,120,160,.45)');
+    c.beginPath(); c.arc(0, -17.6, 2, 0.15 * PI, 0.85 * PI); c.strokeStyle = '#B5566B'; c.lineWidth = 1; c.stroke();
+    poly(c, [[0, -13.5], [-4, -15.5], [-4, -11.5]], '#FF7EB6'); poly(c, [[0, -13.5], [4, -15.5], [4, -11.5]], '#FF7EB6');
+    hat(0);
+  } else {                       // よこむき(みぎむきで かいて、ひだりは はんてん)
+    ci(c, -10, -18, 5.4, hair);
+    rr(c, -4, -5, 4, 5, 1, '#5A3D30'); rr(c, 0, -5, 5, 5, 1, '#6B4A3A');
+    coat(7.5); lens(5, 14.5);
+    ci(c, -1, -22, 9.4, hair);
+    ci(c, 1.5, -21.5, 8.2, skin);
+    c.beginPath(); c.arc(0, -23, 9.6, PI, 0); c.closePath(); c.fillStyle = hair; c.fill();
+    ci(c, -8.5, -20.5, 1.6, '#FF7EB6');
+    ci(c, 5, -19.5, 1.4, ink);
+    ci(c, 6.5, -16.8, 1.8, 'rgba(255,120,160,.45)');
+    c.beginPath(); c.arc(7, -16.6, 1.5, 0.2 * PI, 0.9 * PI); c.strokeStyle = '#B5566B'; c.lineWidth = 1; c.stroke();
+    poly(c, [[3, -13.5], [6.5, -15.3], [6.5, -11.7]], '#FF7EB6');
+    hat(2);
+  }
   c.restore();
 }
-function drawCat(c, cx, by, s, face = 1, bob = 0) {
+function drawEnvelope(c, x, y, s, flap = 0) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  if (flap) for (const d of [-1, 1]) { c.save(); c.translate(d * 12, -3); c.rotate(d * (-.5 + Math.sin(flap) * .5)); el(c, d * 7, 0, 8, 4, '#FFFFFF', '#CFC4E2', 1); c.restore(); }
+  rr(c, -14, -9, 28, 18, 3, '#FFF8E1', '#3A2D58', 1.6);
+  c.beginPath(); c.moveTo(-13, -8); c.lineTo(0, 2); c.lineTo(13, -8); c.strokeStyle = '#3A2D58'; c.lineWidth = 1.4; c.lineJoin = 'round'; c.stroke();
+  ci(c, -2, 3, 2.4, '#FF7EB6'); ci(c, 2, 3, 2.4, '#FF7EB6'); poly(c, [[-4.2, 4], [4.2, 4], [0, 8.4]], '#FF7EB6');
+  c.restore();
+}
+function drawCat(c, cx, by, s, face = 1, bob = 0, back = false) {
   c.save(); c.translate(cx, by); c.scale(s * face, s);
   const w = '#FFFDF7', o = '#CFC4E2';
   el(c, 0, 0, 8, 2.5, 'rgba(40,20,70,.18)');
@@ -156,9 +184,11 @@ function drawCat(c, cx, by, s, face = 1, bob = 0) {
   poly(c, [[-6.5, -17], [-5, -25], [-1, -20.5]], w, o, .9); poly(c, [[6.5, -17], [5, -25], [1, -20.5]], w, o, .9);
   poly(c, [[-5.3, -19], [-4.7, -22.8], [-2.6, -20.3]], '#FFB7CF'); poly(c, [[5.3, -19], [4.7, -22.8], [2.6, -20.3]], '#FFB7CF');
   ci(c, 0, -15, 7, w, o, .9);
-  ci(c, -2.7, -15.5, 1.2, '#3A2D58'); ci(c, 2.7, -15.5, 1.2, '#3A2D58');
-  ci(c, 0, -13.2, .9, '#FF8FB3');
-  poly(c, [[0, -8.6], [-3.5, -10.4], [-3.5, -6.8]], '#4CC3A6'); poly(c, [[0, -8.6], [3.5, -10.4], [3.5, -6.8]], '#4CC3A6');
+  if (!back) {
+    ci(c, -2.7, -15.5, 1.2, '#3A2D58'); ci(c, 2.7, -15.5, 1.2, '#3A2D58');
+    ci(c, 0, -13.2, .9, '#FF8FB3');
+    poly(c, [[0, -8.6], [-3.5, -10.4], [-3.5, -6.8]], '#4CC3A6'); poly(c, [[0, -8.6], [3.5, -10.4], [3.5, -6.8]], '#4CC3A6');
+  } else rr(c, -4, -9.6, 8, 2, 1, '#4CC3A6');
   c.restore();
 }
 function drawAnimal(c, kind, cx, cy, s) {
@@ -255,6 +285,7 @@ function findPath(sx, sy, gx, gy) {
 /* ---------- ゲームの じょうたい ---------- */
 const cv = $('cv'), ctx = cv.getContext('2d');
 let slotIx = -1, data = null, running = false, busy = false;
+let intro = null;
 let m, cat, path = [], held = null, dest = null, holes = [], chest = null, digMiss = 0, tNow = 0;
 
 const target = () => ({ x: FLOWER_X + data.seed.n, y: LANE_ROWS[data.seed.lanes.indexOf(data.seed.c)] });
@@ -277,19 +308,20 @@ function startGame(ix) {
   slotIx = ix;
   data = store.slots[ix];
   if (!data || data.cleared) { data = newStage(data); persist(); }
-  m = { x: START.x, y: START.y, fx: START.x, fy: START.y, p: 1, face: 1, fresh: false };
-  cat = { x: START.x - 1, y: START.y, fx: START.x - 1, fy: START.y, face: 1 };
+  m = { x: START.x, y: START.y, fx: START.x, fy: START.y, p: 1, face: 1, dir: 'down', fresh: false };
+  cat = { x: START.x - 1, y: START.y, fx: START.x - 1, fy: START.y, face: 1, back: false };
   path = []; held = null; dest = null; holes = []; chest = null; digMiss = 0;
   $('title').hidden = true; $('game').hidden = false;
   const wc = $('who').getContext('2d'); wc.clearRect(0, 0, 72, 72); drawAnimal(wc, ANIMALS[ix].id, 36, 42, 2.5);
   $('who').setAttribute('aria-label', ANIMALS[ix].name + 'の データ');
   refreshHud(); fit();
   running = true; playMusic('field');
-  if (keysGot() === 0) showIntro();
+  intro = null;
+  if (keysGot() === 0) { intro = { t: 0, ding: false }; busy = true; say('あれ? なにか とんできたよ!'); }
   else say(data.letter ? 'ばしょが わかったら「ほる」を おそう!' : data.s1 && data.s2 ? 'ポストの ほしが ひかったよ! いってみよう' : 'つづきから はじめるよ。ほしを しらべよう!');
 }
 function goTitle() {
-  running = false; closeModal(); playMusic(null);
+  running = false; intro = null; closeModal(); playMusic(null);
   $('game').hidden = true; $('title').hidden = false; buildSlots();
 }
 
@@ -301,6 +333,8 @@ function startStep(nx, ny) {
   cat.x = m.x; cat.y = m.y;
   m.fx = m.x; m.fy = m.y;
   if (nx !== m.x) m.face = nx > m.x ? 1 : -1;
+  m.dir = nx > m.x ? 'right' : nx < m.x ? 'left' : ny > m.y ? 'down' : 'up';
+  cat.back = m.y < cat.y;
   m.x = nx; m.y = ny; m.p = 0; sfx.step();
 }
 function update(dt) {
@@ -311,7 +345,7 @@ function update(dt) {
   }
   if (busy) return;
   if (path.length) { const [nx, ny] = path.shift(); startStep(nx, ny); return; }
-  if (held) { const [dx, dy] = DIRS[held]; if (!blocked(m.x + dx, m.y + dy)) { startStep(m.x + dx, m.y + dy); return; } if (dx) m.face = dx; }
+  if (held) { const [dx, dy] = DIRS[held]; if (!blocked(m.x + dx, m.y + dy)) { startStep(m.x + dx, m.y + dy); return; } m.dir = held; }
   // とちゅうで とおりすぎた ほしは はんのう しない。とまった ときだけ しらべる
   if (m.fresh) { m.fresh = false; const st = STARS.find(s => s.x === m.x && s.y === m.y); if (st && !chest) touchStar(st); }
 }
@@ -333,7 +367,7 @@ function dig() {
   if (m.x === t.x && m.y === t.y) {
     busy = true; stopMusic(); sfx.found();
     chest = { x: t.x, y: t.y, t: 0 };
-    startStep(t.x + 1, t.y); m.face = -1;
+    startStep(t.x + 1, t.y);
     say('たからばこが でてきた!');
     setTimeout(showChest, 1300);
     return;
@@ -430,8 +464,8 @@ function render(t) {
   const e = m.p, mx = m.fx + (m.x - m.fx) * e, my = m.fy + (m.y - m.fy) * e;
   const cx = cat.fx + (cat.x - cat.fx) * e, cy = cat.fy + (cat.y - cat.fy) * e;
   const walking = m.p < 1, bob = walking ? Math.abs(Math.sin(e * PI)) * 3 : Math.sin(t * 2.4) * .6 + .6;
-  items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 37, 1.6, m.face, bob) });
-  items.push({ y: cy + .94, f: () => drawCat(c, cx * T + 20, cy * T + 37, 1.35, cat.face, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0) });
+  items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 37, 1.6, m.dir, bob) });
+  items.push({ y: cy + .94, f: () => drawCat(c, cx * T + 20, cy * T + 37, 1.35, cat.face, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0, cat.back && walking) });
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   drawFence(c);
 
@@ -439,12 +473,28 @@ function render(t) {
     if ((st.id === 1 && data.s1) || (st.id === 2 && data.s2) || (st.id === 3 && data.letter)) continue;
     drawStar(c, st, t);
   }
+  if (intro) {   // はねの ついた てがみが ミミの ところへ とんでくる
+    const p = Math.min(1, intro.t / 1.5), k = 1 - Math.pow(1 - p, 2);
+    const ex = m.x * T + 20, ey = m.y * T - 42, sx = COLS * T + 40, sy = -30;
+    const x = sx + (ex - sx) * k, y = sy + (ey - sy) * k - Math.sin(p * PI) * 46 + (p >= 1 ? Math.sin(t * 5) * 2 : 0);
+    for (let i = 1; i <= 3; i++) { const q = Math.max(0, k - i * .05); if (p < 1) starShape(c, sx + (ex - sx) * q + 18, sy + (ey - sy) * q - Math.sin(Math.max(0, p - i * .05) * PI) * 46, 4 - i, '#FFFFFF'); }
+    drawEnvelope(c, x, y, 1.5, t * 18);
+    if (p >= 1) { const b = Math.min(1, (intro.t - 1.5) * 5); ci(c, ex + 34, ey - 6, 12 * b, '#FFFFFF', '#3A2D58', 2); num(c, '!', ex + 34, ey - 5, 16 * b, '#D9478A'); }
+  }
 }
 
 let last = 0;
 function frame(ts) {
   const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; tNow = ts / 1000;
-  if (running && data) { if (chest) chest.t += dt; update(dt); render(tNow); }
+  if (running && data) {
+    if (chest) chest.t += dt;
+    if (intro) {
+      intro.t += dt;
+      if (intro.t > 1.5 && !intro.ding) { intro.ding = true; sfx.ok(); }
+      if (intro.t > 2.6) { intro = null; showIntro(); }
+    }
+    update(dt); render(tNow);
+  }
   requestAnimationFrame(frame);
 }
 
@@ -464,8 +514,15 @@ function closeModal() { $('modal').hidden = true; $('panel').innerHTML = ''; bus
 function mk(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d')); return c; }
 
 function showIntro() {
-  const p = openModal('<h2>ミミに てがみが とどいたよ</h2><div class="letter">たんていミミへ。<br>にわの どこかに たからものを かくしたよ。<br>カギを 3つ あつめて、みつけてね。</div><p class="small">いきたい ところを タッチすると あるくよ</p><button class="btn" data-focus type="button">はじめる</button>');
-  p.querySelector('.btn').onclick = () => { sfx.open(); closeModal(); say('ひかっている ほしを しらべてみよう!'); };
+  sfx.open();
+  const p = openModal('<h2>ミミに てがみが とどいたよ!</h2><div id="pic"></div><button class="btn" data-focus type="button">あける</button>');
+  const e = mk(280, 200, x => drawEnvelope(x, 140, 104, 7.4)); e.className = 'prize wig'; p.querySelector('#pic').appendChild(e);
+  p.querySelector('.btn').onclick = () => {
+    sfx.ok();
+    const q = openModal('<div id="pic"></div><div class="letter">たんていミミへ。<br>にわの どこかに たからものを かくしたよ。<br>カギを 3つ あつめて、みつけてね。</div><p class="small">いきたい ところを タッチすると あるくよ</p><button class="btn" data-focus type="button">はじめる</button>');
+    const s = mk(140, 100, x => drawEnvelope(x, 70, 52, 3.6)); s.className = 'prize sm'; q.querySelector('#pic').appendChild(s);
+    q.querySelector('.btn').onclick = () => { sfx.open(); closeModal(); say('ひかっている ほしを しらべてみよう!'); };
+  };
 }
 
 function reward(n, after) {
@@ -534,7 +591,8 @@ function showLetter() {
   sfx.ok();
   const first = !data.letter;
   if (first) { data.letter = true; persist(); }
-  const p = openModal('<span class="tag">なぞ 3</span><h2>ポストに てがみと カギが あった!</h2><div class="letter">' + LETTER + '</div><p class="small">なぞ 1 と なぞ 2 の こたえは てちょうに かいてあるよ</p><div class="row"><button class="btn sub" id="toNote" type="button">てちょうを みる</button><button class="btn" data-focus id="ok" type="button">わかった!</button></div>');
+  const p = openModal('<span class="tag">なぞ 3</span><h2>ポストに てがみと カギが あった!</h2><div id="pic"></div><div class="letter">' + LETTER + '</div><p class="small">なぞ 1 と なぞ 2 の こたえは てちょうに かいてあるよ</p><div class="row"><button class="btn sub" id="toNote" type="button">てちょうを みる</button><button class="btn" data-focus id="ok" type="button">わかった!</button></div>');
+  const ev = mk(140, 100, x => drawEnvelope(x, 70, 52, 3.6)); ev.className = 'prize sm'; p.querySelector('#pic').appendChild(ev);
   const done = () => { refreshHud(); say('ばしょが わかったら「ほる」を おそう!'); };
   p.querySelector('#ok').onclick = () => { closeModal(); done(); };
   p.querySelector('#toNote').onclick = () => { done(); showNote(); };
@@ -557,6 +615,7 @@ function showNote() {
 }
 
 function showChest() {
+  m.dir = 'left';
   const p = openModal('<h2>たからばこを みつけた!</h2><div id="pic"></div><p>3つの カギで あけてみよう</p><button class="btn" data-focus type="button">あける</button>');
   const c = mk(240, 200, x => drawChest(x, 20, 10, 5)); c.className = 'prize'; p.querySelector('#pic').appendChild(c);
   p.querySelector('.btn').onclick = () => {
