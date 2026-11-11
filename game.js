@@ -507,26 +507,40 @@ function frame(ts) {
       if (intro.t > 1.5 && !intro.ding) { intro.ding = true; sfx.ok(); }
       if (intro.t > 2.6) { intro = null; showIntro(); }
     }
-    update(dt); render(tNow);
+    update(dt); render(tNow); drawClouds(tNow);
   }
   requestAnimationFrame(frame);
 }
 
 /* マップの まわりの あきに、そらと おかと のはらを えがく。hz は ちへいせんの たかさ */
+/* くもは べつの レイヤーで ゆっくり ながす(1びょうに 3〜5ピクセル) */
+let sceneryBox = null;
+const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function drawClouds(t) {
+  if (!sceneryBox) return;
+  const { W, hz, dpr } = sceneryBox, cl = $('clouds'), c = cl.getContext('2d');
+  const top = hz - Math.min(70, hz * .55);          // おかの てっぺんより うえだけに かく
+  c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, cl.height / dpr);
+  if (hz <= 70) return;
+  const n = Math.max(2, Math.floor(W / 150)), span = W + 140;
+  c.save(); c.beginPath(); c.rect(0, 0, W, top + 6); c.clip();
+  for (let i = 0; i < n; i++) {
+    const s = .8 + hash(i, 5) * .6, speed = 3 + hash(i, 8) * 2;
+    const x = ((i + hash(i, 9) * .5) * span / n + (calm ? 0 : t * speed)) % span - 70, y = 14 + (top - 34) * hash(i, 3);
+    for (const [dx, dy, r] of [[-16, 4, 11], [0, 0, 15], [16, 4, 11], [-4, 8, 12], [8, 8, 11]]) ci(c, x + dx * s, y + dy * s, r * s, 'rgba(255,255,255,.92)');
+  }
+  c.restore();
+}
 function drawScenery(W, H, hz) {
   const bg = $('bg'), dpr = Math.min(2, window.devicePixelRatio || 1);
   bg.width = Math.round(W * dpr); bg.height = Math.round(H * dpr);
+  const cl = $('clouds'); cl.width = bg.width; cl.height = bg.height; sceneryBox = { W, hz, dpr }; drawClouds(tNow);
   const c = bg.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   const sky = c.createLinearGradient(0, 0, 0, Math.max(1, hz));
   sky.addColorStop(0, '#AEDCF7'); sky.addColorStop(1, '#EAF7FD');
   c.fillStyle = sky; c.fillRect(0, 0, W, hz);
-  if (hz > 70) {                                   // おひさまと くも
+  if (hz > 70) {                                   // おひさま
     ci(c, W - 46, Math.min(44, hz * .3), 30, 'rgba(255,236,150,.5)'); ci(c, W - 46, Math.min(44, hz * .3), 19, '#FFE38A');
-    const n = Math.max(2, Math.floor(W / 150));
-    for (let i = 0; i < n; i++) {
-      const x = (i + .25 + hash(i, 9) * .5) * (W - 90) / n, y = hz * (.16 + .4 * hash(i, 3)), s = .8 + hash(i, 5) * .6;
-      for (const [dx, dy, r] of [[-16, 4, 11], [0, 0, 15], [16, 4, 11], [-4, 8, 12], [8, 8, 11]]) ci(c, x + dx * s, y + dy * s, r * s, 'rgba(255,255,255,.92)');
-    }
   }
   const hr = Math.min(70, hz * .55);               // とおくの おか
   el(c, W * .22, hz, W * .42, hr, '#BFE3D2'); el(c, W * .8, hz, W * .38, hr * .8, '#CDEBD9'); el(c, W * .52, hz, W * .3, hr * .55, '#B3DEC4');
