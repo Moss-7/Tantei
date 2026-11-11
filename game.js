@@ -59,11 +59,25 @@ function tone(freq, dur, delay = 0, type = 'sine', vol = 0.12) {
   if (!store.sound) return;
   try { audio(); note(freq, dur, actx.currentTime + delay, type, vol, actx.destination); } catch (e) {}
 }
+// ざらざらした おと(つちを ほる おとに つかう)
+let noiseBuf = null;
+function scrape(delay, dur, f0, f1, vol) {
+  if (!store.sound) return;
+  try {
+    audio();
+    if (!noiseBuf) { noiseBuf = actx.createBuffer(1, actx.sampleRate * .5, actx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    const t0 = actx.currentTime + delay, src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+    src.buffer = noiseBuf; f.type = 'bandpass'; f.Q.value = .9;
+    f.frequency.setValueAtTime(f0, t0); f.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + .015); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    src.connect(f).connect(g).connect(actx.destination); src.start(t0); src.stop(t0 + dur + .05);
+  } catch (e) {}
+}
 const sfx = {
   ok()   { tone(660, .15); tone(880, .25, .12); },
   ng()   { tone(220, .2, 0, 'triangle'); },
   open() { tone(520, .12); },
-  dig()  { tone(160, .12, 0, 'triangle'); },
+  dig()  { for (const d of [0, .2]) { tone(95, .1, d, 'sine', .2); scrape(d, .17, 1400, 350, .5); scrape(d + .1, .1, 2600, 1200, .16); } },
   step() { stepAlt = !stepAlt; tone(stepAlt ? 330 : 392, .08, 0, 'triangle', .11); },
   found() { [523, 659, 784].forEach((f, i) => tone(f, .25, i * .12)); tone(1047, .6, .36); },
   fanfare() {
@@ -365,7 +379,7 @@ function dig() {
   halt();
   const t = target();
   if (m.x === t.x && m.y === t.y) {
-    busy = true; stopMusic(); sfx.found();
+    busy = true; stopMusic(); sfx.dig(); setTimeout(sfx.found, 420);
     chest = { x: t.x, y: t.y, t: 0 };
     startStep(t.x + 1, t.y);
     say('たからばこが でてきた!');
