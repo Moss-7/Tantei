@@ -52,8 +52,10 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .chip{font-size:14px;padding:3px 14px;border-radius:999px;border:2px solid var(--ink);background:var(--surface)}
 .chip.star{background:var(--star)}
 .keys{display:flex;align-items:center;gap:4px}
-.keys{gap:2px;padding:2px 8px;border-radius:999px;background:var(--surface);border:2px solid var(--line)}
-.keys svg{width:30px;height:30px}
+/* カギは フィールドの わくの うえに のせる */
+.keys{position:absolute;z-index:1;gap:2px;padding:0 10px;border-radius:999px;background:var(--surface);border:3px solid var(--ink);pointer-events:none}
+.keys svg{width:28px;height:28px}
+.who-icon{flex:none;width:34px;height:34px;border-radius:50%;background:var(--surface);border:2px solid var(--line)}
 .keys .o{stroke:var(--line);stroke-width:5;fill:none;stroke-linecap:round;stroke-dasharray:1 0}
 .keys .i{display:none}
 .keys .got .o{stroke:var(--ink);stroke-width:8}
@@ -77,7 +79,7 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .cmd.dig{background:#FF9DB5}
 @media (orientation:landscape){
   .play{grid-template-columns:auto 1fr auto;grid-template-rows:1fr auto;grid-template-areas:"pad field act" "pad talk act"}
-  #cv{top:50%;bottom:auto;transform:translate(-50%,-50%)}
+  #cv{top:calc(50% + 9px);bottom:auto;transform:translate(-50%,-50%)}
   .pad,.act{align-self:end}
   .act{flex-direction:column}
 }

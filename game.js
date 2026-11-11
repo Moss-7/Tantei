@@ -281,6 +281,8 @@ function startGame(ix) {
   cat = { x: START.x - 1, y: START.y, fx: START.x - 1, fy: START.y, face: 1 };
   path = []; held = null; dest = null; holes = []; chest = null; digMiss = 0;
   $('title').hidden = true; $('game').hidden = false;
+  const wc = $('who').getContext('2d'); wc.clearRect(0, 0, 72, 72); drawAnimal(wc, ANIMALS[ix].id, 36, 42, 2.5);
+  $('who').setAttribute('aria-label', ANIMALS[ix].name + 'の データ');
   refreshHud(); fit();
   running = true; playMusic('field');
   if (keysGot() === 0) showIntro();
@@ -417,8 +419,8 @@ function render(t) {
   const e = m.p, mx = m.fx + (m.x - m.fx) * e, my = m.fy + (m.y - m.fy) * e;
   const cx = cat.fx + (cat.x - cat.fx) * e, cy = cat.fy + (cat.y - cat.fy) * e;
   const walking = m.p < 1, bob = walking ? Math.abs(Math.sin(e * PI)) * 3 : Math.sin(t * 2.4) * .6 + .6;
-  items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 36, 1.2, m.face, bob) });
-  items.push({ y: cy + .94, f: () => drawCat(c, cx * T + 20, cy * T + 36, 1.15, cat.face, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0) });
+  items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 37, 1.6, m.face, bob) });
+  items.push({ y: cy + .94, f: () => drawCat(c, cx * T + 20, cy * T + 37, 1.35, cat.face, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0) });
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   drawFence(c);
 
@@ -437,8 +439,10 @@ function frame(ts) {
 
 function fit() {
   const f = $('field'); if (!f.clientWidth) return;
-  const w = Math.max(160, Math.min(f.clientWidth - 6, (f.clientHeight - 6) * 1.6)), h = w / 1.6;
+  const w = Math.max(160, Math.min(f.clientWidth - 6, (f.clientHeight - 24) * 1.6)), h = w / 1.6;
   cv.style.width = w + 'px'; cv.style.height = h + 'px';
+  const fr = f.getBoundingClientRect(), cr = cv.getBoundingClientRect(), k = $('keys');
+  k.style.left = (cr.left - fr.left + 14) + 'px'; k.style.top = (cr.top - fr.top - 15) + 'px';
   const bw = Math.round(Math.min(1600, Math.max(640, w * (window.devicePixelRatio || 1))));
   if (cv.width !== bw) { cv.width = bw; cv.height = Math.round(bw / 1.6); }
 }
