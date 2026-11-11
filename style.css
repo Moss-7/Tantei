@@ -45,13 +45,18 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .chip{font-size:14px;padding:3px 14px;border-radius:999px;border:2px solid var(--ink);background:var(--surface)}
 .chip.star{background:var(--star)}
 .keys{display:flex;align-items:center;gap:4px}
-.keys svg{width:26px;height:26px}
-.keys path,.keys circle{stroke:var(--ink);stroke-width:2;fill:none}
-.keys .got path,.keys .got circle{fill:var(--star)}
+.keys{gap:2px;padding:2px 8px;border-radius:999px;background:var(--surface);border:2px solid var(--line)}
+.keys svg{width:30px;height:30px}
+.keys .o{stroke:var(--line);stroke-width:5;fill:none;stroke-linecap:round;stroke-dasharray:1 0}
+.keys .i{display:none}
+.keys .got .o{stroke:var(--ink);stroke-width:8}
+.keys .got .i{display:inline;stroke:var(--star);stroke-width:4.5;fill:none;stroke-linecap:round}
+.keys .got{animation:keypop .5s}
+@keyframes keypop{0%{transform:scale(.4)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
 
-.play{flex:1;min-height:0;display:grid;gap:8px;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;grid-template-areas:"field field" "pad act"}
+.play{flex:1;min-height:0;display:grid;gap:8px;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto auto;grid-template-areas:"field field" "talk talk" "pad act"}
 .field{grid-area:field;position:relative;min-width:0;min-height:0}
-#cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid var(--ink);border-radius:16px;background:#BDE7AE;touch-action:none;cursor:pointer}
+#cv{position:absolute;left:50%;bottom:0;transform:translateX(-50%);border:3px solid var(--ink);border-radius:16px;background:#BDE7AE;touch-action:none;cursor:pointer}
 .pad{grid-area:pad;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:2px;justify-self:start;
   grid-template-areas:". up ." "left . right" ". down ."}
 .pad button{border:3px solid var(--ink);border-radius:14px;background:var(--surface);font-size:18px;padding:0;line-height:1}
@@ -64,11 +69,12 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .cmd svg{width:32px;height:32px}
 .cmd.dig{background:#FF9DB5}
 @media (orientation:landscape){
-  .play{grid-template-columns:auto 1fr auto;grid-template-rows:1fr;grid-template-areas:"pad field act"}
+  .play{grid-template-columns:auto 1fr auto;grid-template-rows:1fr auto;grid-template-areas:"pad field act" "pad talk act"}
+  #cv{top:50%;bottom:auto;transform:translate(-50%,-50%)}
   .pad,.act{align-self:end}
   .act{flex-direction:column}
 }
-.talk{display:flex;align-items:center;gap:10px;background:var(--surface);border:3px solid var(--ink);border-radius:18px;padding:6px 14px;min-height:60px}
+.talk{grid-area:talk;display:flex;align-items:center;gap:10px;background:var(--surface);border:3px solid var(--ink);border-radius:18px;padding:6px 14px;min-height:60px}
 .talk canvas{width:44px;height:44px;flex:none}
 .talk p{margin:0;font-size:clamp(15px,2.6vw,19px);line-height:1.5}
 
@@ -106,7 +112,7 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .note .a.txt{font-family:var(--body);font-weight:700;font-size:16px;line-height:1.8}
 .note .a canvas{width:40px;height:40px}
 .note .badge{grid-row:span 2;font-size:18px}
-@media (prefers-reduced-motion:reduce){.choice.no{animation:none}.slot-del.hold i{transition-duration:1.4s}}
+@media (prefers-reduced-motion:reduce){.choice.no,.keys .got{animation:none}.slot-del.hold i{transition-duration:1.4s}}
 
 /* てちょうの てがみは ふつうの ぶんしょうとして ながす */
 .note .a.txt{display:block}

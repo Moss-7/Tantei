@@ -264,8 +264,9 @@ function say(t) { $('say').textContent = t; }
 
 function refreshHud() {
   const k = keysGot(); let h = '';
-  for (let i = 0; i < 3; i++) h += '<svg class="' + (i < k ? 'got' : '') + '" viewBox="0 0 24 24"><circle cx="8" cy="8" r="5"/><path d="M12 12l9 9M17 17l3-3"/></svg>';
-  $('keys').innerHTML = h;
+  const shape = cls => '<g class="' + cls + '"><circle cx="11" cy="11" r="5.5"/><path d="M15 15l11 11M21 21l4-4"/></g>';
+  for (let i = 0; i < 3; i++) h += '<svg class="' + (i < k ? 'got' : '') + '" viewBox="0 0 32 32">' + shape('o') + shape('i') + '</svg>';
+  if ($('keys').dataset.k !== String(k)) { $('keys').innerHTML = h; $('keys').dataset.k = String(k); }
   $('keys').setAttribute('aria-label', 'カギ ' + k + 'こ');
   $('btnDig').hidden = !(data.letter && !data.cleared);
   $('btnSound').textContent = store.sound ? 'おと あり' : 'おと なし';
