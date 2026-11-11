@@ -1,4 +1,4 @@
-/* たんていミミと ひみつの たからもの — 1わ「おうちと にわ」試作 */
+/* たんていミミと ひみつの たからもの — 1話「おうちと にわ」試作 */
 (() => {
 'use strict';
 const T = 40, COLS = 16, ROWS = 10, PI = Math.PI;
@@ -633,22 +633,66 @@ function showChest() {
   const p = openModal('<h2>たからばこを みつけた!</h2><div id="pic"></div><p>3つの カギで あけてみよう</p><button class="btn" data-focus type="button">あける</button>');
   const c = mk(240, 200, x => drawChest(x, 20, 10, 5)); c.className = 'prize'; p.querySelector('#pic').appendChild(c);
   p.querySelector('.btn').onclick = () => {
-    sfx.fanfare(); playMusic('clear', 2.2);
     data.cleared = true;
     if (!data.treasures.includes('brooch')) data.treasures.push('brooch');
     persist(); refreshHud();
-    const q = openModal('<h2>おはなの ブローチを てに いれた!</h2><div id="pic"></div><p>1わ クリア! めいたんていだね</p><p class="small">つづきの おはなしは じゅんびちゅうだよ</p><button class="btn" data-focus type="button">タイトルへ</button>');
-    const b = mk(240, 200, x => drawBrooch(x, 120, 100, 2.4)); b.className = 'prize'; q.querySelector('#pic').appendChild(b);
-    q.querySelector('.btn').onclick = goTitle;
+    openChestScene();
   };
+}
+
+/* たからばこが ひらく えんしゅつ: ゆれる → ふたが あく → ひかりの なかから たからものが でてくる */
+function drawChestOpening(c, x, y, s, open) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  if (open > 0) {
+    rr(c, 5, 10, 30, 10, 2, '#5A3418');
+    const gr = c.createLinearGradient(0, 16, 0, -44);
+    gr.addColorStop(0, 'rgba(255,236,150,' + (.95 * open) + ')'); gr.addColorStop(1, 'rgba(255,236,150,0)');
+    poly(c, [[7, 16], [33, 16], [50, -44], [-10, -44]], gr);
+  }
+  c.save(); c.translate(3, 20); c.rotate(-open * 1.15); c.translate(-3, -20 - open * 3);   // ふた
+  rr(c, 3, 6, 34, 14, [12, 12, 0, 0], '#D08C4F', '#7A4B2A', 2); rr(c, 8, 6, 4, 14, 0, '#F2C14E'); rr(c, 28, 6, 4, 14, 0, '#F2C14E');
+  c.restore();
+  rr(c, 3, 16, 34, 20, 3, '#B8733F', '#7A4B2A', 2); rr(c, 3, 17, 34, 4, 0, '#F2C14E'); rr(c, 8, 17, 4, 19, 0, '#F2C14E'); rr(c, 28, 17, 4, 19, 0, '#F2C14E');
+  rr(c, 16, 16, 8, 10, 2, '#FFE38A', '#B58A1F', 1.5);
+  c.restore();
+}
+function openChestScene() {
+  const p = openModal('<h2 id="ttl">カギを さしこむよ…</h2><div id="pic"></div><div id="after" hidden><p>1話 クリア! めいたんていだね</p><p class="small">つづきの おはなしは じゅんびちゅうだよ</p></div><button class="btn" id="fin" type="button" hidden>タイトルへ</button>');
+  const cvs = document.createElement('canvas'); cvs.width = 420; cvs.height = 340; cvs.className = 'pic'; p.querySelector('#pic').appendChild(cvs);
+  const c = cvs.getContext('2d'), ease = v => 1 - Math.pow(1 - Math.min(1, Math.max(0, v)), 3);
+  let t0 = null, opened = false, done = false;
+  for (const d of [0, .18, .36]) tone(300, .06, d, 'square', .05);   // カギが カチャカチャ なる
+  p.querySelector('#fin').onclick = goTitle;
+  const tick = ts => {
+    if (!cvs.isConnected) return;
+    if (t0 === null) t0 = ts;
+    const t = (ts - t0) / 1000;
+    c.clearRect(0, 0, 420, 340);
+    const open = ease((t - .7) / .5), rise = ease((t - 1.1) / 1.0);
+    if (rise > 0) {   // まわる ひかり
+      c.save(); c.translate(210, 250 - rise * 140); c.rotate(t * .6);
+      for (let i = 0; i < 12; i++) { c.rotate(PI / 6); poly(c, [[-9, 0], [9, 0], [0, -150 * rise]], 'rgba(255,225,120,' + (.38 * rise) + ')'); }
+      c.restore();
+    }
+    const shake = t < .7 ? Math.sin(t * 60) * 5 * (t / .7) : 0;
+    drawChestOpening(c, 110 + shake, 150, 5, open);
+    if (rise > 0) {
+      drawBrooch(c, 210, 250 - rise * 140, .5 + rise * 1.6);
+      for (let i = 0; i < 6; i++) { const a = t * 1.4 + i * PI / 3, r = 70 + 26 * Math.sin(t * 3 + i); starShape(c, 210 + Math.cos(a) * r * rise * 1.3, 250 - rise * 140 + Math.sin(a) * r * rise, 3 + 3 * Math.abs(Math.sin(t * 4 + i)), '#FFFFFF', '#FFD25E'); }
+    }
+    if (!opened && t > .7) { opened = true; sfx.fanfare(); playMusic('clear', 2.2); p.querySelector('#ttl').textContent = 'たからばこが ひらいた!'; }
+    if (!done && t > 2.3) { done = true; p.querySelector('#ttl').textContent = 'おはなの ブローチを てに いれた!'; p.querySelector('#after').hidden = false; const f = p.querySelector('#fin'); f.hidden = false; f.focus({ preventScroll: true }); }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 /* ---------- タイトル ---------- */
 function slotState(d) {
   if (!d) return 'はじめから';
-  if (d.cleared) return '1わ クリア・たからもの ' + d.treasures.length + 'こ';
+  if (d.cleared) return '1話 クリア・たからもの ' + d.treasures.length + 'こ';
   const k = (d.s1 ? 1 : 0) + (d.s2 ? 1 : 0) + (d.letter ? 1 : 0);
-  return '1わ・カギ ' + k + 'こ';
+  return '1話・カギ ' + k + 'こ';
 }
 function buildSlots() {
   const host = $('slots'); host.replaceChildren();

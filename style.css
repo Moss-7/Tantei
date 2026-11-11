@@ -170,3 +170,5 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
   .note .a{font-size:18px}
   .note .a canvas{width:30px;height:30px}
 }
+
+#after{display:flex;flex-direction:column;gap:6px}
