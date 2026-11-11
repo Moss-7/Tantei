@@ -10,7 +10,7 @@
 [hidden]{display:none!important}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:700;font-size:17px;line-height:1.6;
-  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;word-break:keep-all;overflow-wrap:anywhere}
 button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
 h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-wrap:balance}
@@ -90,6 +90,8 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .fb{min-height:1.6em;color:var(--berry)}
 .letter{background:#FFF8E1;border:3px dashed #E2AD5E;border-radius:16px;padding:16px;font-size:clamp(17px,3.6vw,21px);line-height:2;text-align:left}
+.tag{font-family:var(--display);font-weight:400;font-size:15px;padding:2px 16px;border-radius:999px;background:var(--star)}
+.ref{display:inline-flex;align-items:center;gap:4px;padding:0 8px 0 10px;border-radius:999px;background:#FFE9A8;white-space:nowrap;line-height:1.7}
 .badge{display:inline-grid;place-items:center;width:1.7em;height:1.7em;border-radius:50%;background:var(--star);font-family:var(--display);font-weight:400;font-size:.85em;vertical-align:middle}
 .note{width:100%;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;text-align:left}
 .note li{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;background:var(--bg);border-radius:16px;padding:10px 14px}

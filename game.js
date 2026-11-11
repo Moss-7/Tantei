@@ -42,25 +42,72 @@ function newStage(old) {
 }
 
 /* ---------- おと ---------- */
-let actx = null;
+let actx = null, musicGain = null, music = null, wantTrack = null;
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+function audio() {
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function note(freq, dur, t0, type, vol, dest) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  o.connect(g).connect(dest); o.start(t0); o.stop(t0 + dur + 0.05);
+}
 function tone(freq, dur, delay = 0, type = 'sine', vol = 0.12) {
   if (!store.sound) return;
-  try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    if (actx.state === 'suspended') actx.resume();
-    const o = actx.createOscillator(), g = actx.createGain(), t0 = actx.currentTime + delay;
-    o.type = type; o.frequency.value = freq;
-    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-    o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + dur + 0.05);
-  } catch (e) {}
+  try { audio(); note(freq, dur, actx.currentTime + delay, type, vol, actx.destination); } catch (e) {}
 }
 const sfx = {
   ok()   { tone(660, .15); tone(880, .25, .12); },
   ng()   { tone(220, .2, 0, 'triangle'); },
   open() { tone(520, .12); },
   dig()  { tone(160, .12, 0, 'triangle'); },
-  win()  { [523, 659, 784, 1047].forEach((f, i) => tone(f, .3, i * .14)); },
+  found() { [523, 659, 784].forEach((f, i) => tone(f, .25, i * .12)); tone(1047, .6, .36); },
+  fanfare() {
+    [523, 523, 523, 659, 784].forEach((f, i) => tone(f, .22, [0, .16, .32, .48, .72][i], 'triangle', .14));
+    [1047, 1319, 1568].forEach(f => tone(f, 1.3, .98, 'triangle', .09));
+    [1568, 2093].forEach((f, i) => tone(f, .5, 1.5 + i * .16, 'sine', .07));
+  },
 };
+
+/* BGM: [おとの たかさ(MIDI), ながさ(はく)]。0 は やすみ。mel と bass の ながさは おなじに する */
+const TRACKS = {
+  field: { beat: .4,
+    mel: [[72,1],[76,1],[79,1],[76,1], [81,1],[79,1],[76,2], [77,1],[81,1],[79,1],[76,1], [74,1],[76,1],[74,2],
+          [72,1],[76,1],[79,1],[84,1], [83,1],[81,1],[79,2], [81,1],[79,1],[77,1],[74,1], [72,2],[0,2]],
+    bass: [[48,2],[55,2], [45,2],[52,2], [53,2],[48,2], [55,2],[43,2], [48,2],[52,2], [55,2],[52,2], [53,2],[55,2], [48,2],[48,2]] },
+  clear: { beat: .3,
+    mel: [[72,.5],[76,.5],[79,.5],[84,1.5],[79,.5],[84,.5], [88,2],[86,1],[84,1],
+          [81,.5],[84,.5],[81,.5],[77,1.5],[81,.5],[84,.5], [79,2],[83,1],[86,1]],
+    bass: [[48,2],[48,2], [48,2],[55,2], [53,2],[53,2], [55,2],[55,2]] },
+};
+function stopMusic() {
+  if (!music) return;
+  clearInterval(music.timer);
+  try { music.gain.gain.setTargetAtTime(0, actx.currentTime, .05); const g = music.gain; setTimeout(() => g.disconnect(), 400); } catch (e) {}
+  music = null;
+}
+function playMusic(name, delay = 0) {
+  wantTrack = name; stopMusic();
+  if (!name || !store.sound || document.hidden) return;
+  try {
+    audio();
+    const gain = actx.createGain(); gain.connect(actx.destination);
+    const t = actx.currentTime + .1 + delay;
+    music = { name, gain, tm: t, tb: t, i: 0, j: 0, timer: setInterval(musicTick, 100) };
+    musicTick();
+  } catch (e) { music = null; }
+}
+function musicTick() {
+  if (!music) return;
+  const tr = TRACKS[music.name], now = actx.currentTime, until = now + .5;
+  if (music.tm < now - .2) { music.tm = music.tb = now + .05; music.i = music.j = 0; }
+  while (music.tm < until) { const [n, d] = tr.mel[music.i]; if (n) note(midi(n), d * tr.beat * .95, music.tm, 'triangle', .055, music.gain); music.tm += d * tr.beat; music.i = (music.i + 1) % tr.mel.length; }
+  while (music.tb < until) { const [n, d] = tr.bass[music.j]; if (n) note(midi(n), d * tr.beat * .9, music.tb, 'sine', .06, music.gain); music.tb += d * tr.beat; music.j = (music.j + 1) % tr.bass.length; }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopMusic(); else if (wantTrack && !music) playMusic(wantTrack); });
 
 /* ---------- えを かく どうぐ ---------- */
 function rr(c, x, y, w, h, r, fill, stroke, lw) { c.beginPath(); c.roundRect(x, y, w, h, r); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 2; c.stroke(); } }
@@ -228,17 +275,17 @@ function startGame(ix) {
   slotIx = ix;
   data = store.slots[ix];
   if (!data || data.cleared) { data = newStage(data); persist(); }
-  m = { x: START.x, y: START.y, fx: START.x, fy: START.y, p: 1, face: 1 };
+  m = { x: START.x, y: START.y, fx: START.x, fy: START.y, p: 1, face: 1, fresh: false };
   cat = { x: START.x - 1, y: START.y, fx: START.x - 1, fy: START.y, face: 1 };
   path = []; held = null; dest = null; holes = []; chest = null; digMiss = 0;
   $('title').hidden = true; $('game').hidden = false;
   refreshHud(); fit();
-  running = true;
+  running = true; playMusic('field');
   if (keysGot() === 0) showIntro();
   else say(data.letter ? 'ばしょが わかったら「ほる」を おそう!' : data.s1 && data.s2 ? 'ポストの ほしが ひかったよ! いってみよう' : 'つづきから はじめるよ。ほしを しらべよう!');
 }
 function goTitle() {
-  running = false; closeModal();
+  running = false; closeModal(); playMusic(null);
   $('game').hidden = true; $('title').hidden = false; buildSlots();
 }
 
@@ -255,17 +302,14 @@ function startStep(nx, ny) {
 function update(dt) {
   if (m.p < 1) {
     m.p = Math.min(1, m.p + dt * 5.5);
-    if (m.p >= 1) arrive();
+    if (m.p >= 1) { m.fresh = true; if (!path.length) dest = null; }
     return;
   }
   if (busy) return;
-  if (path.length) { const [nx, ny] = path.shift(); startStep(nx, ny); }
-  else if (held) { const [dx, dy] = DIRS[held]; if (!blocked(m.x + dx, m.y + dy)) startStep(m.x + dx, m.y + dy); else if (dx) m.face = dx; }
-}
-function arrive() {
-  if (!path.length) dest = null;
-  const st = STARS.find(s => s.x === m.x && s.y === m.y);
-  if (st && !chest) touchStar(st);
+  if (path.length) { const [nx, ny] = path.shift(); startStep(nx, ny); return; }
+  if (held) { const [dx, dy] = DIRS[held]; if (!blocked(m.x + dx, m.y + dy)) { startStep(m.x + dx, m.y + dy); return; } if (dx) m.face = dx; }
+  // とちゅうで とおりすぎた ほしは はんのう しない。とまった ときだけ しらべる
+  if (m.fresh) { m.fresh = false; const st = STARS.find(s => s.x === m.x && s.y === m.y); if (st && !chest) touchStar(st); }
 }
 function touchStar(st) {
   if (st.id === 1 && !data.s1) { halt(); puzzleDucks(); }
@@ -283,7 +327,7 @@ function dig() {
   halt();
   const t = target();
   if (m.x === t.x && m.y === t.y) {
-    busy = true; sfx.win();
+    busy = true; stopMusic(); sfx.found();
     chest = { x: t.x, y: t.y, t: 0 };
     startStep(t.x + 1, t.y); m.face = -1;
     say('たからばこが でてきた!');
@@ -417,7 +461,7 @@ const afterClue = () => say(data.s1 && data.s2 ? 'ポストの ほしが ひか�
 
 function puzzleDucks() {
   sfx.open(); let miss = 0;
-  const p = openModal('<h2><span class="badge">1</span> いけの あひるは なんわ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
+  const p = openModal('<span class="tag">なぞ 1</span><h2>いけの あひるは なんわ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
   const paint = hint => {
     const c = mk(560, 300, x => {
       x.fillStyle = '#BDE7AE'; x.fillRect(0, 0, 560, 300);
@@ -446,7 +490,7 @@ function puzzleDucks() {
 function puzzlePattern() {
   sfx.open(); let miss = 0;
   const A = COLORS[data.seed.other], B = COLORS[data.seed.c];
-  const p = openModal('<h2><span class="badge">2</span> つぎに さく はなは なにいろ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
+  const p = openModal('<span class="tag">なぞ 2</span><h2>つぎに さく はなは なにいろ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
   const c = mk(560, 170, x => {
     x.fillStyle = '#BDE7AE'; x.fillRect(0, 0, 560, 170);
     rr(x, 16, 86, 528, 60, 18, '#C99B77', '#B4835F', 3);
@@ -467,12 +511,13 @@ function puzzlePattern() {
   });
 }
 
-const LETTER = '<span class="badge">2</span> の いろの おおきな はなから かぞえて、みぎへ <span class="badge">1</span> ばんめの いしを ほろう!';
+const REF = n => '<span class="ref">てちょう<span class="badge">' + n + '</span></span>';
+const LETTER = REF(2) + ' の いろの おおきな はなを さがそう。<br>そこから みぎへ、' + REF(1) + ' と おなじ かずだけ いしを かぞえて、ほろう!';
 function showLetter() {
   sfx.ok();
   const first = !data.letter;
   if (first) { data.letter = true; persist(); }
-  const p = openModal('<h2>ポストに てがみと カギが あった!</h2><div class="letter">' + LETTER + '</div><p class="small"><span class="badge">1</span> と <span class="badge">2</span> の こたえは てちょうに かいてあるよ</p><div class="row"><button class="btn sub" id="toNote" type="button">てちょうを みる</button><button class="btn" data-focus id="ok" type="button">わかった!</button></div>');
+  const p = openModal('<span class="tag">なぞ 3</span><h2>ポストに てがみと カギが あった!</h2><div class="letter">' + LETTER + '</div><p class="small">なぞ 1 と なぞ 2 の こたえは てちょうに かいてあるよ</p><div class="row"><button class="btn sub" id="toNote" type="button">てちょうを みる</button><button class="btn" data-focus id="ok" type="button">わかった!</button></div>');
   const done = () => { refreshHud(); say('ばしょが わかったら「ほる」を おそう!'); };
   p.querySelector('#ok').onclick = () => { closeModal(); done(); };
   p.querySelector('#toNote').onclick = () => { done(); showNote(); };
@@ -498,7 +543,7 @@ function showChest() {
   const p = openModal('<h2>たからばこを みつけた!</h2><div id="pic"></div><p>3つの カギで あけてみよう</p><button class="btn" data-focus type="button">あける</button>');
   const c = mk(240, 200, x => drawChest(x, 20, 10, 5)); c.style.width = '150px'; p.querySelector('#pic').appendChild(c);
   p.querySelector('.btn').onclick = () => {
-    sfx.win();
+    sfx.fanfare(); playMusic('clear', 2.2);
     data.cleared = true;
     if (!data.treasures.includes('brooch')) data.treasures.push('brooch');
     persist(); refreshHud();
@@ -568,7 +613,7 @@ window.addEventListener('keyup', ev => { if (KEYMAP[ev.key] === held) held = nul
 $('btnDig').onclick = dig;
 $('btnNote').onclick = () => { if (!busy) showNote(); };
 $('btnHome').onclick = () => { if (!chest) goTitle(); };
-$('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshHud(); sfx.open(); };
+$('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshHud(); sfx.open(); if (store.sound) playMusic(wantTrack); else stopMusic(); };
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
