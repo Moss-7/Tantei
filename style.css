@@ -1,0 +1,101 @@
+/* たんていミミ — パステルの絵本のような見た目。色はここのトークンから使う。 */
+:root{
+  --bg:#F3EFFB; --surface:#FFFFFF; --ink:#3A2D58; --ink-soft:#6E6390;
+  --line:#DCD3F0; --berry:#D9478A; --star:#FFC83D; --mint:#2E9C82; --lav:#B79CED;
+  --display:"Mochiy Pop One","Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:700;font-size:17px;line-height:1.6;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-wrap:balance}
+
+#app{height:100%;display:flex;flex-direction:column}
+.scene{flex:1;min-height:0;display:flex;flex-direction:column;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:10px}
+
+/* ---- タイトル ---- */
+#title{overflow:auto}
+.title-inner{margin:auto;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;max-width:680px;width:100%}
+#titleArt{width:min(240px,60%);height:auto}
+#title h1{font-size:clamp(26px,6vw,42px);color:var(--berry)}
+.pick{margin:0;color:var(--ink-soft)}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
+.slot{display:flex;flex-direction:column;align-items:center;gap:8px}
+.slot-main{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px 12px;
+  background:var(--surface);border:3px solid var(--ink);border-radius:22px;box-shadow:0 5px 0 var(--ink)}
+.slot-main:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+.slot-main canvas{width:min(84px,100%);height:auto}
+.slot-main .who{font-family:var(--display);font-weight:400;font-size:clamp(16px,4vw,20px)}
+.slot-main .state{font-size:clamp(11px,3vw,14px);color:var(--ink-soft);min-height:1.6em}
+.slot-del{position:relative;overflow:hidden;font-size:13px;padding:3px 14px;border-radius:999px;border:2px solid var(--line);background:transparent;color:var(--ink-soft)}
+.slot-del i{position:absolute;inset:0;background:var(--berry);opacity:.3;transform:scaleX(0);transform-origin:left}
+.slot-del.hold i{transform:scaleX(1);transition:transform 1.4s linear}
+.slot-del span{position:relative}
+
+/* ---- ゲーム ---- */
+#game{gap:8px}
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.hud b{font-family:var(--display);font-weight:400;font-size:16px;margin-right:auto}
+.chip{font-size:14px;padding:3px 14px;border-radius:999px;border:2px solid var(--ink);background:var(--surface)}
+.chip.star{background:var(--star)}
+.keys{display:flex;align-items:center;gap:4px}
+.keys svg{width:26px;height:26px}
+.keys path,.keys circle{stroke:var(--ink);stroke-width:2;fill:none}
+.keys .got path,.keys .got circle{fill:var(--star)}
+
+.play{flex:1;min-height:0;display:grid;gap:8px;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;grid-template-areas:"field field" "pad act"}
+.field{grid-area:field;position:relative;min-width:0;min-height:0}
+#cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid var(--ink);border-radius:16px;background:#BDE7AE;touch-action:none;cursor:pointer}
+.pad{grid-area:pad;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:2px;justify-self:start;
+  grid-template-areas:". up ." "left . right" ". down ."}
+.pad button{border:3px solid var(--ink);border-radius:14px;background:var(--surface);font-size:18px;padding:0;line-height:1}
+.pad button:active,.pad button.on{background:var(--lav)}
+.pad [data-dir=up]{grid-area:up}.pad [data-dir=left]{grid-area:left}.pad [data-dir=right]{grid-area:right}.pad [data-dir=down]{grid-area:down}
+.act{grid-area:act;display:flex;align-items:center;justify-content:flex-end;min-width:96px}
+@media (orientation:landscape){
+  .play{grid-template-columns:auto 1fr auto;grid-template-rows:1fr;grid-template-areas:"pad field act"}
+  .pad,.act{align-self:end}
+}
+.talk{display:flex;align-items:center;gap:10px;background:var(--surface);border:3px solid var(--ink);border-radius:18px;padding:6px 14px;min-height:60px}
+.talk canvas{width:44px;height:44px;flex:none}
+.talk p{margin:0;font-size:clamp(15px,2.6vw,19px);line-height:1.5}
+
+/* ---- ボタン ---- */
+.btn{font-family:var(--display);font-weight:400;font-size:20px;padding:10px 24px;border-radius:18px;border:3px solid var(--ink);background:var(--star);box-shadow:0 4px 0 var(--ink)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.sub{background:var(--surface)}
+.btn.dig{background:#FF9DB5;font-size:22px;padding:16px 22px}
+
+/* ---- モーダル ---- */
+.modal{position:fixed;inset:0;background:rgba(58,45,88,.45);display:grid;place-items:center;padding:16px;z-index:5}
+.panel{background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:20px;width:min(560px,100%);max-height:100%;overflow:auto;
+  display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.panel h2{font-size:clamp(20px,4.6vw,26px)}
+.panel p{margin:0}
+.panel canvas.pic{width:100%;max-width:480px;height:auto;border-radius:16px}
+.panel .small{font-size:15px;color:var(--ink-soft)}
+.row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.choice{min-width:68px;min-height:68px;padding:6px 10px;border-radius:18px;border:3px solid var(--ink);background:var(--bg);box-shadow:0 4px 0 var(--ink);
+  font-family:var(--display);font-weight:400;font-size:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.choice:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.choice canvas{width:52px;height:52px}
+.choice small{font-family:var(--body);font-weight:700;font-size:15px}
+.choice.no{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fb{min-height:1.6em;color:var(--berry)}
+.letter{background:#FFF8E1;border:3px dashed #E2AD5E;border-radius:16px;padding:16px;font-size:clamp(17px,3.6vw,21px);line-height:2;text-align:left}
+.badge{display:inline-grid;place-items:center;width:1.7em;height:1.7em;border-radius:50%;background:var(--star);font-family:var(--display);font-weight:400;font-size:.85em;vertical-align:middle}
+.note{width:100%;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;text-align:left}
+.note li{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;background:var(--bg);border-radius:16px;padding:10px 14px}
+.note .q{font-size:15px;color:var(--ink-soft)}
+.note .a{grid-column:2;font-family:var(--display);font-weight:400;font-size:22px;display:flex;align-items:center;gap:8px}
+.note .a.txt{font-family:var(--body);font-weight:700;font-size:16px;line-height:1.8}
+.note .a canvas{width:40px;height:40px}
+.note .badge{grid-row:span 2;font-size:18px}
+@media (prefers-reduced-motion:reduce){.choice.no{animation:none}.slot-del.hold i{transition-duration:1.4s}}

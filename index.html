@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>たんていミミと ひみつの たからもの</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!--APP-->
+<div id="app">
+  <section id="title" class="scene">
+    <div class="title-inner">
+      <canvas id="titleArt" width="360" height="240" aria-hidden="true"></canvas>
+      <h1>たんていミミと<br>ひみつの たからもの</h1>
+      <p class="pick">あそぶ ひとの マークを えらんでね</p>
+      <div id="slots" class="slots"></div>
+    </div>
+  </section>
+
+  <section id="game" class="scene" hidden>
+    <div class="hud">
+      <button id="btnHome" class="chip" type="button">もどる</button>
+      <b id="stageName">1わ おうちと にわ</b>
+      <span class="keys" id="keys" aria-label="カギ"></span>
+      <button id="btnNote" class="chip star" type="button">てちょう</button>
+      <button id="btnSound" class="chip" type="button" aria-pressed="true">おと あり</button>
+    </div>
+    <div class="play">
+      <div class="pad" aria-label="いどう">
+        <button type="button" data-dir="up" aria-label="うえ">▲</button>
+        <button type="button" data-dir="left" aria-label="ひだり">◀</button>
+        <button type="button" data-dir="right" aria-label="みぎ">▶</button>
+        <button type="button" data-dir="down" aria-label="した">▼</button>
+      </div>
+      <div class="field" id="field"><canvas id="cv" aria-label="にわの マップ"></canvas></div>
+      <div class="act"><button id="btnDig" class="btn dig" type="button" hidden>ほる</button></div>
+    </div>
+    <div class="talk">
+      <canvas id="catface" width="120" height="120" aria-hidden="true"></canvas>
+      <p id="say" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <div id="modal" class="modal" hidden><div class="panel" id="panel" role="dialog" aria-modal="true"></div></div>
+</div>
+<!--/APP-->
+<script src="game.js"></script>
+</body>
+</html>
