@@ -89,6 +89,14 @@ const sfx = {
 
 /* BGM: [おとの たかさ(MIDI), ながさ(はく)]。0 は やすみ。mel と bass の ながさは おなじに する */
 const TRACKS = {
+  // タイトル: ぬきあし さしあしの はずむ リズム(イ短調)。みじかく きった おとで かるく
+  title: { beat: .27, gate: .5, bassGate: .45, wave: 'square', vol: .028,
+    mel: [[69,.5],[0,.5],[72,.5],[0,.5],[76,.5],[0,.5],[75,.5],[76,.5],  [81,1],[0,1],[79,.5],[76,.5],[72,1],
+          [74,.5],[0,.5],[77,.5],[0,.5],[81,.5],[0,.5],[80,.5],[81,.5],  [83,1],[0,1],[76,2],
+          [84,.5],[83,.5],[81,.5],[79,.5],[81,1],[76,1],  [77,.5],[76,.5],[74,.5],[72,.5],[74,1],[71,1],
+          [72,.5],[0,.5],[76,.5],[0,.5],[81,.5],[0,.5],[80,.5],[83,.5],  [81,1.5],[0,.5],[81,.5],[0,1.5]],
+    bass: [[45,1],[52,1],[45,1],[52,1], [45,1],[52,1],[45,1],[52,1], [50,1],[57,1],[50,1],[57,1], [52,1],[59,1],[52,1],[56,1],
+           [45,1],[52,1],[45,1],[52,1], [50,1],[57,1],[43,1],[50,1], [45,1],[52,1],[45,1],[52,1], [45,1],[52,1],[45,1],[0,1]] },
   field: { beat: .4,
     mel: [[72,1],[76,1],[79,1],[76,1], [81,1],[79,1],[76,2], [77,1],[81,1],[79,1],[76,1], [74,1],[76,1],[74,2],
           [72,1],[76,1],[79,1],[84,1], [83,1],[81,1],[79,2], [81,1],[79,1],[77,1],[74,1], [72,2],[0,2]],
@@ -119,8 +127,8 @@ function musicTick() {
   if (!music) return;
   const tr = TRACKS[music.name], now = actx.currentTime, until = now + .5;
   if (music.tm < now - .2) { music.tm = music.tb = now + .05; music.i = music.j = 0; }
-  while (music.tm < until) { const [n, d] = tr.mel[music.i]; if (n) note(midi(n), d * tr.beat * .95, music.tm, 'triangle', .055, music.gain); music.tm += d * tr.beat; music.i = (music.i + 1) % tr.mel.length; }
-  while (music.tb < until) { const [n, d] = tr.bass[music.j]; if (n) note(midi(n), d * tr.beat * .9, music.tb, 'sine', .06, music.gain); music.tb += d * tr.beat; music.j = (music.j + 1) % tr.bass.length; }
+  while (music.tm < until) { const [n, d] = tr.mel[music.i]; if (n) note(midi(n), d * tr.beat * (tr.gate || .95), music.tm, tr.wave || 'triangle', tr.vol || .055, music.gain); music.tm += d * tr.beat; music.i = (music.i + 1) % tr.mel.length; }
+  while (music.tb < until) { const [n, d] = tr.bass[music.j]; if (n) note(midi(n), d * tr.beat * (tr.bassGate || .9), music.tb, 'triangle', tr.bassGate ? .09 : .06, music.gain); music.tb += d * tr.beat; music.j = (music.j + 1) % tr.bass.length; }
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopMusic(); else if (wantTrack && !music) playMusic(wantTrack); });
 
@@ -205,6 +213,26 @@ function drawCat(c, cx, by, s, face = 1, bob = 0, back = false, sway = 0, blink 
     ci(c, 0, -13.2, .9, '#FF8FB3');
     poly(c, [[0, -8.6], [-3.5, -10.4], [-3.5, -6.8]], '#4CC3A6'); poly(c, [[0, -8.6], [3.5, -10.4], [3.5, -6.8]], '#4CC3A6');
   } else rr(c, -4, -9.6, 8, 2, 1, '#4CC3A6');
+  c.restore();
+}
+/* シロを むきに あわせて かく。down=しょうめん、up=うしろ、left/right=よこむき */
+function drawCatDir(c, cx, by, s, dir, bob = 0, sway = 0, blink = false) {
+  if (dir === 'down') return drawCat(c, cx, by, s, 1, bob, false, sway, blink);
+  if (dir === 'up') return drawCat(c, cx, by, s, 1, bob, true, sway, blink);
+  c.save(); c.translate(cx, by); c.scale(dir === 'left' ? -s : s, s);
+  const w = '#FFFDF7', o = '#CFC4E2', ink = '#3A2D58';
+  el(c, 0, 0, 9, 2.5, 'rgba(40,20,70,.18)');
+  c.translate(0, -bob);
+  c.beginPath(); c.moveTo(-7, -5); c.quadraticCurveTo(-14 - sway * 2, -6, -12 - sway * 4, -16); c.strokeStyle = o; c.lineWidth = 4.4; c.lineCap = 'round'; c.stroke();
+  c.strokeStyle = w; c.lineWidth = 3; c.stroke();
+  rr(c, -6, -3, 3.2, 3, 1, w, o, .9); rr(c, 2.5, -3, 3.2, 3, 1, w, o, .9);
+  el(c, -1, -6.5, 8.5, 5.2, w, o, .9);
+  poly(c, [[1.5, -18], [3, -25], [6.5, -20.5]], w, o, .9); poly(c, [[6.5, -19.5], [9.5, -25], [11.5, -18.5]], w, o, .9);
+  poly(c, [[7.6, -20], [9.4, -23], [10.5, -19.6]], '#FFB7CF');
+  ci(c, 6.5, -14.5, 6.6, w, o, .9);
+  if (blink) ln(c, 7.6, -15, 9.8, -15, ink, .9); else ci(c, 8.8, -15.2, 1.2, ink);
+  ci(c, 12.6, -13.4, .9, '#FF8FB3');
+  poly(c, [[3, -9.2], [.2, -11], [.2, -7.4]], '#4CC3A6'); poly(c, [[3, -9.2], [5.8, -11], [5.8, -7.4]], '#4CC3A6');
   c.restore();
 }
 function drawAnimal(c, kind, cx, cy, s) {
@@ -325,7 +353,7 @@ function startGame(ix) {
   data = store.slots[ix];
   if (!data || data.cleared) { data = newStage(data); persist(); }
   m = { x: START.x, y: START.y, fx: START.x, fy: START.y, p: 1, face: 1, dir: 'down', fresh: false };
-  cat = { x: START.x - 1, y: START.y, fx: START.x - 1, fy: START.y, face: 1, back: false };
+  cat = { x: START.x - 1, y: START.y, fx: START.x - 1, fy: START.y, face: 1, back: false, dir: 'right' };
   path = []; held = null; dest = null; holes = []; chest = null; digMiss = 0;
   $('title').hidden = true; $('game').hidden = false;
   const wc = $('who').getContext('2d'); wc.clearRect(0, 0, 72, 72); drawAnimal(wc, ANIMALS[ix].id, 36, 42, 2.5);
@@ -337,7 +365,7 @@ function startGame(ix) {
   else say(data.letter ? 'ばしょが わかったら「ほる」を おそう!' : data.s1 && data.s2 ? 'ポストの ほしが ひかったよ! いってみよう' : 'つづきから はじめるよ。ほしを しらべよう!');
 }
 function goTitle() {
-  running = false; intro = null; closeModal(); playMusic(null);
+  running = false; intro = null; closeModal(); playMusic('title');
   $('game').hidden = true; $('title').hidden = false; buildSlots();
 }
 
@@ -346,6 +374,7 @@ const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 function startStep(nx, ny) {
   cat.fx = cat.x; cat.fy = cat.y;
   if (m.x !== cat.x) cat.face = m.x > cat.x ? 1 : -1;
+  cat.dir = m.x > cat.x ? 'right' : m.x < cat.x ? 'left' : m.y < cat.y ? 'up' : m.y > cat.y ? 'down' : cat.dir;
   cat.x = m.x; cat.y = m.y;
   m.fx = m.x; m.fy = m.y;
   if (nx !== m.x) m.face = nx > m.x ? 1 : -1;
@@ -481,7 +510,7 @@ function render(t) {
   const cx = cat.fx + (cat.x - cat.fx) * e, cy = cat.fy + (cat.y - cat.fy) * e;
   const walking = m.p < 1, bob = walking ? Math.abs(Math.sin(e * PI)) * 3 : Math.sin(t * 2.4) * .6 + .6;
   items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 37, 1.6, m.dir, bob) });
-  items.push({ y: cy + .94, f: () => drawCat(c, cx * T + 20, cy * T + 37, 1.35, cat.face, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0, cat.back && walking) });
+  items.push({ y: cy + .94, f: () => drawCatDir(c, cx * T + 20, cy * T + 37, 1.35, cat.dir, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0, walking ? Math.sin(t * 8) * .5 : Math.sin(t * 1.2) * .4) });
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   drawFence(c);
 
@@ -769,7 +798,7 @@ function openChestScene() {
 /* ---------- タイトル ---------- */
 /* タイトルの え: ふだんは ゆっくり いきを して、ときどき まばたき。
    しばらく たつと、むしめがねで さがしながら ひだり→みぎ→まんなかへ あるいて、もとに もどる */
-const TITLE = { home: 290, left: 130, right: 500, speed: 60, idle: 9, look: 1 };
+const TITLE = { home: 290, left: 130, right: 500, speed: 100, idle: 9, look: .9 };
 const titleCat = { x: TITLE.home + 140, last: 0 };
 function titlePose(t) {
   const T_ = TITLE, legs = [[T_.home, T_.left], [T_.left, T_.right], [T_.right, T_.home]];
@@ -793,12 +822,13 @@ function drawTitle(t) {
   // シロは ミミの うしろを すこし おくれて ついていく
   const dt = Math.min(.1, Math.max(0, t - titleCat.last)); titleCat.last = t;
   const want = p.dir === 'down' ? TITLE.home + 140 : p.x - sgn * 125;
-  const step = Math.sign(want - titleCat.x) * Math.min(Math.abs(want - titleCat.x), 95 * dt);
+  const step = Math.sign(want - titleCat.x) * Math.min(Math.abs(want - titleCat.x), 150 * dt);
   titleCat.x += step;
   const catWalk = Math.abs(step) > .01;
-  drawCat(a, titleCat.x, 226, 3.6, catWalk ? (step > 0 ? -1 : 1) : (p.dir === 'down' ? -1 : -sgn),
-    catWalk ? Math.abs(Math.sin(t * 9)) * .9 : (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * (catWalk ? 5 : 1.1)), blinkAt(5.7, 2.5));
-  const bob = p.walk ? Math.abs(Math.sin(t * 7)) * 1.1 : p.look ? .2 : (Math.sin(t * 1.5) + 1) * .3;
+  if (catWalk) drawCatDir(a, titleCat.x, 226, 3.6, step > 0 ? 'right' : 'left', Math.abs(Math.sin(t * 11)) * .9, Math.sin(t * 6) * .6);
+  else if (p.dir === 'down') drawCat(a, titleCat.x, 226, 3.6, -1, (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * 1.1), blinkAt(5.7, 2.5));
+  else drawCatDir(a, titleCat.x, 226, 3.6, p.dir, (Math.sin(t * 1.5 + 1.2) + 1) * .25, Math.sin(t * 1.1), blinkAt(5.7, 2.5));
+  const bob = p.walk ? Math.abs(Math.sin(t * 10)) * 1.1 : p.look ? .2 : (Math.sin(t * 1.5) + 1) * .3;
   drawGirl(a, p.x, 224, 5.2, p.dir, bob, p.dir === 'down' && blinkAt(4.3, 0));
   // むしめがねが きらり(ふだんは ときどき、のぞきこんだ ときは そのつど)
   const g = p.look ? (t * 1.4) % 1 : p.dir === 'down' ? (t % 6) / .9 : 2;
@@ -864,6 +894,8 @@ $('btnDig').onclick = dig;
 $('btnNote').onclick = () => { if (!busy) showNote(); };
 $('btnHome').onclick = () => { if (!chest) goTitle(); };
 $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshHud(); sfx.open(); if (store.sound) playMusic(wantTrack); else stopMusic(); };
+// おとは さいしょの タッチの あとで ないと ならせない
+document.addEventListener('pointerdown', () => { if (!running && !music) playMusic('title'); });
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
