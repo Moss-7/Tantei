@@ -595,7 +595,7 @@ function showIntro() {
   const p = openModal('<h2>ミミに てがみが とどいたよ!</h2><div id="pic"></div><button class="btn" data-focus type="button">あける</button>');
   const e = mk(280, 200, x => drawEnvelope(x, 140, 104, 7.4)); e.className = 'prize wig'; p.querySelector('#pic').appendChild(e);
   p.querySelector('.btn').onclick = () => {
-    scrape(0, .22, 2400, 3600, .12); scrape(.45, .5, 1800, 2600, .08);     // かみの おと
+    scrape(0, .22, 2400, 3600, .06); scrape(.45, .5, 1800, 2600, .04);     // かみの おと
     const q = openModal('<h2>なにが かいてあるかな?</h2><div id="pic"></div>');
     const cvs = document.createElement('canvas'); cvs.width = 320; cvs.height = 300; cvs.className = 'pic'; q.querySelector('#pic').appendChild(cvs);
     const c = cvs.getContext('2d'), ease = v => { v = Math.min(1, Math.max(0, v)); return v * v * (3 - 2 * v); };
