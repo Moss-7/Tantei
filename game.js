@@ -382,10 +382,21 @@ const DUCK_POS = [[11.9, 1.5], [13.1, 1.0], [14.1, 1.6], [12.6, 2.2], [13.7, 2.3
 
 function drawStar(c, st, t) {
   const lit = st.id !== 3 || (data.s1 && data.s2);
-  const x = st.x * T + 20, y = st.y * T + 12 + (lit ? Math.sin(t * 3 + st.id) * 3 : 0);
-  if (lit) ci(c, x, y, 19 + Math.sin(t * 4) * 2, 'rgba(255,214,90,.4)');
-  starShape(c, x, y, 15, lit ? '#FFC83D' : '#D8D2E6', '#FFFFFF');
-  num(c, st.id, x, y + 1.5, 13, lit ? '#3A2D58' : '#9A90B8');
+  const x = st.x * T + 20, y = st.y * T + 17 + (lit ? Math.sin(t * 3 + st.id) * 3 : 0);
+  if (!lit) { starShape(c, x, y, 15, '#D8D2E6', '#FFFFFF'); num(c, st.id, x, y + 1.5, 13, '#9A90B8'); return; }
+  const pulse = (Math.sin(t * 4 + st.id) + 1) / 2;
+  // ひかりの わ
+  const R = 34 + pulse * 8, gr = c.createRadialGradient(x, y, 6, x, y, R);
+  gr.addColorStop(0, 'rgba(255,244,170,.95)'); gr.addColorStop(.55, 'rgba(255,214,90,.5)'); gr.addColorStop(1, 'rgba(255,214,90,0)');
+  ci(c, x, y, R, gr);
+  // まわる ひかりの すじ
+  c.save(); c.translate(x, y); c.rotate(t * .8 + st.id);
+  for (let i = 0; i < 8; i++) { c.rotate(PI / 4); ln(c, 0, -27, 0, -33 - pulse * 5, 'rgba(255,255,255,.95)', 3); }
+  c.restore();
+  starShape(c, x, y, 21 + pulse * 2, '#FFC83D', '#FFFFFF');
+  num(c, st.id, x, y + 2, 17, '#3A2D58');
+  // きらきら
+  for (let i = 0; i < 3; i++) { const a = t * 1.5 + i * 2.1 + st.id, k = (Math.sin(t * 5 + i * 2) + 1) / 2; starShape(c, x + Math.cos(a) * 30, y + Math.sin(a) * 24, 2 + k * 4, '#FFFFFF'); }
 }
 
 function render(t) {
