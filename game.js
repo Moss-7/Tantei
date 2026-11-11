@@ -64,7 +64,7 @@ const sfx = {
   ng()   { tone(220, .2, 0, 'triangle'); },
   open() { tone(520, .12); },
   dig()  { tone(160, .12, 0, 'triangle'); },
-  step() { stepAlt = !stepAlt; tone(stepAlt ? 330 : 392, .07, 0, 'triangle', .05); },
+  step() { stepAlt = !stepAlt; tone(stepAlt ? 330 : 392, .08, 0, 'triangle', .11); },
   found() { [523, 659, 784].forEach((f, i) => tone(f, .25, i * .12)); tone(1047, .6, .36); },
   fanfare() {
     [523, 523, 523, 659, 784].forEach((f, i) => tone(f, .22, [0, .16, .32, .48, .72][i], 'triangle', .14));

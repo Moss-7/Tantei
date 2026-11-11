@@ -24,7 +24,6 @@
       <button id="btnHome" class="chip" type="button">もどる</button>
       <b id="stageName">1わ おうちと にわ</b>
       <span class="keys" id="keys" aria-label="カギ"></span>
-      <button id="btnNote" class="chip star" type="button">てちょう</button>
       <button id="btnSound" class="chip" type="button" aria-pressed="true">おと あり</button>
     </div>
     <div class="play">
@@ -35,7 +34,16 @@
         <button type="button" data-dir="down" aria-label="した">▼</button>
       </div>
       <div class="field" id="field"><canvas id="cv" aria-label="にわの マップ"></canvas></div>
-      <div class="act"><button id="btnDig" class="btn dig" type="button" hidden>ほる</button></div>
+      <div class="act">
+        <button id="btnNote" class="cmd note-btn" type="button">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="4" width="20" height="25" rx="3" fill="#FFF8E1" stroke="#3A2D58" stroke-width="2.4"/><path d="M12 11h10M12 16h10M12 21h6" stroke="#3A2D58" stroke-width="2.2" stroke-linecap="round"/><path d="M4 9h6M4 14h6M4 19h6M4 24h6" stroke="#D9478A" stroke-width="2.6" stroke-linecap="round"/></svg>
+          <span>てちょう</span>
+        </button>
+        <button id="btnDig" class="cmd dig" type="button" hidden>
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M22 4l6 6M25 7L12 20" stroke="#3A2D58" stroke-width="3" stroke-linecap="round"/><path d="M9 17l6 6-3 4c-2 2-6 2-8 0s-2-6 0-8z" fill="#E8EEF5" stroke="#3A2D58" stroke-width="2.4" stroke-linejoin="round"/></svg>
+          <span>ほる</span>
+        </button>
+      </div>
     </div>
     <div class="talk">
       <canvas id="catface" width="120" height="120" aria-hidden="true"></canvas>
