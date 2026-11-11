@@ -42,7 +42,7 @@ function newStage(old) {
 }
 
 /* ---------- おと ---------- */
-let actx = null, musicGain = null, music = null, wantTrack = null;
+let stepAlt = false, actx = null, musicGain = null, music = null, wantTrack = null;
 const midi = n => 440 * Math.pow(2, (n - 69) / 12);
 function audio() {
   actx = actx || new (window.AudioContext || window.webkitAudioContext)();
@@ -64,6 +64,7 @@ const sfx = {
   ng()   { tone(220, .2, 0, 'triangle'); },
   open() { tone(520, .12); },
   dig()  { tone(160, .12, 0, 'triangle'); },
+  step() { stepAlt = !stepAlt; tone(stepAlt ? 330 : 392, .07, 0, 'triangle', .05); },
   found() { [523, 659, 784].forEach((f, i) => tone(f, .25, i * .12)); tone(1047, .6, .36); },
   fanfare() {
     [523, 523, 523, 659, 784].forEach((f, i) => tone(f, .22, [0, .16, .32, .48, .72][i], 'triangle', .14));
@@ -297,7 +298,7 @@ function startStep(nx, ny) {
   cat.x = m.x; cat.y = m.y;
   m.fx = m.x; m.fy = m.y;
   if (nx !== m.x) m.face = nx > m.x ? 1 : -1;
-  m.x = nx; m.y = ny; m.p = 0;
+  m.x = nx; m.y = ny; m.p = 0; sfx.step();
 }
 function update(dt) {
   if (m.p < 1) {
@@ -442,7 +443,7 @@ function fit() {
 }
 
 /* ---------- モーダル ---------- */
-function openModal(html) { busy = true; halt(); $('panel').innerHTML = html; $('modal').hidden = false; $('panel').scrollTop = 0; const b = $('panel').querySelector('[data-focus]'); if (b) b.focus(); return $('panel'); }
+function openModal(html) { busy = true; halt(); $('panel').innerHTML = html; $('modal').hidden = false; $('panel').scrollTop = 0; const b = $('panel').querySelector('[data-focus]'); if (b) b.focus({ preventScroll: true }); return $('panel'); }
 function closeModal() { $('modal').hidden = true; $('panel').innerHTML = ''; busy = false; }
 function mk(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d')); return c; }
 
@@ -454,7 +455,7 @@ function showIntro() {
 function reward(n, after) {
   sfx.ok();
   const p = openModal('<h2>せいかい!</h2><div id="rw"></div><p>カギを てに いれた!<br>こたえは てちょうに かいておいたよ</p><button class="btn" data-focus type="button">つぎへ</button>');
-  const c = mk(200, 160, x => drawKey(x, 96, 76, 2.6)); c.style.width = '120px'; p.querySelector('#rw').appendChild(c);
+  const c = mk(200, 160, x => drawKey(x, 96, 76, 2.6)); c.className = 'prize'; p.querySelector('#rw').appendChild(c);
   p.querySelector('.btn').onclick = () => { closeModal(); refreshHud(); after(); };
 }
 const afterClue = () => say(data.s1 && data.s2 ? 'ポストの ほしが ひかったよ! いってみよう' : 'もう ひとつの ほしも しらべてみよう!');
@@ -541,14 +542,14 @@ function showNote() {
 
 function showChest() {
   const p = openModal('<h2>たからばこを みつけた!</h2><div id="pic"></div><p>3つの カギで あけてみよう</p><button class="btn" data-focus type="button">あける</button>');
-  const c = mk(240, 200, x => drawChest(x, 20, 10, 5)); c.style.width = '150px'; p.querySelector('#pic').appendChild(c);
+  const c = mk(240, 200, x => drawChest(x, 20, 10, 5)); c.className = 'prize'; p.querySelector('#pic').appendChild(c);
   p.querySelector('.btn').onclick = () => {
     sfx.fanfare(); playMusic('clear', 2.2);
     data.cleared = true;
     if (!data.treasures.includes('brooch')) data.treasures.push('brooch');
     persist(); refreshHud();
     const q = openModal('<h2>おはなの ブローチを てに いれた!</h2><div id="pic"></div><p>1わ クリア! めいたんていだね</p><p class="small">つづきの おはなしは じゅんびちゅうだよ</p><button class="btn" data-focus type="button">タイトルへ</button>');
-    const b = mk(240, 200, x => drawBrooch(x, 120, 100, 2.4)); b.style.width = '160px'; q.querySelector('#pic').appendChild(b);
+    const b = mk(240, 200, x => drawBrooch(x, 120, 100, 2.4)); b.className = 'prize'; q.querySelector('#pic').appendChild(b);
     q.querySelector('.btn').onclick = goTitle;
   };
 }
