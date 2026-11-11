@@ -136,7 +136,7 @@ function starShape(c, x, y, R, fill, stroke) {
 }
 function num(c, t, x, y, size, col) { c.font = '400 ' + size + 'px "Mochiy Pop One","Zen Maru Gothic",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = col; c.fillText(t, x, y); }
 
-function drawGirl(c, cx, by, s, dir = 'down', bob = 0) {
+function drawGirl(c, cx, by, s, dir = 'down', bob = 0, blink = false) {
   c.save(); c.translate(cx, by); c.scale(dir === 'left' ? -s : s, s);
   const hair = '#7A4B3A', skin = '#FFE2CF', ink = '#3A2D58';
   el(c, 0, 0, 10, 3, 'rgba(40,20,70,.18)');
@@ -158,7 +158,8 @@ function drawGirl(c, cx, by, s, dir = 'down', bob = 0) {
     legs(); coat(9.5); lens(8, 15.5);
     ci(c, 0, -22, 9, skin);
     c.beginPath(); c.arc(0, -23, 9.6, PI, 0); c.closePath(); c.fillStyle = hair; c.fill();
-    ci(c, -3.5, -19.5, 1.3, ink); ci(c, 3.5, -19.5, 1.3, ink);
+    if (blink) { ln(c, -4.8, -19.3, -2.2, -19.3, ink, 1); ln(c, 2.2, -19.3, 4.8, -19.3, ink, 1); }
+    else { ci(c, -3.5, -19.5, 1.3, ink); ci(c, 3.5, -19.5, 1.3, ink); }
     ci(c, -6, -17, 1.8, 'rgba(255,120,160,.45)'); ci(c, 6, -17, 1.8, 'rgba(255,120,160,.45)');
     c.beginPath(); c.arc(0, -17.6, 2, 0.15 * PI, 0.85 * PI); c.strokeStyle = '#B5566B'; c.lineWidth = 1; c.stroke();
     poly(c, [[0, -13.5], [-4, -15.5], [-4, -11.5]], '#FF7EB6'); poly(c, [[0, -13.5], [4, -15.5], [4, -11.5]], '#FF7EB6');
@@ -187,19 +188,20 @@ function drawEnvelope(c, x, y, s, flap = 0) {
   ci(c, -2, 3, 2.4, '#FF7EB6'); ci(c, 2, 3, 2.4, '#FF7EB6'); poly(c, [[-4.2, 4], [4.2, 4], [0, 8.4]], '#FF7EB6');
   c.restore();
 }
-function drawCat(c, cx, by, s, face = 1, bob = 0, back = false) {
+function drawCat(c, cx, by, s, face = 1, bob = 0, back = false, sway = 0, blink = false) {
   c.save(); c.translate(cx, by); c.scale(s * face, s);
   const w = '#FFFDF7', o = '#CFC4E2';
   el(c, 0, 0, 8, 2.5, 'rgba(40,20,70,.18)');
   c.translate(0, -bob);
-  c.beginPath(); c.moveTo(6, -4); c.quadraticCurveTo(14, -5, 12, -14); c.strokeStyle = o; c.lineWidth = 4.4; c.lineCap = 'round'; c.stroke();
+  c.beginPath(); c.moveTo(6, -4); c.quadraticCurveTo(14 + sway * 2, -5, 12 + sway * 5, -14); c.strokeStyle = o; c.lineWidth = 4.4; c.lineCap = 'round'; c.stroke();
   c.strokeStyle = w; c.lineWidth = 3; c.stroke();
   el(c, 0, -6, 7, 6, w, o, .9);
   poly(c, [[-6.5, -17], [-5, -25], [-1, -20.5]], w, o, .9); poly(c, [[6.5, -17], [5, -25], [1, -20.5]], w, o, .9);
   poly(c, [[-5.3, -19], [-4.7, -22.8], [-2.6, -20.3]], '#FFB7CF'); poly(c, [[5.3, -19], [4.7, -22.8], [2.6, -20.3]], '#FFB7CF');
   ci(c, 0, -15, 7, w, o, .9);
   if (!back) {
-    ci(c, -2.7, -15.5, 1.2, '#3A2D58'); ci(c, 2.7, -15.5, 1.2, '#3A2D58');
+    if (blink) { ln(c, -3.8, -15.3, -1.6, -15.3, '#3A2D58', .9); ln(c, 1.6, -15.3, 3.8, -15.3, '#3A2D58', .9); }
+    else { ci(c, -2.7, -15.5, 1.2, '#3A2D58'); ci(c, 2.7, -15.5, 1.2, '#3A2D58'); }
     ci(c, 0, -13.2, .9, '#FF8FB3');
     poly(c, [[0, -8.6], [-3.5, -10.4], [-3.5, -6.8]], '#4CC3A6'); poly(c, [[0, -8.6], [3.5, -10.4], [3.5, -6.8]], '#4CC3A6');
   } else rr(c, -4, -9.6, 8, 2, 1, '#4CC3A6');
@@ -500,6 +502,7 @@ function render(t) {
 let last = 0;
 function frame(ts) {
   const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; tNow = ts / 1000;
+  if (!running && !calm && !$('title').hidden) drawTitle(tNow);
   if (running && data) {
     if (chest) chest.t += dt;
     if (intro) {
@@ -571,16 +574,48 @@ function openModal(html) { busy = true; halt(); $('panel').innerHTML = html; $('
 function closeModal() { $('modal').hidden = true; $('panel').innerHTML = ''; busy = false; }
 function mk(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d')); return c; }
 
+function drawEnvelopeOpening(c, x, y, s, k, rise) {   // k: 1=とじている → -1=ひらいた
+  c.save(); c.translate(x, y); c.scale(s, s);
+  const flap = () => poly(c, [[-14, -9], [14, -9], [0, -9 + 11 * k]], '#FFF1C9', '#3A2D58', 1.5);
+  rr(c, -14, -9, 28, 18, 3, '#FBE9B8', '#3A2D58', 1.6);
+  if (k <= 0) flap();
+  if (rise > 0) {                                         // びんせんが でてくる
+    c.save(); c.beginPath(); c.rect(-20, -60, 40, 67); c.clip();
+    const py = -4 - rise * 22;
+    rr(c, -10, py, 20, 24, 2, '#FFFFFF', '#3A2D58', 1.3);
+    for (let i = 0; i < 3; i++) ln(c, -6, py + 6 + i * 5, i === 2 ? 2 : 6, py + 6 + i * 5, '#D9478A', 1.2);
+    c.restore();
+  }
+  poly(c, [[-14, -9], [0, 2], [14, -9], [14, 7.5], [12.5, 9], [-12.5, 9], [-14, 7.5]], '#FFF8E1', '#3A2D58', 1.5);
+  if (k > 0) { flap(); c.globalAlpha = k; ci(c, -2, 3, 2.4, '#FF7EB6'); ci(c, 2, 3, 2.4, '#FF7EB6'); poly(c, [[-4.2, 4], [4.2, 4], [0, 8.4]], '#FF7EB6'); c.globalAlpha = 1; }
+  c.restore();
+}
 function showIntro() {
   sfx.open();
   const p = openModal('<h2>ミミに てがみが とどいたよ!</h2><div id="pic"></div><button class="btn" data-focus type="button">あける</button>');
   const e = mk(280, 200, x => drawEnvelope(x, 140, 104, 7.4)); e.className = 'prize wig'; p.querySelector('#pic').appendChild(e);
   p.querySelector('.btn').onclick = () => {
-    sfx.ok();
-    const q = openModal('<div id="pic"></div><div class="letter">たんていミミへ。<br>にわの どこかに たからものを かくしたよ。<br>カギを 3つ あつめて、みつけてね。</div><p class="small">いきたい ところを タッチすると あるくよ</p><button class="btn" data-focus type="button">はじめる</button>');
-    const s = mk(140, 100, x => drawEnvelope(x, 70, 52, 3.6)); s.className = 'prize sm'; q.querySelector('#pic').appendChild(s);
-    q.querySelector('.btn').onclick = () => { sfx.open(); closeModal(); say('ひかっている ほしを しらべてみよう!'); };
+    scrape(0, .22, 2400, 3600, .12); scrape(.45, .5, 1800, 2600, .08);     // かみの おと
+    const q = openModal('<h2>なにが かいてあるかな?</h2><div id="pic"></div>');
+    const cvs = document.createElement('canvas'); cvs.width = 320; cvs.height = 300; cvs.className = 'pic'; q.querySelector('#pic').appendChild(cvs);
+    const c = cvs.getContext('2d'), ease = v => { v = Math.min(1, Math.max(0, v)); return v * v * (3 - 2 * v); };
+    let t0 = null;
+    const tick = ts => {
+      if (!cvs.isConnected) return;
+      if (t0 === null) t0 = ts;
+      const t = (ts - t0) / 1000;
+      c.clearRect(0, 0, 320, 300);
+      drawEnvelopeOpening(c, 160, 210, 7.4, 1 - 2 * ease(t / .45), ease((t - .4) / .8));
+      if (t < 1.6) requestAnimationFrame(tick); else showLetterText();
+    };
+    requestAnimationFrame(tick);
   };
+}
+function showLetterText() {
+  sfx.ok();
+  const q = openModal('<div id="pic"></div><div class="letter">たんていミミへ。<br>にわの どこかに たからものを かくしたよ。<br>カギを 3つ あつめて、みつけてね。</div><p class="small">いきたい ところを タッチすると あるくよ</p><button class="btn" data-focus type="button">はじめる</button>');
+  const s = mk(140, 100, x => drawEnvelope(x, 70, 52, 3.6)); s.className = 'prize sm'; q.querySelector('#pic').appendChild(s);
+  q.querySelector('.btn').onclick = () => { sfx.open(); closeModal(); say('ひかっている ほしを しらべてみよう!'); };
 }
 
 function reward(n, after) {
@@ -732,6 +767,16 @@ function openChestScene() {
 }
 
 /* ---------- タイトル ---------- */
+/* タイトルの え: ゆっくり いきを して、ときどき まばたき。シロは しっぽを ゆらす */
+function drawTitle(t) {
+  const a = $('titleArt').getContext('2d');
+  a.clearRect(0, 0, 360, 240);
+  const blinkAt = (period, off) => ((t + off) % period) < .14;
+  drawGirl(a, 150, 224, 5.2, 'down', (Math.sin(t * 1.5) + 1) * .3, blinkAt(4.3, 0));
+  drawCat(a, 290, 226, 3.6, -1, (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * 1.1), blinkAt(5.7, 2.5));
+  const g = (t % 6) / .9;                       // むしめがねが ときどき きらり
+  if (g < 1) starShape(a, 236, 142, 9 * Math.sin(g * PI), '#FFFFFF');
+}
 function slotState(d) {
   if (!d) return 'はじめから';
   if (d.cleared) return '1話 クリア・たからもの ' + d.treasures.length + 'こ';
@@ -797,8 +842,7 @@ if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
 /* ---------- はじまり ---------- */
 function boot() {
-  const a = $('titleArt').getContext('2d');
-  drawGirl(a, 150, 224, 5.2); drawCat(a, 290, 226, 3.6, -1);
+  drawTitle(0);
   drawCat($('catface').getContext('2d'), 58, 128, 5.2);
   buildSlots();
   requestAnimationFrame(frame);
