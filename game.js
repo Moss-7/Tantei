@@ -767,15 +767,42 @@ function openChestScene() {
 }
 
 /* ---------- タイトル ---------- */
-/* タイトルの え: ゆっくり いきを して、ときどき まばたき。シロは しっぽを ゆらす */
+/* タイトルの え: ふだんは ゆっくり いきを して、ときどき まばたき。
+   しばらく たつと、むしめがねで さがしながら ひだり→みぎ→まんなかへ あるいて、もとに もどる */
+const TITLE = { home: 290, left: 130, right: 500, speed: 60, idle: 9, look: 1 };
+const titleCat = { x: TITLE.home + 140, last: 0 };
+function titlePose(t) {
+  const T_ = TITLE, legs = [[T_.home, T_.left], [T_.left, T_.right], [T_.right, T_.home]];
+  let u = t % (T_.idle + legs.reduce((s, l) => s + Math.abs(l[1] - l[0]) / T_.speed + T_.look, 0));
+  if (u < T_.idle) return { x: T_.home, dir: 'down', walk: false, look: false };
+  u -= T_.idle;
+  for (const [from, to] of legs) {
+    const d = Math.abs(to - from) / T_.speed, dir = to > from ? 'right' : 'left';
+    if (u < d) return { x: from + (to - from) * (u / d), dir, walk: true, look: false };
+    u -= d;
+    if (u < T_.look) return { x: to, dir, walk: false, look: true };   // たちどまって のぞきこむ
+    u -= T_.look;
+  }
+  return { x: T_.home, dir: 'down', walk: false, look: false };
+}
 function drawTitle(t) {
   const a = $('titleArt').getContext('2d');
-  a.clearRect(0, 0, 360, 240);
+  a.clearRect(0, 0, 640, 240);
   const blinkAt = (period, off) => ((t + off) % period) < .14;
-  drawGirl(a, 150, 224, 5.2, 'down', (Math.sin(t * 1.5) + 1) * .3, blinkAt(4.3, 0));
-  drawCat(a, 290, 226, 3.6, -1, (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * 1.1), blinkAt(5.7, 2.5));
-  const g = (t % 6) / .9;                       // むしめがねが ときどき きらり
-  if (g < 1) starShape(a, 236, 142, 9 * Math.sin(g * PI), '#FFFFFF');
+  const p = titlePose(t), sgn = p.dir === 'left' ? -1 : 1;
+  // シロは ミミの うしろを すこし おくれて ついていく
+  const dt = Math.min(.1, Math.max(0, t - titleCat.last)); titleCat.last = t;
+  const want = p.dir === 'down' ? TITLE.home + 140 : p.x - sgn * 125;
+  const step = Math.sign(want - titleCat.x) * Math.min(Math.abs(want - titleCat.x), 95 * dt);
+  titleCat.x += step;
+  const catWalk = Math.abs(step) > .01;
+  drawCat(a, titleCat.x, 226, 3.6, catWalk ? (step > 0 ? -1 : 1) : (p.dir === 'down' ? -1 : -sgn),
+    catWalk ? Math.abs(Math.sin(t * 9)) * .9 : (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * (catWalk ? 5 : 1.1)), blinkAt(5.7, 2.5));
+  const bob = p.walk ? Math.abs(Math.sin(t * 7)) * 1.1 : p.look ? .2 : (Math.sin(t * 1.5) + 1) * .3;
+  drawGirl(a, p.x, 224, 5.2, p.dir, bob, p.dir === 'down' && blinkAt(4.3, 0));
+  // むしめがねが きらり(ふだんは ときどき、のぞきこんだ ときは そのつど)
+  const g = p.look ? (t * 1.4) % 1 : p.dir === 'down' ? (t % 6) / .9 : 2;
+  if (g < 1) starShape(a, p.dir === 'down' ? p.x + 86 : p.x + sgn * 80, 142, 9 * Math.sin(g * PI), '#FFFFFF');
 }
 function slotState(d) {
   if (!d) return 'はじめから';
