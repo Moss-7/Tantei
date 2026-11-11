@@ -512,12 +512,42 @@ function frame(ts) {
   requestAnimationFrame(frame);
 }
 
+/* マップの まわりの あきに、そらと おかと のはらを えがく。hz は ちへいせんの たかさ */
+function drawScenery(W, H, hz) {
+  const bg = $('bg'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  bg.width = Math.round(W * dpr); bg.height = Math.round(H * dpr);
+  const c = bg.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const sky = c.createLinearGradient(0, 0, 0, Math.max(1, hz));
+  sky.addColorStop(0, '#AEDCF7'); sky.addColorStop(1, '#EAF7FD');
+  c.fillStyle = sky; c.fillRect(0, 0, W, hz);
+  if (hz > 70) {                                   // おひさまと くも
+    ci(c, W - 46, Math.min(44, hz * .3), 30, 'rgba(255,236,150,.5)'); ci(c, W - 46, Math.min(44, hz * .3), 19, '#FFE38A');
+    const n = Math.max(2, Math.floor(W / 150));
+    for (let i = 0; i < n; i++) {
+      const x = (i + .25 + hash(i, 9) * .5) * (W - 90) / n, y = hz * (.16 + .4 * hash(i, 3)), s = .8 + hash(i, 5) * .6;
+      for (const [dx, dy, r] of [[-16, 4, 11], [0, 0, 15], [16, 4, 11], [-4, 8, 12], [8, 8, 11]]) ci(c, x + dx * s, y + dy * s, r * s, 'rgba(255,255,255,.92)');
+    }
+  }
+  const hr = Math.min(70, hz * .55);               // とおくの おか
+  el(c, W * .22, hz, W * .42, hr, '#BFE3D2'); el(c, W * .8, hz, W * .38, hr * .8, '#CDEBD9'); el(c, W * .52, hz, W * .3, hr * .55, '#B3DEC4');
+  for (let x = -10, i = 0; x < W + 20; x += 34 + hash(i, 2) * 18, i++) {   // きの ならび
+    const r = 15 + hash(i, 7) * 9;
+    ci(c, x, hz - r * .55, r, i % 3 ? '#7CCB96' : '#6CC08B'); ci(c, x - r * .3, hz - r * .8, r * .45, '#9ADCAE');
+  }
+  c.fillStyle = '#A9DB9A'; c.fillRect(0, hz, W, H - hz);                     // のはら
+  for (let i = 0; i < Math.floor(W * (H - hz) / 2600); i++) {
+    const x = hash(i, 11) * W, y = hz + 8 + hash(i, 13) * (H - hz - 12);
+    if (i % 4 === 0) { for (let k = 0; k < 5; k++) { const a = k * PI * 2 / 5; ci(c, x + Math.cos(a) * 3.4, y + Math.sin(a) * 3.4, 2.6, i % 8 ? '#FFFFFF' : '#FFD25E'); } ci(c, x, y, 2, '#FFE38A'); }
+    else { ln(c, x, y, x - 3, y - 6, '#8CCB7E', 2); ln(c, x, y, x + 3, y - 6, '#8CCB7E', 2); }
+  }
+}
 function fit() {
   const f = $('field'); if (!f.clientWidth) return;
   const w = Math.max(160, Math.min(f.clientWidth - 6, (f.clientHeight - 24) * 1.6)), h = w / 1.6;
   cv.style.width = w + 'px'; cv.style.height = h + 'px';
   const fr = f.getBoundingClientRect(), cr = cv.getBoundingClientRect(), k = $('keys');
   k.style.left = (cr.left - fr.left + 14) + 'px'; k.style.top = (cr.top - fr.top - 15) + 'px';
+  drawScenery(f.clientWidth, f.clientHeight, cr.top - fr.top + 12);
   const bw = Math.round(Math.min(1600, Math.max(640, w * (window.devicePixelRatio || 1))));
   if (cv.width !== bw) { cv.width = bw; cv.height = Math.round(bw / 1.6); }
 }
