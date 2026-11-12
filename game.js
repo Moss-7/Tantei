@@ -599,7 +599,7 @@ function fit() {
 }
 
 /* ---------- モーダル ---------- */
-function openModal(html) { busy = true; halt(); $('panel').innerHTML = html; $('modal').hidden = false; $('panel').scrollTop = 0; const b = $('panel').querySelector('[data-focus]'); if (b) b.focus({ preventScroll: true }); return $('panel'); }
+function openModal(html, cls = '') { busy = true; halt(); $('panel').className = 'panel ' + cls; $('panel').innerHTML = html; $('modal').hidden = false; $('panel').scrollTop = 0; const b = $('panel').querySelector('[data-focus]'); if (b) b.focus({ preventScroll: true }); return $('panel'); }
 function closeModal() { $('modal').hidden = true; $('panel').innerHTML = ''; busy = false; }
 function mk(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d')); return c; }
 
@@ -722,17 +722,17 @@ function showLetter() {
 
 function showNote() {
   if (!data) return;
-  sfx.open();
-  const p = openModal('<h2>たんていてちょう</h2><ul class="note">' +
-    '<li><span class="badge">1</span><span class="q">いけの あひるの かず</span><span class="a" id="a1"></span></li>' +
-    '<li><span class="badge">2</span><span class="q">つぎに さく はなの いろ</span><span class="a" id="a2"></span></li>' +
-    '<li><span class="badge">3</span><span class="q">ポストの てがみ</span><span class="a txt" id="a3"></span></li></ul>' +
-    '<button class="btn" data-focus type="button">とじる</button>');
-  p.querySelector('#a1').textContent = data.s1 ? data.seed.n + ' わ' : '?';
+  sfx.open(); scrape(0, .16, 2200, 3200, .04);     // ページを めくる おと
+  const row = (n, q, id, txt) => '<li><span class="badge">' + n + '</span><span class="q">' + q + '</span><span class="a' + (txt ? ' txt' : '') + '" id="' + id + '"></span></li>';
+  const p = openModal('<div class="nb"><div class="nb-page"><span class="nb-stamp">ひみつ</span><h2>たんていてちょう</h2><ul class="note">' +
+    row(1, 'いけの あひるの かず', 'a1') + row(2, 'つぎに さく はなの いろ', 'a2') + row(3, 'ポストの てがみ', 'a3', true) +
+    '</ul></div></div><button class="btn" data-focus type="button">とじる</button>', 'notebook');
+  const blank = el => { el.innerHTML = '<span class="nb-blank">?</span>'; };
+  if (data.s1) p.querySelector('#a1').textContent = data.seed.n + ' わ'; else blank(p.querySelector('#a1'));
   const a2 = p.querySelector('#a2');
-  if (data.s2) { a2.appendChild(mk(80, 80, x => drawFlower(x, 40, 44, COLORS[data.seed.c].hex, 2.6))); a2.append(COLORS[data.seed.c].name); } else a2.textContent = '?';
+  if (data.s2) { a2.appendChild(mk(80, 80, x => drawFlower(x, 40, 44, COLORS[data.seed.c].hex, 2.6))); a2.append(COLORS[data.seed.c].name); } else blank(a2);
   const a3 = p.querySelector('#a3');
-  if (data.letter) a3.innerHTML = LETTER; else a3.textContent = '?';
+  if (data.letter) a3.innerHTML = LETTER; else blank(a3);
   p.querySelector('.btn').onclick = closeModal;
 }
 

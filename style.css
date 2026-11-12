@@ -196,3 +196,32 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .gate.open .lens{background:transparent}
 @keyframes lenspulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 @media (prefers-reduced-motion:reduce){.lens{animation:none}}
+
+/* ---- てちょう: リングノートの みため ---- */
+.panel.notebook{background:transparent;border:0;padding:0 0 6px;gap:12px;overflow:visible;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px)}
+.panel.notebook .btn{flex:none}
+.nb{position:relative;width:100%;min-height:0;flex:0 1 auto;display:flex;background:#B79CED;border:3px solid var(--ink);border-radius:18px;padding:10px 10px 10px 30px;box-shadow:0 6px 0 var(--ink);overflow:hidden auto}
+/* リング: ひょうしと かみを つなぐ かなぐ */
+.nb::before{content:"";position:absolute;left:8px;top:14px;bottom:14px;width:40px;z-index:2;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='34'%3E%3Ccircle cx='31' cy='17' r='5' fill='%233A2D58'/%3E%3Crect x='3' y='12.5' width='30' height='9' rx='4.5' fill='%23E6E1F0' stroke='%233A2D58' stroke-width='2.5'/%3E%3C/svg%3E") repeat-y}
+.nb-page{position:relative;flex:1;min-width:0;border:3px solid var(--ink);border-radius:10px;padding:14px 14px 18px 34px;text-align:left;
+  background:linear-gradient(90deg,transparent 24px,#F6A6BF 24px 26px,transparent 26px),
+             repeating-linear-gradient(#FFFBEA 0 31px,#CFE3F5 31px 33px)}
+.nb-page h2{font-size:clamp(19px,4.6vw,24px);line-height:33px;margin:0 0 0 2px;text-align:left}
+.nb-stamp{position:absolute;right:12px;top:10px;width:52px;height:52px;display:grid;place-items:center;border:3px solid var(--berry);border-radius:50%;
+  color:var(--berry);font-family:var(--display);font-weight:400;font-size:13px;transform:rotate(14deg);opacity:.75}
+.panel.notebook .note{gap:0}
+.panel.notebook .note li{background:transparent;border-radius:0;padding:0;grid-template-columns:auto 1fr;gap:0 10px;align-items:start;margin-top:33px}
+.panel.notebook .note .badge{grid-row:span 2;width:28px;height:28px;margin-top:2px;font-size:15px}
+.panel.notebook .note .q{line-height:33px;font-size:15px;color:var(--ink-soft)}
+.panel.notebook .note .a{line-height:33px;min-height:33px;font-size:22px;color:#3F5BB5}
+.panel.notebook .note .a.txt{font-size:16px;line-height:33px}
+.panel.notebook .note .a canvas{width:30px;height:30px}
+.panel.notebook .ref{line-height:1.5;background:#FFE9A8;color:var(--ink)}
+.nb-blank{display:inline-grid;place-items:center;width:30px;height:30px;border:2.5px dashed #B3A8D3;border-radius:50%;color:#B3A8D3;font-family:var(--display);font-size:16px}
+@media (max-height:480px){
+  .panel.notebook .note li{margin-top:0}
+  .nb-stamp{width:42px;height:42px;font-size:11px;top:6px}
+  .nb{padding:6px 6px 6px 26px}
+  .nb-page{padding:6px 12px 10px 34px}
+}
