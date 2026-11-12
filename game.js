@@ -417,14 +417,14 @@ function dig() {
     const back = { right: 'left', left: 'right', down: 'up', up: 'down' };
     cat.fx = cat.x; cat.fy = cat.y;
     m.fx = m.x; m.fy = m.y; m.x = t.x + side[0]; m.y = t.y + side[1]; m.p = 0; sfx.step();
-    m.dir = side[0] > 0 ? 'right' : side[0] < 0 ? 'left' : side[1] > 0 ? 'down' : 'up';
-    m.lookBack = back[m.dir];
+    // あなの ほうを むいたまま、うしろへ さがる
+    m.lookBack = m.dir = back[side[0] > 0 ? 'right' : side[0] < 0 ? 'left' : side[1] > 0 ? 'down' : 'up'];
     cat.dir = cat.x < t.x ? 'right' : cat.x > t.x ? 'left' : cat.y < t.y ? 'down' : 'up';
     say('たからばこが でてきた!');
     setTimeout(showChest, 1300);
     return;
   }
-  sfx.dig(); digMiss++;
+  sfx.dig(); digMiss++; m.dir = 'down';   // あしもとの あなを みる
   if (!holes.some(h => h.x === m.x && h.y === m.y)) holes.push({ x: m.x, y: m.y });
   const col = COLORS[data.seed.c].name;
   if (digMiss >= 4) say('ひかっている いしを ほってみよう!');
