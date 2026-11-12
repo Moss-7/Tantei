@@ -412,7 +412,14 @@ function dig() {
   if (m.x === t.x && m.y === t.y) {
     busy = true; stopMusic(); sfx.dig(); setTimeout(sfx.found, 420);
     chest = { x: t.x, y: t.y, t: 0 };
-    startStep(t.x + 1, t.y);
+    // ミミだけ よこに よける。シロは うごかさず、たからばこの ますには だれも のこらない
+    const side = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => !blocked(t.x + dx, t.y + dy) && !(cat.x === t.x + dx && cat.y === t.y + dy)) || [1, 0];
+    const back = { right: 'left', left: 'right', down: 'up', up: 'down' };
+    cat.fx = cat.x; cat.fy = cat.y;
+    m.fx = m.x; m.fy = m.y; m.x = t.x + side[0]; m.y = t.y + side[1]; m.p = 0; sfx.step();
+    m.dir = side[0] > 0 ? 'right' : side[0] < 0 ? 'left' : side[1] > 0 ? 'down' : 'up';
+    m.lookBack = back[m.dir];
+    cat.dir = cat.x < t.x ? 'right' : cat.x > t.x ? 'left' : cat.y < t.y ? 'down' : 'up';
     say('たからばこが でてきた!');
     setTimeout(showChest, 1300);
     return;
@@ -737,7 +744,7 @@ function showNote() {
 }
 
 function showChest() {
-  m.dir = 'left';
+  m.dir = m.lookBack || 'left';
   const p = openModal('<h2>たからばこを みつけた!</h2><div id="pic"></div><p>3つの カギで あけてみよう</p><button class="btn" data-focus type="button">あける</button>');
   const c = mk(240, 200, x => drawChest(x, 20, 10, 5)); c.className = 'prize'; p.querySelector('#pic').appendChild(c);
   p.querySelector('.btn').onclick = () => {
