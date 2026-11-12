@@ -784,19 +784,21 @@ function openChestScene() {
     const t = (ts - t0) / 1000;
     c.clearRect(0, 0, 420, 340);
     const open = ease((t - .7) / .5), rise = ease((t - 1.1) / 1.0);
+    const fade = ease((t - 2.3) / .8);                 // たからばこが きえて、たからものだけ のこる
+    const by = 250 - rise * 140 + fade * 60, bs = .5 + rise * 1.6 + fade * .7;
     if (rise > 0) {   // まわる ひかり
-      c.save(); c.translate(210, 250 - rise * 140); c.rotate(t * .6);
+      c.save(); c.translate(210, by); c.rotate(t * .6);
       for (let i = 0; i < 12; i++) { c.rotate(PI / 6); poly(c, [[-9, 0], [9, 0], [0, -150 * rise]], 'rgba(255,225,120,' + (.38 * rise) + ')'); }
       c.restore();
     }
     const shake = t < .7 ? Math.sin(t * 60) * 5 * (t / .7) : 0;
-    drawChestOpening(c, 110 + shake, 150, 5, open);
+    if (fade < 1) { c.globalAlpha = 1 - fade; drawChestOpening(c, 110 + shake, 150, 5, open); c.globalAlpha = 1; }
     if (rise > 0) {
-      drawBrooch(c, 210, 250 - rise * 140, .5 + rise * 1.6);
-      for (let i = 0; i < 6; i++) { const a = t * 1.4 + i * PI / 3, r = 70 + 26 * Math.sin(t * 3 + i); starShape(c, 210 + Math.cos(a) * r * rise * 1.3, 250 - rise * 140 + Math.sin(a) * r * rise, 3 + 3 * Math.abs(Math.sin(t * 4 + i)), '#FFFFFF', '#FFD25E'); }
+      drawBrooch(c, 210, by, bs);
+      for (let i = 0; i < 6; i++) { const a = t * 1.4 + i * PI / 3, r = 70 + 26 * Math.sin(t * 3 + i); starShape(c, 210 + Math.cos(a) * r * rise * 1.3, by + Math.sin(a) * r * rise, 3 + 3 * Math.abs(Math.sin(t * 4 + i)), '#FFFFFF', '#FFD25E'); }
     }
     if (!opened && t > .7) { opened = true; sfx.fanfare(); playMusic('clear', 2.2); p.querySelector('#ttl').textContent = 'たからばこが ひらいた!'; }
-    if (!done && t > 2.3) { done = true; p.querySelector('#ttl').textContent = 'おはなの ブローチを てに いれた!'; p.querySelector('#after').hidden = false; const f = p.querySelector('#fin'); f.hidden = false; f.focus({ preventScroll: true }); }
+    if (!done && t > 3.1) { done = true; p.querySelector('#ttl').textContent = 'おはなの ブローチを てに いれた!'; p.querySelector('#after').hidden = false; const f = p.querySelector('#fin'); f.hidden = false; f.focus({ preventScroll: true }); }
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
