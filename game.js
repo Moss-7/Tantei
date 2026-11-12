@@ -940,6 +940,9 @@ function showNote() {
       if (i === step) { r.canvas.className = 'nb-pic'; el.appendChild(r.canvas); }   // いま さがしている てがみは えも みせる
       el.insertAdjacentHTML('beforeend', '<span>' + r.html + '</span>' + (i < step ? ' <span class="nb-done">みつけた!</span>' : ''));
     });
+    // いま さがしている てがみが みえる ところまで、かみを おくる
+    const cur = [a1, a2, a3][Math.min(step, 2)].closest('li'), page = p.querySelector('.nb-page');
+    if (step > 0) page.scrollTop = Math.max(0, cur.offsetTop - 40);
   }
   p.querySelector('.btn').onclick = closeModal;
 }

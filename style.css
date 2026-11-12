@@ -270,3 +270,7 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .panel.notebook .note .a canvas.nb-pic{display:block;width:auto;height:auto;max-width:100%;max-height:66px;margin:0}
 .panel.notebook .note .a.txt:has(.nb-pic){line-height:33px}
 .nb-done{display:inline-block;color:var(--berry);font-family:var(--display);font-weight:400;font-size:13px;border:2px solid var(--berry);border-radius:999px;padding:0 8px;line-height:1.5;transform:rotate(-4deg)}
+
+/* てちょうが ながい とき: ひょうしと リングは そのまま、かみの なかだけ スクロールする */
+.nb{overflow:hidden}
+.nb-page{min-height:0;overflow:hidden auto;overscroll-behavior:contain;background-attachment:local,local}
