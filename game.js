@@ -895,13 +895,41 @@ $('btnNote').onclick = () => { if (!busy) showNote(); };
 $('btnHome').onclick = () => { if (!chest) goTitle(); };
 $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshHud(); sfx.open(); if (store.sound) playMusic(wantTrack); else stopMusic(); };
 // おとは さいしょの タッチの あとで ないと ならせない
-document.addEventListener('pointerdown', () => { if (!running && !music) playMusic('title'); });
+document.addEventListener('pointerdown', () => { if (!running && !music && $('gate').hidden) playMusic('title'); });
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
+/* ---------- いりぐち(むしめがね) ---------- */
+function setupGate() {
+  const gate = $('gate'), lens = $('lens'), c = $('lensArt').getContext('2d');
+  // レンズの なかに ミミの かげを ぼんやり うつす
+  drawGirl(c, 112, 214, 4.6); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#A9B9E8'; c.fillRect(0, 0, 240, 240); c.globalCompositeOperation = 'source-over';
+  num(c, '?', 196, 62, 44, '#D9478A');
+  let opening = false;
+  gate.onclick = () => {
+    if (opening) return; opening = true;
+    playMusic('title');
+    [784, 988, 1175, 1568].forEach((f, i) => tone(f, .25, i * .07, 'triangle', .08));   // きらりん
+    if (calm) { gate.hidden = true; return; }
+    const r = lens.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, r0 = lens.clientWidth / 2;
+    const far = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy)) + 40, S = far / r0;
+    gate.style.setProperty('--cx', cx + 'px'); gate.style.setProperty('--cy', cy + 'px');
+    gate.classList.add('open');
+    let t0 = null;
+    const tick = ts => {
+      if (t0 === null) t0 = ts;
+      const p = Math.min(1, (ts - t0) / 950), k = p < .25 ? 1 - .12 * Math.sin(p / .25 * PI) : 1 + (S - 1) * Math.pow((p - .25) / .75, 2.2);
+      lens.style.transform = 'scale(' + k + ')';
+      gate.style.setProperty('--r', Math.max(0, r0 * k - 1) + 'px');
+      if (p < 1) requestAnimationFrame(tick); else gate.hidden = true;
+    };
+    requestAnimationFrame(tick);
+  };
+}
+
 /* ---------- はじまり ---------- */
 function boot() {
-  drawTitle(0);
+  drawTitle(0); setupGate();
   drawCat($('catface').getContext('2d'), 58, 128, 5.2);
   buildSlots();
   requestAnimationFrame(frame);
