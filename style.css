@@ -262,3 +262,11 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
   .panel.lk .tag,.panel.lk h2,.panel.lk .letter,.panel.lk .fb,.panel.lk .row{grid-column:2}
   .panel.lk .fb{align-self:start}
 }
+
+/* ---- 1話: てがみの なぞ ---- */
+.hl{font-weight:700;background:linear-gradient(transparent 62%,#FFE38A 62%)}
+.letter canvas.pic{display:block;margin:0 auto 6px;max-height:22vh}
+.letter p{margin:0}
+.panel.notebook .note .a canvas.nb-pic{display:block;width:auto;height:auto;max-width:100%;max-height:66px;margin:0}
+.panel.notebook .note .a.txt:has(.nb-pic){line-height:33px}
+.nb-done{display:inline-block;color:var(--berry);font-family:var(--display);font-weight:400;font-size:13px;border:2px solid var(--berry);border-radius:999px;padding:0 8px;line-height:1.5;transform:rotate(-4deg)}
