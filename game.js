@@ -531,7 +531,7 @@ function render(t) {
 let last = 0;
 function frame(ts) {
   const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; tNow = ts / 1000;
-  if (!running && !calm && !$('title').hidden) drawTitle(tNow);
+  if (!running && !$('title').hidden) { if (!calm) drawTitle(tNow); drawClouds(tNow, 'titleClouds'); }
   if (running && data) {
     if (chest) chest.t += dt;
     if (intro) {
@@ -546,11 +546,11 @@ function frame(ts) {
 
 /* マップの まわりの あきに、そらと おかと のはらを えがく。hz は ちへいせんの たかさ */
 /* くもは べつの レイヤーで ゆっくり ながす(1びょうに 3〜5ピクセル) */
-let sceneryBox = null;
+const sceneryBoxes = {};
 const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-function drawClouds(t) {
-  if (!sceneryBox) return;
-  const { W, hz, dpr } = sceneryBox, cl = $('clouds'), c = cl.getContext('2d');
+function drawClouds(t, id = 'clouds') {
+  const box = sceneryBoxes[id]; if (!box) return;
+  const { W, hz, dpr } = box, cl = $(id), c = cl.getContext('2d');
   const top = hz - Math.min(70, hz * .55);          // おかの てっぺんより うえだけに かく
   c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, cl.height / dpr);
   if (hz <= 70) return;
@@ -563,10 +563,10 @@ function drawClouds(t) {
   }
   c.restore();
 }
-function drawScenery(W, H, hz) {
-  const bg = $('bg'), dpr = Math.min(2, window.devicePixelRatio || 1);
+function drawScenery(W, H, hz, bgId = 'bg', cloudId = 'clouds') {
+  const bg = $(bgId), dpr = Math.min(2, window.devicePixelRatio || 1);
   bg.width = Math.round(W * dpr); bg.height = Math.round(H * dpr);
-  const cl = $('clouds'); cl.width = bg.width; cl.height = bg.height; sceneryBox = { W, hz, dpr }; drawClouds(tNow);
+  const cl = $(cloudId); cl.width = bg.width; cl.height = bg.height; sceneryBoxes[cloudId] = { W, hz, dpr }; drawClouds(tNow, cloudId);
   const c = bg.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   const sky = c.createLinearGradient(0, 0, 0, Math.max(1, hz));
   sky.addColorStop(0, '#AEDCF7'); sky.addColorStop(1, '#EAF7FD');
@@ -834,6 +834,12 @@ function drawTitle(t) {
   const g = p.look ? (t * 1.4) % 1 : p.dir === 'down' ? (t % 6) / .9 : 2;
   if (g < 1) starShape(a, p.dir === 'down' ? p.x + 86 : p.x + sgn * 80, 142, 9 * Math.sin(g * PI), '#FFFFFF');
 }
+// タイトルの はいけい: ミミたちの あしもとを ちへいせんに して、そらと のはらを えがく
+function fitTitle() {
+  const sec = $('title'); if (sec.hidden || !sec.clientWidth) return;
+  const s = sec.getBoundingClientRect(), a = $('titleArt').getBoundingClientRect();
+  drawScenery(sec.clientWidth, Math.max(sec.clientHeight, sec.scrollHeight), a.top - s.top + sec.scrollTop + a.height * .87, 'titleBg', 'titleClouds');
+}
 function slotState(d) {
   if (!d) return 'はじめから';
   if (d.cleared) return '1話 クリア・たからもの ' + d.treasures.length + 'こ';
@@ -861,6 +867,7 @@ function buildSlots() {
     }
     host.appendChild(wrap);
   });
+  fitTitle();
 }
 
 /* ---------- にゅうりょく ---------- */
@@ -896,7 +903,7 @@ $('btnHome').onclick = () => { if (!chest) goTitle(); };
 $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshHud(); sfx.open(); if (store.sound) playMusic(wantTrack); else stopMusic(); };
 // おとは さいしょの タッチの あとで ないと ならせない
 document.addEventListener('pointerdown', () => { if (!running && !music && $('gate').hidden) playMusic('title'); });
-window.addEventListener('resize', fit);
+window.addEventListener('resize', fit); window.addEventListener('resize', fitTitle);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
 /* ---------- いりぐち(むしめがね) ---------- */
@@ -930,6 +937,7 @@ function setupGate() {
 /* ---------- はじまり ---------- */
 function boot() {
   drawTitle(0); setupGate();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
   drawCat($('catface').getContext('2d'), 58, 128, 5.2);
   buildSlots();
   requestAnimationFrame(frame);
