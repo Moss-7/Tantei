@@ -225,3 +225,40 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
   .nb{padding:6px 6px 6px 26px}
   .nb-page{padding:6px 12px 10px 34px}
 }
+
+/* ---- 2話: ロッカー ---- */
+.letter.slim{padding:8px 14px;font-size:clamp(15px,3.4vw,18px);line-height:1.9}
+.lockers{display:grid;grid-template-columns:22px repeat(5,1fr);gap:6px;width:min(100%,330px,46vh);align-items:center}
+.lockers .lab{font-family:var(--display);font-weight:400;font-size:15px;color:var(--berry);visibility:hidden;text-align:center}
+.lockers.hint .lab{visibility:visible}
+.locker{position:relative;aspect-ratio:1/1.15;padding:0;border:3px solid var(--ink);border-radius:8px;background:#B4E8DC;box-shadow:0 3px 0 var(--ink)}
+.locker::before{content:"";position:absolute;left:22%;right:22%;top:16%;height:18%;border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);opacity:.45}
+.locker::after{content:"";position:absolute;right:14%;top:56%;width:16%;aspect-ratio:1;border-radius:50%;background:var(--ink)}
+.locker.open{background:#5A4A78;box-shadow:none;transform:translateY(3px)}
+.locker.open::before,.locker.open::after{display:none}
+.locker.got{background:radial-gradient(circle,#FFF4B8,#FFC83D)}
+.locker.glow{animation:lockglow .8s ease-in-out infinite}
+@keyframes lockglow{50%{box-shadow:0 0 0 5px var(--star),0 3px 0 var(--ink)}}
+/* ---- はなしを えらぶ ---- */
+.stages{display:flex;flex-direction:column;gap:12px;width:100%}
+.stage-btn{display:grid;grid-template-columns:auto 1fr;gap:0 12px;align-items:center;text-align:left;padding:10px 16px;border:3px solid var(--ink);border-radius:18px;background:var(--bg);box-shadow:0 4px 0 var(--ink)}
+.stage-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.stage-btn:disabled{opacity:.5;box-shadow:none}
+.stage-btn canvas{grid-row:span 3;width:48px;height:48px}
+.stage-btn b{font-family:var(--display);font-weight:400;font-size:15px;color:var(--mint)}
+.stage-btn span{font-family:var(--display);font-weight:400;font-size:20px}
+.stage-btn small{font-size:13px;color:var(--ink-soft)}
+.stage-btn b,.stage-btn span,.stage-btn small{grid-column:2}
+.stage-btn canvas ~ b,.stage-btn canvas ~ span,.stage-btn canvas ~ small{grid-column:2}
+.choice small{font-family:var(--body);font-weight:700;font-size:15px}
+@media (max-height:480px){.lockers{width:min(100%,44vh);gap:4px}.locker{border-width:2px}.stage-btn{padding:5px 14px}.stages{gap:6px}}
+@media (prefers-reduced-motion:reduce){.locker.glow{animation:none;box-shadow:0 0 0 5px var(--star)}}
+
+/* スマホの よこむき: ロッカーを ひだり、ぶんと ボタンを みぎに ならべる */
+@media (max-height:480px){
+  .panel.lk{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;gap:6px 16px;align-items:center;justify-items:center;width:min(720px,100%)}
+  .panel.lk .lockers{grid-column:1;grid-row:1/6;width:min(44vw,calc((100vh - 60px)*1.12));gap:5px}
+  .panel.lk .locker{aspect-ratio:1/1}
+  .panel.lk .tag,.panel.lk h2,.panel.lk .letter,.panel.lk .fb,.panel.lk .row{grid-column:2}
+  .panel.lk .fb{align-self:start}
+}
