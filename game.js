@@ -393,8 +393,12 @@ function targetOf(step) {
 }
 // さがせる もの(となりに たつと、ミミが そちらを むく)
 const searchables = () => stageNo === 2 ? [...DESKS, ...[0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]), ...LOCKER_TILES] : [...BIGF, ...HUTS];
+// たすけを だす めやす。すぐには たすけず、じぶんで かんがえる じかんを とる
+const HINT_AT = 3;     // この かいすう まちがえたら、シロの ヒントと ばんごうを だす
+const STAR_AT = 8;     // この かいすう まちがえたら、ただしい ばしょに ほしを だす
+const STAR_SEC = 240;  // まちがえなくても、この びょうすう みつからなければ ほしを だす
 let searchMiss = 0, stepTime = 0, helpSaid = false, searchFx = null;
-const helpOn = () => data && !data.cleared && keysGot() < 3 && (searchMiss >= 4 || stepTime > 90);
+const helpOn = () => data && !data.cleared && keysGot() < 3 && (searchMiss >= STAR_AT || stepTime > STAR_SEC);
 const keysGot = () => (data.s1 ? 1 : 0) + (data.s2 ? 1 : 0) + (data.letter ? 1 : 0);
 function persist() { store.slots[slotIx] = data; saveAll(); }
 function say(t) { $('say').textContent = t; }
@@ -484,8 +488,8 @@ function search() {
   if (hit && tg.wall) { setTimeout(showLockers, 450); busy = true; return; }   // ロッカーは ちかくで みて、どれを あけるか えらぶ
   if (hit) { busy = true; m.lookBack = m.dir; setTimeout(() => foundPlace(step), 650); return; }
   searchMiss++;
-  if (searchMiss >= 4) return;   // たすけの ほしが でる(frame で あんないする)
-  if (searchMiss >= 2) say(MISS_HINT[stageNo][step]);
+  if (searchMiss >= STAR_AT) return;   // たすけの ほしが でる(frame で あんないする)
+  if (searchMiss >= HINT_AT) say(MISS_HINT[stageNo][step]);
   else say(stageNo === 1 && step === 0 && !isStone(m.x, m.y) ? 'いしの うえで さがしてみよう。てちょうで てがみも よめるよ' : 'ここには なにも ないみたい。てちょうで てがみを よんでみよう');
 }
 function foundPlace(step) {
@@ -566,7 +570,7 @@ function drawGround(c) {
     if (isPath(q, r)) {
       c.fillStyle = '#F7E6BC'; c.fillRect(x, y, T, T);
       for (let i = 0; i < 2; i++) ci(c, x + 6 + hash(q + i, r) * 28, y + 6 + hash(q, r + i + 7) * 28, 1.6, '#E8CF98');
-      if (isStone(q, r)) { el(c, x + 20, y + 22, 15, 11, '#EEE9F5', '#CFC4E2', 2); if (!data.s1 && searchMiss >= 2) num(c, q - START_MAT.x, x + 20, y + 23, 13, '#6E6390'); }
+      if (isStone(q, r)) { el(c, x + 20, y + 22, 15, 11, '#EEE9F5', '#CFC4E2', 2); if (!data.s1 && searchMiss >= HINT_AT) num(c, q - START_MAT.x, x + 20, y + 23, 13, '#6E6390'); }
       if (q === START_MAT.x && r === START_MAT.y) {   // スタートの しるし(てがみの えと おなじ ピンクの マット)
         rr(c, x + 3, y + 5, 34, 32, 8, '#FF9DB5', '#D9478A', 2); poly(c, [[x + 11, y + 17], [x + 20, y + 17], [x + 20, y + 12], [x + 30, y + 21], [x + 20, y + 30], [x + 20, y + 25], [x + 11, y + 25]], '#FFFFFF');
       }
@@ -674,7 +678,7 @@ function items2(c, t, items) {
   DESKS.forEach(([dx, dy]) => items.push({ y: dy + .8, f: () => {
     const x = dx * T, y = dy * T, q = DESK_X.indexOf(dx);
     rr(c, x + 9, y + 26, 22, 12, 4, CHAIRS[q].hex, 'rgba(58,45,88,.3)', 1); rr(c, x + 2, y + 5, 36, 22, 4, '#E8B07E', '#C98A5E', 2); rr(c, x + 8, y + 9, 12, 9, 2, '#FFFFFF');
-    if (!data.s1 && searchMiss >= 2 && q === data.seed.col) { ci(c, x + 28, y + 15, 8, '#FFC83D', '#FFFFFF', 2); num(c, DESK_Y.indexOf(dy) + 1, x + 28, y + 16, 11, '#3A2D58'); }   // ヒント: まえからの ばんごう
+    if (!data.s1 && searchMiss >= HINT_AT && q === data.seed.col) { ci(c, x + 28, y + 15, 8, '#FFC83D', '#FFFFFF', 2); num(c, DESK_Y.indexOf(dy) + 1, x + 28, y + 16, 11, '#3A2D58'); }   // ヒント: まえからの ばんごう
   } }));
   for (let i = 0; i < 6; i++) items.push({ y: 9.95, f: () => {   // ばんごうの はこ
     const x = (BOX_X0 + i) * T, y = 9 * T;
@@ -855,7 +859,7 @@ function showLockers() {      // 3つうめの てがみの とおりに ロッ�
   const row = data.seed.lr, col = data.seed.lc;
   const p = openModal('<span class="tag">てがみ 3</span><h2>どの ロッカーを あける?</h2><div class="letter slim">' + riddleParts(2).html + '</div><div class="lockers" id="lk"></div><p class="fb" id="fb"></p><div class="row"><button class="btn sub" id="x" type="button">とじる</button></div>', 'lk');
   const lk = p.querySelector('#lk');
-  const hints = () => { lk.classList.toggle('hint', lockMiss >= 2); if (lockMiss >= 4) lk.querySelector('[data-ok]').classList.add('glow'); };
+  const hints = () => { lk.classList.toggle('hint', lockMiss >= HINT_AT); if (lockMiss >= STAR_AT) lk.querySelector('[data-ok]').classList.add('glow'); };
   lk.insertAdjacentHTML('beforeend', '<span></span>' + [1, 2, 3, 4, 5].map(n => '<span class="lab">' + n + '</span>').join(''));
   for (let r = 1; r <= 4; r++) {
     lk.insertAdjacentHTML('beforeend', '<span class="lab">' + r + '</span>');
@@ -870,7 +874,7 @@ function showLockers() {      // 3つうめの てがみの とおりに ロッ�
           stopMusic(); sfx.found(); setTimeout(showChest, 1100); return;
         }
         sfx.ng(); lockMiss++; b.classList.add('open'); b.disabled = true; hints();
-        p.querySelector('#fb').textContent = lockMiss >= 4 ? 'ひかっている ロッカーを あけてみよう' : lockMiss >= 2 ? 'ばんごうを つけたよ。たての ばんごうが「だん」だよ' : 'からっぽ…。てがみを もういちど よんでみよう';
+        p.querySelector('#fb').textContent = lockMiss >= STAR_AT ? 'ひかっている ロッカーを あけてみよう' : lockMiss >= HINT_AT ? 'ばんごうを つけたよ。たての ばんごうが「だん」だよ' : 'からっぽ…。てがみを もういちど よんでみよう';
       };
       lk.appendChild(b);
     }
