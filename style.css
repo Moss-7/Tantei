@@ -293,3 +293,17 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .panel.notebook .note .steps{gap:0}
 .panel.notebook .note .steps li{display:block;margin-top:0;padding:0 0 0 2em;background:transparent}
 .panel.notebook .note .steps li::before{top:.5em;font-size:.8em}
+
+/* ---- シロの ふきだし: いまの ステップと、みくらべる え ---- */
+.talk{flex-wrap:wrap;row-gap:4px}
+.talk p{flex:1 1 0;min-width:0}
+.stepno{display:inline-block;margin-right:8px;padding:0 9px;border-radius:999px;background:var(--star);color:var(--ink);font-family:var(--display);font-weight:400;font-size:.8em;line-height:1.6;vertical-align:.08em}
+.say-box{flex:none;display:flex;align-items:center}
+.talk .say-pic{display:block;flex:none;height:72px;width:auto;background:#FFF8E1;border:2px dashed #E2AD5E;border-radius:10px}
+@media (max-width:480px) and (orientation:portrait){
+  .say-box{order:3;flex:1 1 100%;justify-content:center}
+  .talk .say-pic{height:auto;width:min(100%,300px)}
+}
+@media (max-height:480px){.talk .say-pic{height:46px}}
+
+@media (max-height:480px){.talk p{font-size:15px;line-height:1.4}}

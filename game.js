@@ -35,11 +35,6 @@ const LAST_STAGE = 2;
 let stageNo = 1;
 const stg = () => STAGE[stageNo];
 const GO_SAY = 'ばしょが わかったら、そこで「さがす」を おそう!';
-// てがみを とじた あとに シロが いう、さいしょに する こと
-const AFTER_SAY = {
-  1: ['まず いけの ちかくへ いって、あひるを かぞえよう!', 'かだんの はなを みて、つぎの いろを かんがえよう。その いろの おおきな はなの となりで「さがす」だよ', 'こやは 3つ あるよ。やねと いりぐちを みて、となりで「さがす」を おそう'],
-  2: ['いすの いろを みて、つくえの となりで「さがす」を おそう', 'ばんごうの はこは、したの かべに ならんでいるよ', 'うえの かべの ロッカーの まえで「さがす」を おそう'],
-};
 
 /* ---------- セーブ ---------- */
 function loadAll() {
@@ -405,28 +400,77 @@ const HINT_AT = 3;     // この かいすう まちがえたら、シロの ヒ
 const STAR_AT = 8;     // この かいすう まちがえたら、ただしい ばしょに ほしを だす
 const STAR_SEC = 240;  // まちがえなくても、この びょうすう みつからなければ ほしを だす
 let searchMiss = 0, stepTime = 0, helpSaid = false, searchFx = null, foundFx = null;
-// 1話の 1つうめは あそびかたの れんしゅう。guide: 0=いけへ、1=スタートへ、2=いしを すすむ、3=「さがす」を おす、-1=あんない なし
-let guide = -1;
-const GUIDE_SPOT = [{ x: 13, y: 3 }, START_MAT];
+/* ---------- あんない: てがみを ステップに わけて、1つずつ すすむ ----------
+   いまの ステップは シロの ふきだしに いつも でている。え(pic)が いる ステップでは、てがみの えも ふきだしに だす。
+   done: たちどまった ときに みたされたら つぎへ / spot: いきさきの やじるし / さいごの ステップは「さがす」(near の ばしょで ボタンが ひかる) */
+let guide = -1, sayTimer = null;
+const stoodAt = (x0, x1, y0, y1) => m.x >= x0 && m.x <= x1 && m.y >= y0 && m.y <= y1;
+const nextTo = list => list.some(p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1);
+const BOXES = [0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]);
+const GUIDE = {
+  1: [
+    [ { text: () => 'いけの ちかくへ いって、あひるを かぞえよう', spot: { x: 13, y: 3 }, done: () => stoodAt(13, 14, 3, 3) },
+      { text: () => 'かぞえたら、ピンクの スタートに たとう', spot: START_MAT, done: () => stoodAt(START_MAT.x, START_MAT.x, START_MAT.y, START_MAT.y) },
+      { text: () => 'スタートから みぎへ、あひると おなじ かずだけ いしを すすもう', pic: true, done: () => guide >= 2 && isStone(m.x, m.y) },
+      { text: () => 'ここだと おもったら「さがす」を おそう', near: () => isStone(m.x, m.y) } ],
+    [ { text: () => 'かだんの はなを みに いこう', spot: { x: 11, y: 4 }, done: () => stoodAt(9, 14, 4, 4) || stoodAt(9, 14, 6, 6) },
+      { text: () => '「?」に はいる いろは なにかな? その いろの おおきな はなの となりへ いこう', pic: true, done: () => nextTo(BIGF) },
+      { text: () => 'この はなだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(BIGF) } ],
+    [ { text: () => 'こやの ちかくへ いこう', spot: { x: 11, y: 6 }, done: () => stoodAt(8, 15, 6, 8) },
+      { text: () => 'やねと いりぐちが えと おなじ こやを さがして、となりに たとう', pic: true, done: () => nextTo(HUTS) },
+      { text: () => 'この こやだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(HUTS) } ],
+  ],
+  2: [
+    [ { text: () => 'こくばんの まえへ いこう。こくばんの ほうが「まえ」だよ', spot: { x: 3, y: 2 }, done: () => stoodAt(1, 5, 2, 2) },
+      { text: () => CHAIRS[data.seed.col].name + 'の いすの れつで、まえから ' + data.seed.k + 'ばんめの つくえの となりに たとう', pic: true, done: () => nextTo(DESKS) },
+      { text: () => 'この つくえだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(DESKS) } ],
+    [ { text: () => 'とけいを みに いこう', spot: { x: 8, y: 2 }, done: () => stoodAt(7, 9, 2, 2) },
+      { text: () => 'とけいは なんじかな? おなじ ばんごうの はこの まえへ いこう', pic: true, done: () => nextTo(BOXES) },
+      { text: () => 'この はこだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(BOXES) } ],
+    [ { text: () => 'ロッカーの まえへ いこう', spot: { x: 12, y: 2 }, done: () => stoodAt(10, 14, 2, 2) },
+      { text: () => '「さがす」を おして、ロッカーを ちかくで みよう', pic: true, near: () => stoodAt(10, 14, 2, 2) } ],
+  ],
+};
+const curSteps = () => (data && !data.cleared && keysGot() < 3 && guide >= 0) ? GUIDE[stageNo][keysGot()] : null;
+// シロの ふきだしに、いまの ステップを だす
+function showStep() {
+  clearTimeout(sayTimer);
+  const steps = curSteps(); if (!steps) return;
+  const s = steps[guide], box = $('say'), pic = $('sayPic');
+  box.replaceChildren();
+  const no = document.createElement('span'); no.className = 'stepno'; no.textContent = (guide + 1) + '/' + steps.length;
+  box.append(no, s.text());
+  pic.replaceChildren();
+  if (s.pic) { const cv2 = riddleParts(keysGot()).canvas; cv2.className = 'say-pic'; pic.appendChild(cv2); }
+  pic.hidden = !s.pic;
+  fit();
+}
+function startGuide() { guide = 0; showStep(); }
+function stopGuide() { guide = -1; clearTimeout(sayTimer); $('btnDig').classList.remove('pulse'); $('sayPic').hidden = true; }
 function guideTick() {
+  const steps = curSteps();
   // あるいている とちゅうで とおりすぎた だけでは すすめない。たちどまった ときだけ みる
-  if (stageNo !== 1 || keysGot() !== 0 || guide < 0 || busy || m.p < 1 || path.length || held) return;
-  const atMat = m.x === START_MAT.x && m.y === START_MAT.y, nearPond = m.y === 3 && m.x >= 11 && m.x <= 14;
-  if (guide === 0 && nearPond) { guide = 1; say('あひるを かぞえたら、ピンクの スタートへ いこう!'); }
-  else if (guide <= 1 && atMat) { guide = 2; say('ここが スタート。みぎへ、あひると おなじ かずだけ いしを すすもう!'); }
-  else if (guide === 2 && isStone(m.x, m.y)) { guide = 3; say('ここだと おもったら「さがす」を おそう!'); }
-  $('btnDig').classList.toggle('pulse', guide === 3 && isStone(m.x, m.y));
+  if (!steps || busy || m.p < 1 || path.length || held) return;
+  const last = steps.length - 1, was = guide;
+  for (let j = last - 1; j >= guide; j--) if (steps[j].done()) { guide = j + 1; break; }          // さきの ステップを みたして いたら、そこまで すすむ
+  if (guide === last && was === last && last > 0 && !steps[last - 1].done()) guide = last - 1;   // 「さがす」の ばしょから はなれたら、ひとつ もどる
+  if (guide !== was) { showStep(); if (guide > was) tone(880, .1, 0, 'sine', .07); }
+  $('btnDig').classList.toggle('pulse', guide === last && steps[last].near());
 }
 function drawGuideArrow(c, t) {
-  if (stageNo !== 1 || keysGot() !== 0 || guide < 0 || guide > 1) return;
-  const g = GUIDE_SPOT[guide], x = g.x * T + 20, y = g.y * T - 16 + Math.sin(t * 5) * 5;
+  const steps = curSteps(); if (!steps || !steps[guide].spot) return;
+  const g = steps[guide].spot, x = g.x * T + 20, y = g.y * T - 16 + Math.sin(t * 5) * 5;
   ci(c, x, g.y * T + 24, 13 + Math.sin(t * 5) * 2, null, 'rgba(217,71,138,.75)', 3);
   poly(c, [[x - 12, y - 14], [x + 12, y - 14], [x + 12, y - 2], [x + 20, y - 2], [x, y + 18], [x - 20, y - 2], [x - 12, y - 2]], '#FF7EB6', '#FFFFFF', 3);
 }
 const helpOn = () => data && !data.cleared && keysGot() < 3 && (searchMiss >= STAR_AT || stepTime > STAR_SEC);
 const keysGot = () => (data.s1 ? 1 : 0) + (data.s2 ? 1 : 0) + (data.letter ? 1 : 0);
 function persist() { store.slots[slotIx] = data; saveAll(); }
-function say(t) { $('say').textContent = t; }
+function say(t) {
+  clearTimeout(sayTimer);
+  $('say').textContent = t; $('sayPic').hidden = true;
+  if (curSteps()) sayTimer = setTimeout(showStep, 4500);
+}
 
 function refreshHud() {
   const k = keysGot(); let h = '';
@@ -446,7 +490,7 @@ function startGame(ix, newStageNo) {
   else if (!data) { data = newStage(null, 1); persist(); }
   stageNo = STAGE[data.stage] ? data.stage : 1;
   if ((stageNo === 1 && !data.seed.huts) || (stageNo === 2 && !data.seed.lr)) { data = newStage(data, stageNo); persist(); }   // ふるい セーブは つくりなおす
-  searchMiss = 0; stepTime = 0; helpSaid = false; searchFx = null; foundFx = null; guide = -1; $('btnDig').classList.remove('pulse');
+  searchMiss = 0; stepTime = 0; helpSaid = false; searchFx = null; foundFx = null; stopGuide();
   buildBlocked(); closeModal();
   const START = stg().start;
   $('stageName').textContent = stageNo + '話 ' + stg().name;
@@ -460,10 +504,10 @@ function startGame(ix, newStageNo) {
   running = true; playMusic(stg().track);
   intro = null;
   if (keysGot() === 0) { intro = { t: 0, ding: false }; busy = true; say('あれ? なにか とんできたよ!'); }
-  else say('つづきから はじめるよ。てちょうで てがみを よんでみよう!');
+  else { guide = 0; say('つづきから はじめるよ!'); }
 }
 function goTitle() {
-  running = false; intro = null; closeModal(); playMusic('title');
+  running = false; intro = null; closeModal(); stopGuide(); playMusic('title');
   $('game').hidden = true; $('title').hidden = false; buildSlots();
 }
 
@@ -518,7 +562,7 @@ function search() {
   else say(stageNo === 1 && step === 0 && !isStone(m.x, m.y) ? 'いしの うえで さがしてみよう。てちょうで てがみも よめるよ' : 'ここには なにも ないみたい。てちょうで てがみを よんでみよう');
 }
 function foundPlace(step) {
-  foundFx = null; guide = -1; $('btnDig').classList.remove('pulse');
+  foundFx = null; stopGuide();
   if (step === 0) data.s1 = true; else if (step === 1) data.s2 = true; else data.letter = true;
   persist(); refreshHud(); searchMiss = 0; stepTime = 0; helpSaid = false;
   if (step === 2) { stopMusic(); sfx.found(); showChest(); return; }
@@ -602,7 +646,7 @@ function showRiddle(i) {
   const p = openModal('<span class="tag">てがみ ' + (i + 1) + '</span><div class="letter" id="lt"></div><p class="small">ばしょが わかったら、そこで「さがす」を おそう</p><button class="btn" data-focus type="button">わかった!</button>');
   r.canvas.className = 'pic'; const t = document.createElement('p'); t.innerHTML = r.html;
   p.querySelector('#lt').append(r.canvas, t);
-  p.querySelector('.btn').onclick = () => { closeModal(); say(AFTER_SAY[stageNo][i]); if (stageNo === 1 && i === 0) guide = 0; };
+  p.querySelector('.btn').onclick = () => { closeModal(); startGuide(); };
 }
 
 /* ---------- えがく ---------- */
@@ -940,7 +984,7 @@ function showLockers() {      // 3つうめの てがみの とおりに ロッ�
         if (b.dataset.ok) {
           lk.querySelectorAll('.locker').forEach(e => { e.disabled = true; });
           b.classList.add('open', 'got'); p.querySelector('#fb').textContent = 'あった!';
-          data.letter = true; persist(); refreshHud(); searchMiss = 0; stepTime = 0; helpSaid = false;
+          data.letter = true; persist(); refreshHud(); searchMiss = 0; stepTime = 0; helpSaid = false; stopGuide();
           stopMusic(); sfx.found(); setTimeout(showChest, 1100); return;
         }
         sfx.ng(); lockMiss++; b.classList.add('open'); b.disabled = true; hints();
