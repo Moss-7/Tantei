@@ -274,3 +274,8 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 /* てちょうが ながい とき: ひょうしと リングは そのまま、かみの なかだけ スクロールする */
 .nb{overflow:hidden}
 .nb-page{min-height:0;overflow:hidden auto;overscroll-behavior:contain;background-attachment:local,local}
+
+/* みつけた! の もじが はずんで でる */
+.pop{color:var(--berry);font-size:clamp(26px,6.4vw,36px)!important;animation:popin .6s cubic-bezier(.3,1.7,.5,1) both}
+@keyframes popin{0%{transform:scale(.2) rotate(-12deg);opacity:0}100%{transform:scale(1) rotate(-3deg);opacity:1}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}}
