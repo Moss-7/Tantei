@@ -100,6 +100,7 @@ const sfx = {
   ok()   { tone(660, .15); tone(880, .25, .12); },
   ng()   { tone(220, .2, 0, 'triangle'); },
   open() { tone(520, .12); },
+  miss() { tone(311, .16, .24, 'triangle', .14); tone(233, .3, .4, 'triangle', .14); },   // さがしたけれど なにも ない: さがる 2つの おと
   dig()  { for (const d of [0, .2]) { tone(95, .1, d, 'sine', .2); scrape(d, .17, 1400, 350, .5); scrape(d + .1, .1, 2600, 1200, .16); } },
   step() { stepAlt = !stepAlt; tone(stepAlt ? 330 : 392, .08, 0, 'triangle', .11); },
   found() { [523, 659, 784].forEach((f, i) => tone(f, .25, i * .12)); tone(1047, .6, .36); },
@@ -487,7 +488,7 @@ function search() {
   tone(740, .07, 0, 'triangle', .1); tone(1100, .1, .07, 'triangle', .08);
   if (hit && tg.wall) { setTimeout(showLockers, 450); busy = true; return; }   // ロッカーは ちかくで みて、どれを あけるか えらぶ
   if (hit) { busy = true; m.lookBack = m.dir; setTimeout(() => foundPlace(step), 650); return; }
-  searchMiss++;
+  searchMiss++; sfx.miss();
   if (searchMiss >= STAR_AT) return;   // たすけの ほしが でる(frame で あんないする)
   if (searchMiss >= HINT_AT) say(MISS_HINT[stageNo][step]);
   else say(stageNo === 1 && step === 0 && !isStone(m.x, m.y) ? 'いしの うえで さがしてみよう。てちょうで てがみも よめるよ' : 'ここには なにも ないみたい。てちょうで てがみを よんでみよう');
