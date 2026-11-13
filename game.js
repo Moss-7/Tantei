@@ -414,10 +414,10 @@ const GUIDE = {
       { text: () => 'スタートから みぎへ、あひると おなじ かずだけ いしを すすもう', pic: true, done: () => guide >= 2 && isStone(m.x, m.y) },
       { text: () => 'ここだと おもったら「さがす」を おそう', near: () => isStone(m.x, m.y) } ],
     [ { text: () => 'かだんの はなを みに いこう', spot: { x: 11, y: 4 }, done: () => stoodAt(9, 14, 4, 4) || stoodAt(9, 14, 6, 6) },
-      { text: () => '「?」に はいる いろは なにかな? その いろの おおきな はなの となりへ いこう', pic: true, done: () => nextTo(BIGF) },
+      { text: () => '「?」に はいる いろの、おおきな はなの となりへ いこう', pic: true, done: () => nextTo(BIGF) },
       { text: () => 'この はなだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(BIGF) } ],
     [ { text: () => 'こやの ちかくへ いこう', spot: { x: 11, y: 6 }, done: () => stoodAt(8, 15, 6, 8) },
-      { text: () => 'やねと いりぐちが えと おなじ こやを さがして、となりに たとう', pic: true, done: () => nextTo(HUTS) },
+      { text: () => 'えと おなじ やねと いりぐちの こやの となりに たとう', pic: true, done: () => nextTo(HUTS) },
       { text: () => 'この こやだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(HUTS) } ],
   ],
   2: [
@@ -443,7 +443,6 @@ function showStep() {
   pic.replaceChildren();
   if (s.pic) { const cv2 = riddleParts(keysGot()).canvas; cv2.className = 'say-pic'; pic.appendChild(cv2); }
   pic.hidden = !s.pic;
-  fit();
 }
 function startGuide() { guide = 0; showStep(); }
 function stopGuide() { guide = -1; clearTimeout(sayTimer); $('btnDig').classList.remove('pulse'); $('sayPic').hidden = true; }
