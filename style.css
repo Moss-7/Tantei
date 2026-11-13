@@ -279,3 +279,17 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .pop{color:var(--berry);font-size:clamp(26px,6.4vw,36px)!important;animation:popin .6s cubic-bezier(.3,1.7,.5,1) both}
 @keyframes popin{0%{transform:scale(.2) rotate(-12deg);opacity:0}100%{transform:scale(1) rotate(-3deg);opacity:1}}
 @media (prefers-reduced-motion:reduce){.pop{animation:none}}
+
+/* てがみの なかの、じゅんばんの ついた やること */
+.steps{list-style:none;margin:0;padding:0;counter-reset:st;display:flex;flex-direction:column;gap:2px}
+.steps li{counter-increment:st;display:block;position:relative;padding-left:2em}
+.steps li::before{content:counter(st);position:absolute;left:0;top:.22em;line-height:1;display:grid;place-items:center;width:1.55em;height:1.55em;border-radius:50%;background:var(--star);color:var(--ink);font-family:var(--display);font-weight:400;font-size:.85em}
+/* 「さがす」を おす ばめんで、ボタンを めだたせる */
+.cmd.pulse{animation:cmdpulse .9s ease-in-out infinite}
+@keyframes cmdpulse{50%{transform:scale(1.1);box-shadow:0 4px 0 var(--ink),0 0 0 6px rgba(255,200,61,.75)}}
+@media (prefers-reduced-motion:reduce){.cmd.pulse{animation:none;box-shadow:0 4px 0 var(--ink),0 0 0 6px rgba(255,200,61,.75)}}
+
+/* てちょうの なかの てじゅん: てちょうの ぎょうの きまりを うけつがない */
+.panel.notebook .note .steps{gap:0}
+.panel.notebook .note .steps li{display:block;margin-top:0;padding:0 0 0 2em;background:transparent}
+.panel.notebook .note .steps li::before{top:.5em;font-size:.8em}

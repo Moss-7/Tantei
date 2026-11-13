@@ -35,6 +35,11 @@ const LAST_STAGE = 2;
 let stageNo = 1;
 const stg = () => STAGE[stageNo];
 const GO_SAY = 'ばしょが わかったら、そこで「さがす」を おそう!';
+// てがみを とじた あとに シロが いう、さいしょに する こと
+const AFTER_SAY = {
+  1: ['まず いけの ちかくへ いって、あひるを かぞえよう!', 'かだんの はなを みて、つぎの いろを かんがえよう。その いろの おおきな はなの となりで「さがす」だよ', 'こやは 3つ あるよ。やねと いりぐちを みて、となりで「さがす」を おそう'],
+  2: ['いすの いろを みて、つくえの となりで「さがす」を おそう', 'ばんごうの はこは、したの かべに ならんでいるよ', 'うえの かべの ロッカーの まえで「さがす」を おそう'],
+};
 
 /* ---------- セーブ ---------- */
 function loadAll() {
@@ -400,6 +405,24 @@ const HINT_AT = 3;     // この かいすう まちがえたら、シロの ヒ
 const STAR_AT = 8;     // この かいすう まちがえたら、ただしい ばしょに ほしを だす
 const STAR_SEC = 240;  // まちがえなくても、この びょうすう みつからなければ ほしを だす
 let searchMiss = 0, stepTime = 0, helpSaid = false, searchFx = null, foundFx = null;
+// 1話の 1つうめは あそびかたの れんしゅう。guide: 0=いけへ、1=スタートへ、2=いしを すすむ、3=「さがす」を おす、-1=あんない なし
+let guide = -1;
+const GUIDE_SPOT = [{ x: 13, y: 3 }, START_MAT];
+function guideTick() {
+  // あるいている とちゅうで とおりすぎた だけでは すすめない。たちどまった ときだけ みる
+  if (stageNo !== 1 || keysGot() !== 0 || guide < 0 || busy || m.p < 1 || path.length || held) return;
+  const atMat = m.x === START_MAT.x && m.y === START_MAT.y, nearPond = m.y === 3 && m.x >= 11 && m.x <= 14;
+  if (guide === 0 && nearPond) { guide = 1; say('あひるを かぞえたら、ピンクの スタートへ いこう!'); }
+  else if (guide <= 1 && atMat) { guide = 2; say('ここが スタート。みぎへ、あひると おなじ かずだけ いしを すすもう!'); }
+  else if (guide === 2 && isStone(m.x, m.y)) { guide = 3; say('ここだと おもったら「さがす」を おそう!'); }
+  $('btnDig').classList.toggle('pulse', guide === 3 && isStone(m.x, m.y));
+}
+function drawGuideArrow(c, t) {
+  if (stageNo !== 1 || keysGot() !== 0 || guide < 0 || guide > 1) return;
+  const g = GUIDE_SPOT[guide], x = g.x * T + 20, y = g.y * T - 16 + Math.sin(t * 5) * 5;
+  ci(c, x, g.y * T + 24, 13 + Math.sin(t * 5) * 2, null, 'rgba(217,71,138,.75)', 3);
+  poly(c, [[x - 12, y - 14], [x + 12, y - 14], [x + 12, y - 2], [x + 20, y - 2], [x, y + 18], [x - 20, y - 2], [x - 12, y - 2]], '#FF7EB6', '#FFFFFF', 3);
+}
 const helpOn = () => data && !data.cleared && keysGot() < 3 && (searchMiss >= STAR_AT || stepTime > STAR_SEC);
 const keysGot = () => (data.s1 ? 1 : 0) + (data.s2 ? 1 : 0) + (data.letter ? 1 : 0);
 function persist() { store.slots[slotIx] = data; saveAll(); }
@@ -423,7 +446,7 @@ function startGame(ix, newStageNo) {
   else if (!data) { data = newStage(null, 1); persist(); }
   stageNo = STAGE[data.stage] ? data.stage : 1;
   if ((stageNo === 1 && !data.seed.huts) || (stageNo === 2 && !data.seed.lr)) { data = newStage(data, stageNo); persist(); }   // ふるい セーブは つくりなおす
-  searchMiss = 0; stepTime = 0; helpSaid = false; searchFx = null; foundFx = null;
+  searchMiss = 0; stepTime = 0; helpSaid = false; searchFx = null; foundFx = null; guide = -1; $('btnDig').classList.remove('pulse');
   buildBlocked(); closeModal();
   const START = stg().start;
   $('stageName').textContent = stageNo + '話 ' + stg().name;
@@ -495,7 +518,7 @@ function search() {
   else say(stageNo === 1 && step === 0 && !isStone(m.x, m.y) ? 'いしの うえで さがしてみよう。てちょうで てがみも よめるよ' : 'ここには なにも ないみたい。てちょうで てがみを よんでみよう');
 }
 function foundPlace(step) {
-  foundFx = null;
+  foundFx = null; guide = -1; $('btnDig').classList.remove('pulse');
   if (step === 0) data.s1 = true; else if (step === 1) data.s2 = true; else data.letter = true;
   persist(); refreshHud(); searchMiss = 0; stepTime = 0; helpSaid = false;
   if (step === 2) { stopMusic(); sfx.found(); showChest(); return; }
@@ -526,7 +549,7 @@ function riddleParts(i) {
   const s = data.seed;
   if (stageNo === 2) return riddleParts2(i, s);
   if (i === 0) return {
-    html: 'いけの あひるは なんわ?<br>ポストの よこの <b class="hl">スタート</b>から、あひると おなじ かずだけ いしを すすんで、さがそう!',
+    html: '<ol class="steps"><li>いけの <b class="hl">あひる</b>を かぞえよう</li><li>ピンクの <b class="hl">スタート</b>に たとう</li><li>あひると おなじ かずだけ、<b class="hl">いし</b>を みぎへ すすもう</li><li>そこで「さがす」を おそう!</li></ol>',
     canvas: mk(520, 124, x => {
       rr(x, 14, 16, 68, 62, 12, '#FF9DB5', '#D9478A', 3); poly(x, [[34, 38], [52, 38], [52, 30], [66, 47], [52, 64], [52, 56], [34, 56]], '#FFFFFF');
       num(x, 'スタート', 48, 102, 19, '#D9478A');
@@ -579,7 +602,7 @@ function showRiddle(i) {
   const p = openModal('<span class="tag">てがみ ' + (i + 1) + '</span><div class="letter" id="lt"></div><p class="small">ばしょが わかったら、そこで「さがす」を おそう</p><button class="btn" data-focus type="button">わかった!</button>');
   r.canvas.className = 'pic'; const t = document.createElement('p'); t.innerHTML = r.html;
   p.querySelector('#lt').append(r.canvas, t);
-  p.querySelector('.btn').onclick = () => { closeModal(); say(GO_SAY); };
+  p.querySelector('.btn').onclick = () => { closeModal(); say(AFTER_SAY[stageNo][i]); if (stageNo === 1 && i === 0) guide = 0; };
 }
 
 /* ---------- えがく ---------- */
@@ -753,6 +776,7 @@ function render(t) {
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   if (!two) drawFence(c);
 
+  drawGuideArrow(c, t);
   if (foundFx) drawFoundFx(c, foundFx);
   if (helpOn()) { const tg = targetOf(keysGot()); drawStar(c, { id: 9, label: '!', x: tg.x, y: tg.wall ? 2 : tg.on ? tg.y : tg.y - 1 }, t); }   // こまった ときの たすけの ほし
   if (intro) {   // はねの ついた てがみが ミミの ところへ とんでくる
@@ -779,6 +803,7 @@ function frame(ts) {
     if (!busy && !data.cleared) stepTime += dt;
     if (searchFx && (searchFx.t += dt) > .55) searchFx = null;
     if (foundFx) foundFx.t += dt;
+    guideTick();
     if (helpOn() && !helpSaid && !busy) { helpSaid = true; say('ひかっている ほしの ところで「さがす」を おそう!'); }
     update(dt); render(tNow); drawClouds(tNow);
   }
