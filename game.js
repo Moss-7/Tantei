@@ -25,19 +25,16 @@ const ROOFS = { red: { name: 'あか', hex: '#FF7E8A' }, blue: { name: 'あお',
 /* はなしごとの さだめ。あたらしい はなしは ここに たして、マップ・なぞ・けしきを それぞれ かく */
 const STAGE = {
   1: { name: 'おうちと にわ', place: 'にわ', track: 'field', scene: 'garden', start: { x: 4, y: 3 },
-       stars: [],   // 1話は ほしを めあてに しない。てがみの なぞを といて ばしょを さがす
        treasure: { id: 'brooch', name: 'おはなの ブローチ', draw: (c, x, y, s) => drawBrooch(c, x, y, s) },
-       lockedSay: 'ポストには カギが かかっているよ。さきに ほかの ほしを しらべよう',
-       readySay: 'ポストの ほしが ひかったよ! いってみよう', goSay: 'ばしょが わかったら、そこで「さがす」を おそう!', foundSay: 'こやの なかに カギと たからばこが あった!' },
-  2: { name: 'がっこう', place: 'がっこう', track: 'school', scene: 'school', start: { x: 9, y: 8 },
-       stars: [{ id: 1, x: 3, y: 2 }, { id: 2, x: 8, y: 2 }, { id: 3, x: 12, y: 2 }],
+       foundSay: 'こやの なかに カギと たからばこが あった!' },
+  2: { name: 'がっこう', place: 'がっこう', track: 'school', scene: 'school', start: { x: 8, y: 6 },
        treasure: { id: 'musicbox', name: 'ほしの オルゴール', draw: (c, x, y, s) => drawMusicBox(c, x, y, s) },
-       lockedSay: 'ロッカーには カギが かかっているよ。さきに ほかの ほしを しらべよう',
-       readySay: 'ロッカーの ほしが ひかったよ! いってみよう', goSay: 'ロッカーの ほしを しらべて、あけてみよう!', foundSay: 'ロッカーの なかに たからばこが あった!' },
+       foundSay: 'ロッカーの なかに カギと たからばこが あった!' },
 };
 const LAST_STAGE = 2;
 let stageNo = 1;
 const stg = () => STAGE[stageNo];
+const GO_SAY = 'ばしょが わかったら、そこで「さがす」を おそう!';
 
 /* ---------- セーブ ---------- */
 function loadAll() {
@@ -58,12 +55,10 @@ function newSeed() {
   const order = [0, 1, 2].sort(() => Math.random() - 0.5);
   return { n: 3 + Math.floor(Math.random() * 3), c, other, lanes, r, d, huts: order.map(i => combos[i]), ans: order.indexOf(0) };
 }
-// 2話: まえから k ばんめの つくえの カード(1〜4)が ロッカーの だん、とけいの じかん(2〜5)が れつ
+// 2話: いすの いろの れつ(col)と まえから k ばんめの つくえ、とけいの じかん(h)と おなじ ばんごうの はこ、ロッカーの だん(lr)と れつ(lc)
 function newSeed2() {
-  const k = 2 + Math.floor(Math.random() * 4);
-  let cards;
-  do { cards = [1, 2, 3, 4, 5].sort(() => Math.random() - 0.5); } while (cards[k - 1] > 4);
-  return { k, cards, h: 2 + Math.floor(Math.random() * 4) };
+  const r = n => Math.floor(Math.random() * n);
+  return { col: r(3), k: 1 + r(3), h: 2 + r(4), lr: 1 + r(4), lc: 1 + r(5) };
 }
 function newStage(old, no = 1) {
   return { stage: no, seed: no === 2 ? newSeed2() : newSeed(), s1: false, s2: false, letter: false, cleared: false, treasures: old ? old.treasures : [] };
@@ -333,7 +328,12 @@ function drawKey(c, x, y, s) {
 }
 
 /* ---------- マップ ---------- */
-const DESKS = [2, 4, 6].flatMap(x => [4, 6, 8].map(y => [x, y]));
+const DESK_X = [2, 4, 6], DESK_Y = [4, 6, 8];
+const DESKS = DESK_X.flatMap(x => DESK_Y.map(y => [x, y]));
+const CHAIRS = [{ name: 'ピンク', hex: '#FF9DB5' }, { name: 'あお', hex: '#7FB6F0' }, { name: 'きいろ', hex: '#FFD25E' }];   // れつごとの いすの いろ
+const BOX_X0 = 9;                                    // ばんごうの はこ 1〜6 は (9〜14, 9)
+const BOX_COL = ['#FF9DB5', '#FFC83D', '#8FD6A6', '#7FB6F0', '#B79CED', '#FF9F6B'];
+const LOCKER_TILES = [10, 11, 12, 13, 14].map(x => [x, 1]);   // かべの ロッカー。まえの れつ(y=2)から さがす
 const blockedSet = new Set();
 const bk = (x, y) => x + ',' + y;
 function buildBlocked() {
@@ -342,7 +342,8 @@ function buildBlocked() {
   if (stageNo === 2) {
     add(0, 0, 15, 1);                                   // かべ(こくばん・とけい・ロッカー)
     DESKS.forEach(d => add(d[0], d[1], d[0], d[1]));    // つくえ
-    add(12, 8, 13, 8); add(15, 4, 15, 5); add(15, 9, 15, 9);   // ピアノ、たな、うえきばち
+    add(0, 9, 1, 9); add(15, 4, 15, 5); add(15, 9, 15, 9);     // ピアノ、たな、うえきばち
+    add(BOX_X0, 9, BOX_X0 + 5, 9);                              // ばんごうの はこ
     return;
   }
   add(1, 0, 5, 2);        // いえ
@@ -383,12 +384,17 @@ let intro = null;
 let lockMiss = 0;
 let m, cat, path = [], held = null, dest = null, holes = [], chest = null, digMiss = 0, tNow = 0;
 
-// 1話: いま さがす ばしょ。0=いし(その ますの うえ)、1=おおきな はな、2=こや(となりの ます)
-const targetOf = step => step === 0 ? { x: START_MAT.x + data.seed.n, y: START_MAT.y }
-  : step === 1 ? { x: BIGF[data.seed.lanes.indexOf(data.seed.c)][0], y: BIGF[data.seed.lanes.indexOf(data.seed.c)][1] }
-  : { x: HUTS[data.seed.ans][0], y: HUTS[data.seed.ans][1] };
+// いま さがす ばしょ。on: その ますの うえで さがす / それいがいは となりの ますから さがす
+function targetOf(step) {
+  const s = data.seed;
+  if (stageNo === 2) return step === 0 ? { x: DESK_X[s.col], y: DESK_Y[s.k - 1] } : step === 1 ? { x: BOX_X0 + s.h - 1, y: 9 } : { x: 12, y: 1, wall: true };
+  return step === 0 ? { x: START_MAT.x + s.n, y: START_MAT.y, on: true }
+    : step === 1 ? { x: BIGF[s.lanes.indexOf(s.c)][0], y: BIGF[s.lanes.indexOf(s.c)][1] } : { x: HUTS[s.ans][0], y: HUTS[s.ans][1] };
+}
+// さがせる もの(となりに たつと、ミミが そちらを むく)
+const searchables = () => stageNo === 2 ? [...DESKS, ...[0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]), ...LOCKER_TILES] : [...BIGF, ...HUTS];
 let searchMiss = 0, stepTime = 0, helpSaid = false, searchFx = null;
-const helpOn = () => stageNo === 1 && data && !data.cleared && keysGot() < 3 && (searchMiss >= 4 || stepTime > 90);
+const helpOn = () => data && !data.cleared && keysGot() < 3 && (searchMiss >= 4 || stepTime > 90);
 const keysGot = () => (data.s1 ? 1 : 0) + (data.s2 ? 1 : 0) + (data.letter ? 1 : 0);
 function persist() { store.slots[slotIx] = data; saveAll(); }
 function say(t) { $('say').textContent = t; }
@@ -399,7 +405,7 @@ function refreshHud() {
   for (let i = 0; i < 3; i++) h += '<svg class="' + (i < k ? 'got' : '') + '" viewBox="0 0 32 32">' + shape('o') + shape('i') + '</svg>';
   if ($('keys').dataset.k !== String(k)) { $('keys').innerHTML = h; $('keys').dataset.k = String(k); }
   $('keys').setAttribute('aria-label', 'カギ ' + k + 'こ');
-  $('btnDig').hidden = !(stageNo === 1 && !data.cleared);
+  $('btnDig').hidden = !!data.cleared;
   $('btnSound').setAttribute('aria-label', store.sound ? 'おとを けす' : 'おとを だす');
   $('btnSound').setAttribute('aria-pressed', String(store.sound));
 }
@@ -410,7 +416,7 @@ function startGame(ix, newStageNo) {
   if (newStageNo) { data = newStage(data, newStageNo); persist(); }
   else if (!data) { data = newStage(null, 1); persist(); }
   stageNo = STAGE[data.stage] ? data.stage : 1;
-  if (stageNo === 1 && !data.seed.huts) { data = newStage(data, 1); persist(); }   // ふるい セーブは つくりなおす
+  if ((stageNo === 1 && !data.seed.huts) || (stageNo === 2 && !data.seed.lr)) { data = newStage(data, stageNo); persist(); }   // ふるい セーブは つくりなおす
   searchMiss = 0; stepTime = 0; helpSaid = false; searchFx = null;
   buildBlocked(); closeModal();
   const START = stg().start;
@@ -425,8 +431,7 @@ function startGame(ix, newStageNo) {
   running = true; playMusic(stg().track);
   intro = null;
   if (keysGot() === 0) { intro = { t: 0, ding: false }; busy = true; say('あれ? なにか とんできたよ!'); }
-  else if (stageNo === 1) say('つづきから はじめるよ。てちょうで てがみを よんでみよう!');
-  else say(data.letter ? stg().goSay : data.s1 && data.s2 ? stg().readySay : 'つづきから はじめるよ。ほしを しらべよう!');
+  else say('つづきから はじめるよ。てちょうで てがみを よんでみよう!');
 }
 function goTitle() {
   running = false; intro = null; closeModal(); playMusic('title');
@@ -455,40 +460,33 @@ function update(dt) {
   if (busy) return;
   if (path.length) { const [nx, ny] = path.shift(); startStep(nx, ny); return; }
   if (held) { const [dx, dy] = DIRS[held]; if (!blocked(m.x + dx, m.y + dy)) { startStep(m.x + dx, m.y + dy); return; } m.dir = held; }
-  // とちゅうで とおりすぎた ほしは はんのう しない。とまった ときだけ しらべる
-  if (m.fresh) { m.fresh = false; const st = stg().stars.find(s => s.x === m.x && s.y === m.y); if (st && !chest) touchStar(st); }
 }
-function touchStar(st) {
-  if (stageNo !== 2) return;
-  if (st.id === 1 && !data.s1) { halt(); puzzleDesks(); }
-  else if (st.id === 2 && !data.s2) { halt(); puzzleClock(); }
-  else if (st.id === 3 && !starGone(st)) {
-    if (!(data.s1 && data.s2)) say(stg().lockedSay);
-    else { halt(); data.letter ? showLockers() : showLockerNote(); }
-  }
-}
-// しらべおわった ほしは きえる。2話の ロッカーの ほしは、たからを みつけるまで のこる
-const starGone = st => st.id === 1 ? data.s1 : st.id === 2 ? data.s2 : stageNo === 2 ? data.cleared : data.letter;
 function halt() { path = []; held = null; dest = null; document.querySelectorAll('.pad button.on').forEach(b => b.classList.remove('on')); }
 
 /* ---------- さがす(1話) ---------- */
+const MISS_HINT = {
+  1: ['ピンクの スタートから、いしを 1、2、3と かぞえよう。ばんごうを つけたよ', 'かだんの はなの ならびを みて、つぎの いろを かんがえよう', 'やねの いろと、いりぐちの かたちを りょうほう みてみよう'],
+  2: ['こくばんに ちかい ほうが「まえ」だよ。つくえに ばんごうを つけたよ', 'みじかい はりが さす すうじを みよう。ながい はりは 12だよ', 'うえの かべに ならんでいる ロッカーの まえで さがそう'],
+};
 function search() {
-  if (busy || m.p < 1 || stageNo !== 1 || data.cleared) return;
+  if (busy || m.p < 1 || data.cleared) return;
   halt();
   const step = keysGot();
   if (step >= 3) { showChest(); return; }
-  const tg = targetOf(step), dx = tg.x - m.x, dy = tg.y - m.y;
-  const hit = step === 0 ? (dx === 0 && dy === 0) : Math.abs(dx) + Math.abs(dy) === 1;
-  // となりに ある ものを さがす ときは、そちらを むく
-  const near = [...BIGF, ...HUTS].find(p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1);
+  const tg = targetOf(step), dist = (x, y) => Math.abs(x - m.x) + Math.abs(y - m.y);
+  const hit = tg.on ? dist(tg.x, tg.y) === 0 : tg.wall ? LOCKER_TILES.some(p => dist(p[0], p[1]) === 1) : dist(tg.x, tg.y) === 1;
+  // となりに ある ものを さがす ときは、そちらを むく(めあての ものが となりなら、それを えらぶ)
+  const list = searchables().filter(p => dist(p[0], p[1]) === 1);
+  const near = list.find(p => p[0] === tg.x && p[1] === tg.y) || list[0];
   if (near) m.dir = near[0] > m.x ? 'right' : near[0] < m.x ? 'left' : near[1] > m.y ? 'down' : 'up'; else m.dir = 'down';
   searchFx = { x: near ? near[0] : m.x, y: near ? near[1] : m.y, t: 0 };
   tone(740, .07, 0, 'triangle', .1); tone(1100, .1, .07, 'triangle', .08);
+  if (hit && tg.wall) { setTimeout(showLockers, 450); busy = true; return; }   // ロッカーは ちかくで みて、どれを あけるか えらぶ
   if (hit) { busy = true; m.lookBack = m.dir; setTimeout(() => foundPlace(step), 650); return; }
   searchMiss++;
   if (searchMiss >= 4) return;   // たすけの ほしが でる(frame で あんないする)
-  if (searchMiss >= 2) say(['ピンクの スタートから、いしを 1、2、3と かぞえよう。ばんごうを つけたよ', 'かだんの はなの ならびを みて、つぎの いろを かんがえよう', 'やねの いろと、いりぐちの かたちを りょうほう みてみよう'][step]);
-  else say(step === 0 && !isStone(m.x, m.y) ? 'いしの うえで さがしてみよう。てちょうで てがみも よめるよ' : 'ここには なにも ないみたい。てちょうで てがみを よんでみよう');
+  if (searchMiss >= 2) say(MISS_HINT[stageNo][step]);
+  else say(stageNo === 1 && step === 0 && !isStone(m.x, m.y) ? 'いしの うえで さがしてみよう。てちょうで てがみも よめるよ' : 'ここには なにも ないみたい。てちょうで てがみを よんでみよう');
 }
 function foundPlace(step) {
   if (step === 0) data.s1 = true; else if (step === 1) data.s2 = true; else data.letter = true;
@@ -503,6 +501,7 @@ function foundPlace(step) {
 /* てがみの なぞ: え(canvas)と ぶん(html) */
 function riddleParts(i) {
   const s = data.seed;
+  if (stageNo === 2) return riddleParts2(i, s);
   if (i === 0) return {
     html: 'いけの あひるは なんわ?<br>ポストの よこの <b class="hl">スタート</b>から、あひると おなじ かずだけ いしを すすんで、さがそう!',
     canvas: mk(520, 124, x => {
@@ -527,13 +526,37 @@ function riddleParts(i) {
       num(x, 'いりぐち', 391, 108, 19, '#3A2D58');
     }) };
 }
+function riddleParts2(i, s) {
+  if (i === 0) return {
+    html: '<b class="hl">' + CHAIRS[s.col].name + 'の いす</b>の れつで、まえから <b class="hl">' + s.k + 'ばんめ</b>の つくえを さがそう!',
+    canvas: mk(520, 170, x => {
+      rr(x, 150, 8, 220, 26, 5, '#5FA98A', '#C98A5E', 4); num(x, 'こくばん', 260, 22, 15, '#FFFFFF');
+      num(x, 'まえ', 96, 22, 19, '#D9478A'); num(x, 'うしろ', 96, 150, 19, '#6E6390');
+      ln(x, 96, 40, 96, 124, '#B3A8D3', 4); poly(x, [[96, 134], [87, 120], [105, 120]], '#B3A8D3');
+      for (let q = 0; q < 3; q++) for (let r = 0; r < 3; r++) { const dx = 176 + q * 70, dy = 46 + r * 40; rr(x, dx + 10, dy + 20, 22, 10, 4, CHAIRS[q].hex); rr(x, dx, dy, 42, 22, 5, '#E8B07E', '#C98A5E', 2.5); }
+    }) };
+  if (i === 1) return {
+    html: 'とけいは なんじ?<br>おなじ ばんごうの <b class="hl">はこ</b>を さがそう!',
+    canvas: mk(520, 170, x => {
+      drawClock(x, 150, 85, 76, s.h, false);
+      ln(x, 250, 85, 300, 85, '#B3A8D3', 5); poly(x, [[314, 85], [298, 74], [298, 96]], '#B3A8D3');
+      rr(x, 340, 46, 110, 84, 10, '#FFC83D', '#3A2D58', 3); rr(x, 340, 46, 110, 20, [10, 10, 0, 0], '#FFE38A', '#3A2D58', 3); num(x, '?', 395, 100, 44, '#3A2D58');
+    }) };
+  return {
+    html: '<b class="hl">ロッカー</b>を さがそう。<br>うえから <b class="hl">' + s.lr + 'だんめ</b>、ひだりから <b class="hl">' + s.lc + 'ばんめ</b>を あけよう!',
+    canvas: mk(520, 170, x => {
+      num(x, 'うえ', 120, 34, 19, '#D9478A'); ln(x, 120, 50, 120, 128, '#B3A8D3', 4); poly(x, [[120, 138], [111, 124], [129, 124]], '#B3A8D3');
+      num(x, 'ひだり', 208, 16, 19, '#D9478A'); ln(x, 250, 16, 400, 16, '#B3A8D3', 4); poly(x, [[412, 16], [398, 7], [398, 25]], '#B3A8D3');
+      for (let r = 0; r < 4; r++) for (let q = 0; q < 5; q++) { const lx = 160 + q * 54, ly = 32 + r * 33; rr(x, lx, ly, 48, 28, 5, '#B4E8DC', '#3A2D58', 2.5); ci(x, lx + 39, ly + 14, 3, '#3A2D58'); }
+    }) };
+}
 function showRiddle(i) {
   sfx.open();
   const r = riddleParts(i);
   const p = openModal('<span class="tag">てがみ ' + (i + 1) + '</span><div class="letter" id="lt"></div><p class="small">ばしょが わかったら、そこで「さがす」を おそう</p><button class="btn" data-focus type="button">わかった!</button>');
   r.canvas.className = 'pic'; const t = document.createElement('p'); t.innerHTML = r.html;
   p.querySelector('#lt').append(r.canvas, t);
-  p.querySelector('.btn').onclick = () => { closeModal(); say(stg().goSay); };
+  p.querySelector('.btn').onclick = () => { closeModal(); say(GO_SAY); };
 }
 
 /* ---------- えがく ---------- */
@@ -580,7 +603,7 @@ function drawFence(c) {
 const DUCK_POS = [[11.9, 1.5], [13.1, 1.0], [14.1, 1.6], [12.6, 2.2], [13.7, 2.3]];
 
 function drawStar(c, st, t) {
-  const lit = st.id !== 3 || (data.s1 && data.s2);
+  const lit = true;
   const x = st.x * T + 20, y = st.y * T + 17 + (lit ? Math.sin(t * 3 + st.id) * 3 : 0);
   if (!lit) { starShape(c, x, y, 15, '#D8D2E6', '#FFFFFF'); num(c, st.id, x, y + 1.5, 13, '#9A90B8'); return; }
   const pulse = (Math.sin(t * 4 + st.id) + 1) / 2;
@@ -645,11 +668,19 @@ function flats2(c, t) {
   drawClock(c, 8 * T + 20, 36, 20, data.seed.h, false);
   // ロッカー(4だん × 5れつ)
   rr(c, 10 * T + 2, 6, 5 * T - 4, 70, 5, '#7CCDBE', '#3A2D58', 2.5);
-  for (let r = 0; r < 4; r++) for (let q = 0; q < 5; q++) { const lx = 10 * T + 7 + q * 37.6, ly = 10 + r * 16; rr(c, lx, ly, 33.6, 13.5, 2.5, data.cleared && r === data.seed.cards[data.seed.k - 1] - 1 && q === data.seed.h - 1 ? '#5A4A78' : '#B4E8DC', '#3A2D58', 1.3); ci(c, lx + 28, ly + 6.7, 1.6, '#3A2D58'); }
+  for (let r = 0; r < 4; r++) for (let q = 0; q < 5; q++) { const lx = 10 * T + 7 + q * 37.6, ly = 10 + r * 16; rr(c, lx, ly, 33.6, 13.5, 2.5, data.cleared && r === data.seed.lr - 1 && q === data.seed.lc - 1 ? '#5A4A78' : '#B4E8DC', '#3A2D58', 1.3); ci(c, lx + 28, ly + 6.7, 1.6, '#3A2D58'); }
 }
 function items2(c, t, items) {
-  DESKS.forEach(([dx, dy]) => items.push({ y: dy + .8, f: () => { const x = dx * T, y = dy * T; rr(c, x + 10, y + 27, 20, 10, 4, '#FF9DB5'); rr(c, x + 2, y + 5, 36, 22, 4, '#E8B07E', '#C98A5E', 2); rr(c, x + 8, y + 9, 12, 9, 2, '#FFFFFF'); } }));
-  items.push({ y: 8.9, f: () => { const x = 12 * T, y = 8 * T; rr(c, x + 2, y - 8, 76, 38, 6, '#3F3458'); rr(c, x + 6, y + 16, 68, 12, 2, '#FFFFFF'); for (let i = 1; i < 9; i++) ln(c, x + 6 + i * 7.5, y + 16, x + 6 + i * 7.5, y + 28, '#B3A8D3', 1); for (let i = 0; i < 8; i++) if (i % 7 !== 2 && i % 7 !== 6) rr(c, x + 11 + i * 7.5, y + 16, 4, 7, 1, '#3F3458'); rr(c, x + 28, y + 32, 24, 6, 3, '#FF9DB5'); } });
+  DESKS.forEach(([dx, dy]) => items.push({ y: dy + .8, f: () => {
+    const x = dx * T, y = dy * T, q = DESK_X.indexOf(dx);
+    rr(c, x + 9, y + 26, 22, 12, 4, CHAIRS[q].hex, 'rgba(58,45,88,.3)', 1); rr(c, x + 2, y + 5, 36, 22, 4, '#E8B07E', '#C98A5E', 2); rr(c, x + 8, y + 9, 12, 9, 2, '#FFFFFF');
+    if (!data.s1 && searchMiss >= 2 && q === data.seed.col) { ci(c, x + 28, y + 15, 8, '#FFC83D', '#FFFFFF', 2); num(c, DESK_Y.indexOf(dy) + 1, x + 28, y + 16, 11, '#3A2D58'); }   // ヒント: まえからの ばんごう
+  } }));
+  for (let i = 0; i < 6; i++) items.push({ y: 9.95, f: () => {   // ばんごうの はこ
+    const x = (BOX_X0 + i) * T, y = 9 * T;
+    rr(c, x + 3, y + 4, 34, 32, 5, BOX_COL[i], '#3A2D58', 2); rr(c, x + 3, y + 4, 34, 9, [5, 5, 0, 0], 'rgba(255,255,255,.45)'); ci(c, x + 20, y + 24, 9.5, '#FFFFFF'); num(c, i + 1, x + 20, y + 25, 13, '#3A2D58');
+  } });
+  items.push({ y: 9.9, f: () => { const x = 0, y = 9 * T; rr(c, x + 2, y - 8, 76, 38, 6, '#3F3458'); rr(c, x + 6, y + 16, 68, 12, 2, '#FFFFFF'); for (let i = 1; i < 9; i++) ln(c, x + 6 + i * 7.5, y + 16, x + 6 + i * 7.5, y + 28, '#B3A8D3', 1); for (let i = 0; i < 8; i++) if (i % 7 !== 2 && i % 7 !== 6) rr(c, x + 11 + i * 7.5, y + 16, 4, 7, 1, '#3F3458'); rr(c, x + 28, y + 32, 24, 6, 3, '#FF9DB5'); } });
   items.push({ y: 5.9, f: () => { const x = 15 * T, y = 4 * T; rr(c, x + 3, y - 6, 34, 82, 4, '#B98058', '#8C5A3C', 2); const cols = ['#FF8FB3', '#7FB6F0', '#FFD25E', '#8FD6A6', '#B79CED']; for (let r = 0; r < 3; r++) for (let i = 0; i < 4; i++) rr(c, x + 7 + i * 6.6, y - 1 + r * 25, 5.4, 19, 1, cols[(i + r * 2) % 5]); } });
   items.push({ y: 9.9, f: () => { const x = 15 * T, y = 9 * T; ci(c, x + 20, y + 6, 15, '#6CC08B'); ci(c, x + 13, y, 8, '#8FD6A6'); rr(c, x + 9, y + 18, 22, 18, 4, '#E8B07E', '#C98A5E', 2); } });
 }
@@ -675,8 +706,7 @@ function render(t) {
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   if (!two) drawFence(c);
 
-  for (const st of stg().stars) if (!starGone(st)) drawStar(c, st, t);
-  if (helpOn()) { const tg = targetOf(keysGot()); drawStar(c, { id: 9, label: '!', x: tg.x, y: tg.y - (keysGot() > 0 ? 1 : 0) }, t); }   // こまった ときの たすけの ほし
+  if (helpOn()) { const tg = targetOf(keysGot()); drawStar(c, { id: 9, label: '!', x: tg.x, y: tg.wall ? 2 : tg.on ? tg.y : tg.y - 1 }, t); }   // こまった ときの たすけの ほし
   if (intro) {   // はねの ついた てがみが ミミの ところへ とんでくる
     const p = Math.min(1, intro.t / 1.5), k = 1 - Math.pow(1 - p, 2);
     const ex = m.x * T + 20, ey = m.y * T - 42, sx = COLS * T + 40, sy = -30;
@@ -698,7 +728,7 @@ function frame(ts) {
       if (intro.t > 1.5 && !intro.ding) { intro.ding = true; sfx.ok(); }
       if (intro.t > 2.6) { intro = null; showIntro(); }
     }
-    if (stageNo === 1 && !busy && !data.cleared) stepTime += dt;
+    if (!busy && !data.cleared) stepTime += dt;
     if (searchFx && (searchFx.t += dt) > .55) searchFx = null;
     if (helpOn() && !helpSaid && !busy) { helpSaid = true; say('ひかっている ほしの ところで「さがす」を おそう!'); }
     update(dt); render(tNow); drawClouds(tNow);
@@ -814,85 +844,16 @@ function showIntro() {
 }
 function showLetterText() {
   sfx.ok();
-  const one = stageNo === 1;
-  const q = openModal('<div id="pic"></div><div class="letter">たんていミミへ。<br>' + stg().place + 'の どこかに たからものを かくしたよ。<br>' +
-    (one ? 'てがみの なぞを といて、カギを 3つ あつめてね。' : 'カギを 3つ あつめて、みつけてね。') + '</div><p class="small">いきたい ところを タッチすると あるくよ</p><button class="btn" data-focus type="button">' + (one ? 'なぞを よむ' : 'はじめる') + '</button>');
+  const q = openModal('<div id="pic"></div><div class="letter">たんていミミへ。<br>' + stg().place + 'の どこかに たからものを かくしたよ。<br>てがみの なぞを といて、カギを 3つ あつめてね。</div><p class="small">いきたい ところを タッチすると あるくよ</p><button class="btn" data-focus type="button">なぞを よむ</button>');
   const s = mk(140, 100, x => drawEnvelope(x, 70, 52, 3.6)); s.className = 'prize sm'; q.querySelector('#pic').appendChild(s);
-  q.querySelector('.btn').onclick = () => { if (one) { showRiddle(0); return; } sfx.open(); closeModal(); say('ひかっている ほしを しらべてみよう!'); };
+  q.querySelector('.btn').onclick = () => showRiddle(0);
 }
 
-function reward(n, after) {
-  sfx.ok();
-  const p = openModal('<h2>せいかい!</h2><div id="rw"></div><p>カギを てに いれた!<br>こたえは てちょうに かいておいたよ</p><button class="btn" data-focus type="button">つぎへ</button>');
-  const c = mk(200, 160, x => drawKey(x, 96, 76, 2.6)); c.className = 'prize'; p.querySelector('#rw').appendChild(c);
-  p.querySelector('.btn').onclick = () => { closeModal(); refreshHud(); after(); };
-}
-const afterClue = () => say(data.s1 && data.s2 ? stg().readySay : 'もう ひとつの ほしも しらべてみよう!');
-
-const REF = n => '<span class="ref">てちょう<span class="badge">' + n + '</span></span>';
-/* ===== 2話の なぞ ===== */
-function puzzleDesks() {      // なぞ 1: なんばんめ
-  sfx.open(); let miss = 0;
-  const { k, cards } = data.seed;
-  const p = openModal('<span class="tag">なぞ 1</span><h2>まえから ' + k + 'ばんめの つくえの カードは いくつ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
-  const paint = hint => {
-    const cvs = mk(560, 250, x => {
-      x.fillStyle = '#F6DFB8'; x.fillRect(0, 0, 560, 250);
-      rr(x, 14, 56, 48, 150, 6, '#5FA98A', '#C98A5E', 5); num(x, 'まえ', 40, 28, 20, '#3A2D58'); num(x, 'うしろ', 508, 28, 20, '#3A2D58');
-      ln(x, 78, 28, 452, 28, '#B3A8D3', 3); poly(x, [[462, 28], [448, 20], [448, 36]], '#B3A8D3');
-      for (let i = 0; i < 5; i++) {
-        const dx = 92 + i * 92;
-        rr(x, dx + 14, 150, 8, 44, 2, '#C98A5E'); rr(x, dx + 46, 150, 8, 44, 2, '#C98A5E');
-        rr(x, dx, 122, 68, 34, 8, '#E8B07E', '#C98A5E', 3);
-        rr(x, dx + 15, 70, 38, 52, 6, '#FFFFFF', '#3A2D58', 2.5); num(x, cards[i], dx + 34, 98, 30, '#D9478A');
-        if (hint) { ci(x, dx + 34, 222, 17, '#FFC83D', '#FFFFFF', 3); num(x, i + 1, dx + 34, 223, 18, '#3A2D58'); }
-      }
-    });
-    cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs);
-  };
-  paint(false);
-  for (let v = 1; v <= 5; v++) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.textContent = v;
-    b.onclick = () => {
-      if (v === cards[k - 1]) { data.s1 = true; persist(); reward(1, afterClue); return; }
-      sfx.ng(); miss++; b.classList.remove('no'); void b.offsetWidth; b.classList.add('no');
-      if (miss >= 2) { paint(true); p.querySelector('#fb').textContent = 'したの ばんごうが「なんばんめ」だよ。' + k + 'ばんめの カードを みよう'; }
-      else p.querySelector('#fb').textContent = 'こくばんに ちかい ほうが「まえ」だよ';
-    };
-    p.querySelector('#ch').appendChild(b);
-  }
-}
-function puzzleClock() {      // なぞ 2: とけい
-  sfx.open(); let miss = 0;
-  const h = data.seed.h;
-  const p = openModal('<span class="tag">なぞ 2</span><h2>とけいは なんじ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
-  const paint = hint => { const cvs = mk(300, 300, x => drawClock(x, 150, 150, 132, h, hint)); cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs); };
-  paint(false);
-  for (let v = 2; v <= 6; v++) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.innerHTML = v + '<small>じ</small>';
-    b.onclick = () => {
-      if (v === h) { data.s2 = true; persist(); reward(2, afterClue); return; }
-      sfx.ng(); miss++; b.classList.remove('no'); void b.offsetWidth; b.classList.add('no');
-      if (miss >= 2) { paint(true); p.querySelector('#fb').textContent = 'ピンクの みじかい はりが さす すうじを みよう'; }
-      else p.querySelector('#fb').textContent = 'ながい はりは 12。みじかい はりは どこ?';
-    };
-    p.querySelector('#ch').appendChild(b);
-  }
-}
-const LETTER2 = 'うえから ' + REF(1) + ' だんめ、ひだりから ' + REF(2) + ' ばんめの ロッカーを あけよう!';
-function showLockerNote() {   // なぞ 3 の メモ(3つめの カギ)
-  sfx.ok();
-  if (!data.letter) { data.letter = true; persist(); }
-  const p = openModal('<span class="tag">なぞ 3</span><h2>ロッカーに メモと カギが あった!</h2><div id="pic"></div><div class="letter">' + LETTER2 + '</div><p class="small">なぞ 1 と なぞ 2 の こたえは てちょうに かいてあるよ</p><div class="row"><button class="btn sub" id="toNote" type="button">てちょうを みる</button><button class="btn" data-focus id="ok" type="button">ロッカーを みる</button></div>');
-  const ev = mk(140, 100, x => drawEnvelope(x, 70, 52, 3.6)); ev.className = 'prize sm'; p.querySelector('#pic').appendChild(ev);
-  refreshHud(); say(stg().goSay);
-  p.querySelector('#ok').onclick = showLockers;
-  p.querySelector('#toNote').onclick = showNote;
-}
-function showLockers() {      // なぞ 3: なぞ 1 と なぞ 2 の こたえで ロッカーを えらぶ
+/* ===== 2話: ロッカーを えらぶ ===== */
+function showLockers() {      // 3つうめの てがみの とおりに ロッカーを えらぶ
   sfx.open();
-  const row = data.seed.cards[data.seed.k - 1], col = data.seed.h;
-  const p = openModal('<span class="tag">なぞ 3</span><h2>どの ロッカーを あける?</h2><div class="letter slim">' + LETTER2 + '</div><div class="lockers" id="lk"></div><p class="fb" id="fb"></p><div class="row"><button class="btn sub" id="toNote" type="button">てちょうを みる</button><button class="btn sub" id="x" type="button">とじる</button></div>', 'lk');
+  const row = data.seed.lr, col = data.seed.lc;
+  const p = openModal('<span class="tag">てがみ 3</span><h2>どの ロッカーを あける?</h2><div class="letter slim">' + riddleParts(2).html + '</div><div class="lockers" id="lk"></div><p class="fb" id="fb"></p><div class="row"><button class="btn sub" id="x" type="button">とじる</button></div>', 'lk');
   const lk = p.querySelector('#lk');
   const hints = () => { lk.classList.toggle('hint', lockMiss >= 2); if (lockMiss >= 4) lk.querySelector('[data-ok]').classList.add('glow'); };
   lk.insertAdjacentHTML('beforeend', '<span></span>' + [1, 2, 3, 4, 5].map(n => '<span class="lab">' + n + '</span>').join(''));
@@ -904,46 +865,35 @@ function showLockers() {      // なぞ 3: なぞ 1 と なぞ 2 の こたえ�
       b.onclick = () => {
         if (b.dataset.ok) {
           lk.querySelectorAll('.locker').forEach(e => { e.disabled = true; });
-          b.classList.add('open', 'got'); stopMusic(); sfx.found(); p.querySelector('#fb').textContent = 'あった!';
-          setTimeout(showChest, 1100); return;
+          b.classList.add('open', 'got'); p.querySelector('#fb').textContent = 'あった!';
+          data.letter = true; persist(); refreshHud(); searchMiss = 0; stepTime = 0; helpSaid = false;
+          stopMusic(); sfx.found(); setTimeout(showChest, 1100); return;
         }
         sfx.ng(); lockMiss++; b.classList.add('open'); b.disabled = true; hints();
-        p.querySelector('#fb').textContent = lockMiss >= 4 ? 'ひかっている ロッカーを あけてみよう' : lockMiss >= 2 ? 'ばんごうを つけたよ。たての ばんごうが「だん」だよ' : 'からっぽ…。てちょうを みてみよう';
+        p.querySelector('#fb').textContent = lockMiss >= 4 ? 'ひかっている ロッカーを あけてみよう' : lockMiss >= 2 ? 'ばんごうを つけたよ。たての ばんごうが「だん」だよ' : 'からっぽ…。てがみを もういちど よんでみよう';
       };
       lk.appendChild(b);
     }
   }
   hints();
-  p.querySelector('#toNote').onclick = showNote;
   p.querySelector('#x').onclick = closeModal;
 }
 
 function showNote() {
   if (!data) return;
   sfx.open(); scrape(0, .16, 2200, 3200, .04);     // ページを めくる おと
-  const row = (n, q, id, txt) => '<li><span class="badge">' + n + '</span><span class="q">' + q + '</span><span class="a' + (txt ? ' txt' : '') + '" id="' + id + '"></span></li>';
-  const p = openModal('<div class="nb"><div class="nb-page"><span class="nb-stamp">ひみつ</span><h2>たんていてちょう</h2><ul class="note">' +
-    (stageNo === 2 ? row(1, 'つくえの カードの かず', 'a1') + row(2, 'とけいの じかん', 'a2') + row(3, 'ロッカーの メモ', 'a3', true)
-                   : row(1, '1つうめの てがみ', 'a1', true) + row(2, '2つうめの てがみ', 'a2', true) + row(3, '3つうめの てがみ', 'a3', true)) +
+  const row = n => '<li><span class="badge">' + n + '</span><span class="q">' + n + 'つうめの てがみ</span><span class="a txt" id="a' + n + '"></span></li>';
+  const p = openModal('<div class="nb"><div class="nb-page"><span class="nb-stamp">ひみつ</span><h2>たんていてちょう</h2><ul class="note">' + row(1) + row(2) + row(3) +
     '</ul></div></div><button class="btn" data-focus type="button">とじる</button>', 'notebook');
-  const blank = el => { el.innerHTML = '<span class="nb-blank">?</span>'; };
-  const a1 = p.querySelector('#a1'), a2 = p.querySelector('#a2'), a3 = p.querySelector('#a3');
-  if (stageNo === 2) {
-    if (data.s1) a1.textContent = String(data.seed.cards[data.seed.k - 1]); else blank(a1);
-    if (data.s2) a2.textContent = data.seed.h + ' じ'; else blank(a2);
-    if (data.letter) a3.innerHTML = LETTER2; else blank(a3);
-  } else {
-    const step = keysGot();
-    [a1, a2, a3].forEach((el, i) => {
-      if (i > step) { blank(el); return; }
-      const r = riddleParts(i);
-      if (i === step) { r.canvas.className = 'nb-pic'; el.appendChild(r.canvas); }   // いま さがしている てがみは えも みせる
-      el.insertAdjacentHTML('beforeend', '<span>' + r.html + '</span>' + (i < step ? ' <span class="nb-done">みつけた!</span>' : ''));
-    });
-    // いま さがしている てがみが みえる ところまで、かみを おくる
-    const cur = [a1, a2, a3][Math.min(step, 2)].closest('li'), page = p.querySelector('.nb-page');
-    if (step > 0) page.scrollTop = Math.max(0, cur.offsetTop - 40);
-  }
+  const cells = [1, 2, 3].map(n => p.querySelector('#a' + n)), step = keysGot();
+  cells.forEach((el, i) => {
+    if (i > step) { el.innerHTML = '<span class="nb-blank">?</span>'; return; }
+    const r = riddleParts(i);
+    if (i === step) { r.canvas.className = 'nb-pic'; el.appendChild(r.canvas); }   // いま さがしている てがみは えも みせる
+    el.insertAdjacentHTML('beforeend', '<span>' + r.html + '</span>' + (i < step ? ' <span class="nb-done">みつけた!</span>' : ''));
+  });
+  // いま さがしている てがみが みえる ところまで、かみを おくる
+  if (step > 0) p.querySelector('.nb-page').scrollTop = Math.max(0, cells[Math.min(step, 2)].closest('li').offsetTop - 40);
   p.querySelector('.btn').onclick = closeModal;
 }
 
@@ -1106,7 +1056,7 @@ cv.addEventListener('pointerdown', ev => {
   if (busy || !running || chest) return;
   const r = cv.getBoundingClientRect();
   const tx = Math.floor((ev.clientX - r.left) / r.width * COLS), ty = Math.floor((ev.clientY - r.top) / r.height * ROWS);
-  if (tx === m.x && ty === m.y && m.p >= 1) { const st = stg().stars.find(s => s.x === tx && s.y === ty); if (st) touchStar(st); return; }
+  if (tx === m.x && ty === m.y && m.p >= 1) return;
   held = null;
   path = findPath(m.x, m.y, tx, ty);
   dest = path.length ? { x: path[path.length - 1][0], y: path[path.length - 1][1] } : null;
