@@ -405,9 +405,10 @@ const STAR_SEC = 240;  // まちがえなくても、この びょうすう み�
 let searchMiss = 0, stepTime = 0, helpSaid = false, searchFx = null, foundFx = null;
 /* ---------- あんない: てがみを ステップに わけて、1つずつ すすむ ----------
    いまの ステップは シロの ふきだしに いつも でている。え(pic)が いる ステップでは、てがみの えも ふきだしに だす。
-   done: たちどまった ときに みたされたら つぎへ / spot: いきさきの やじるし / さいごの ステップは「さがす」(near の ばしょで ボタンが ひかる) */
+   done: たちどまった ときに みたされたら つぎへ / spot: みに いく もの(きいろく ひかる) / さいごの ステップは「さがす」(near の ばしょで ボタンが ひかる) */
 let guide = -1, sayTimer = null;
 const stoodAt = (x0, x1, y0, y1) => m.x >= x0 && m.x <= x1 && m.y >= y0 && m.y <= y1;
+const besideBox = (x0, y0, x1, y1) => stoodAt(x0 - 1, x1 + 1, y0 - 1, y1 + 1) && !stoodAt(x0, x1, y0, y1) && !((m.x < x0 || m.x > x1) && (m.y < y0 || m.y > y1));
 const nextTo = list => list.some(p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1);
 const BOXES = [0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]);
 /* look: その ばしょに ついたら ひらく「ちかくで みる」がめん。こたえると つぎの ステップへ すすむ。
@@ -415,25 +416,24 @@ const BOXES = [0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]);
 let looked = {}, lookArmed = true;
 const GUIDE = {
   1: [
-    [ { text: () => 'いけの ちかくへ いって、あひるを かぞえよう', spot: { x: 13, y: 3 }, done: () => stoodAt(13, 14, 3, 3), look: lookDucks },
-      { text: () => 'カードを もって、ピンクの スタートに たとう', spot: START_MAT, done: () => stoodAt(START_MAT.x, START_MAT.x, START_MAT.y, START_MAT.y),
+    [ { text: () => 'ひかっている いけへ いって、あひるを かぞえよう', spot: { el: [13 * T, 1.6 * T, 2 * T, 1.3 * T] }, done: () => besideBox(11, 0, 14, 2), look: lookDucks },
+      { text: () => 'カードを もって、ピンクの スタートに たとう', spot: { rect: [START_MAT.x * T + 3, START_MAT.y * T + 5, 34, 32] }, done: () => stoodAt(START_MAT.x, START_MAT.x, START_MAT.y, START_MAT.y),
         arrive: () => { searchFx = { x: START_MAT.x, y: START_MAT.y, t: 0 }; tone(660, .1, .1, 'triangle', .1); tone(990, .16, .2, 'triangle', .1); } },
       { text: () => looked[0] ? 'カードの かずだけ、いしを みぎへ すすもう' : 'あひると おなじ かずだけ、いしを みぎへ すすもう', done: () => guide >= 2 && isStone(m.x, m.y) },
       { text: () => 'ここだと おもったら「さがす」を おそう', near: () => isStone(m.x, m.y) } ],
-    [ { text: () => 'かだんの はなを みに いこう', spot: { x: 11, y: 4 }, done: () => stoodAt(9, 14, 4, 4) || stoodAt(9, 14, 6, 6), look: lookPattern },
+    [ { text: () => 'ひかっている かだんの はなを みに いこう', spot: { rect: [9 * T + 2, 5 * T + 6, 6 * T - 4, T - 8] }, done: () => besideBox(9, 5, 14, 5), look: lookPattern },
       { text: () => looked[0] ? 'うえきばちの はなが 3ぼん あるよ。カードと おなじ いろの となりに たとう' : '「?」に はいる いろの、おおきな はなの となりへ いこう', done: () => nextTo(BIGF) },
       { text: () => 'この はなだと おもったら「さがす」を おそう', near: () => nextTo(BIGF) } ],
-    [ { text: () => 'こやの ちかくへ いこう', spot: { x: 11, y: 6 }, done: () => stoodAt(8, 15, 6, 8) },
-      { text: () => '2まいの カードに あう こやを さがそう。となりで「さがす」だよ', near: () => nextTo(HUTS) } ],
+    [ { text: () => '2まいの カードに あう こやを さがそう。となりで「さがす」だよ', near: () => nextTo(HUTS) } ],
   ],
   2: [
-    [ { text: () => 'こくばんの まえへ いこう', spot: { x: 3, y: 2 }, done: () => stoodAt(1, 5, 2, 2), look: lookDesks },
+    [ { text: () => 'ひかっている こくばんの まえへ いこう', spot: { rect: [T + 4, 12, 5 * T - 8, 54] }, done: () => stoodAt(1, 5, 2, 2), look: lookDesks },
       { text: () => CHAIRS[data.seed.col].name + 'の いすの れつ、まえから ' + data.seed.k + 'ばんめの つくえの となりへ いこう', pic: () => riddleParts(0, looked[0]).canvas, done: () => nextTo(DESKS) },
       { text: () => 'この つくえだと おもったら「さがす」を おそう', pic: () => riddleParts(0, looked[0]).canvas, near: () => nextTo(DESKS) } ],
-    [ { text: () => 'とけいを みに いこう', spot: { x: 8, y: 2 }, done: () => stoodAt(7, 9, 2, 2), look: lookClock },
+    [ { text: () => 'ひかっている とけいを みに いこう', spot: { el: [8 * T + 20, 36, 22, 22] }, done: () => stoodAt(7, 9, 2, 2), look: lookClock },
       { text: () => looked[0] ? data.seed.h + 'ばんの はこの まえへ いこう' : 'とけいは なんじかな? おなじ ばんごうの はこの まえへ いこう', pic: () => looked[0] ? null : riddleParts(1).canvas, done: () => nextTo(BOXES) },
       { text: () => 'この はこだと おもったら「さがす」を おそう', near: () => nextTo(BOXES) } ],
-    [ { text: () => 'ロッカーの まえへ いこう', spot: { x: 12, y: 2 }, done: () => stoodAt(10, 14, 2, 2) },
+    [ { text: () => 'ひかっている ロッカーの まえへ いこう', spot: { rect: [10 * T + 2, 6, 5 * T - 4, 70] }, done: () => stoodAt(10, 14, 2, 2) },
       { text: () => '「さがす」を おして、ロッカーを ちかくで みよう', pic: true, near: () => stoodAt(10, 14, 2, 2) } ],
   ],
 };
@@ -579,19 +579,23 @@ function lookClock(cb) {        // とけい: なんじ
   }
 }
 function drawCandidates(c, t) {
-  if (stageNo !== 1 || !curSteps() || guide < 1 || foundFx) return;
-  const k = keysGot(), list = k === 1 ? BIGF : k === 2 ? HUTS : null; if (!list) return;
+  if (stageNo !== 1 || !curSteps() || foundFx) return;
+  const k = keysGot(), list = k === 1 && guide >= 1 ? BIGF : k === 2 ? HUTS : null; if (!list) return;
   list.forEach(([px, py], i) => {
     const x = px * T + 20, top = py * T - (k === 1 ? 34 : 14) + Math.sin(t * 4 + i * 1.3) * 3;
     ci(c, x, py * T + 34, 17 + Math.sin(t * 4 + i * 1.3) * 2, null, 'rgba(255,200,61,.9)', 3);
     poly(c, [[x - 8, top - 10], [x + 8, top - 10], [x, top]], '#FFC83D', '#FFFFFF', 2);
   });
 }
-function drawGuideArrow(c, t) {
-  const steps = curSteps(); if (!steps || !steps[guide].spot) return;
-  const g = steps[guide].spot, x = g.x * T + 20, y = g.y * T - 16 + Math.sin(t * 5) * 5;
-  ci(c, x, g.y * T + 24, 13 + Math.sin(t * 5) * 2, null, 'rgba(217,71,138,.75)', 3);
-  poly(c, [[x - 12, y - 14], [x + 12, y - 14], [x + 12, y - 2], [x + 20, y - 2], [x, y + 18], [x - 20, y - 2], [x - 12, y - 2]], '#FF7EB6', '#FFFFFF', 3);
+// いま みに いく もの(いけ、かだん、スタート、こくばん など)じたいを きいろく ひからせる。えらぶ もの(はな、こや)の しるしと おなじ いろ
+function drawSpotGlow(c, t) {
+  const steps = curSteps(); if (!steps || !steps[guide].spot || foundFx) return;
+  const s = steps[guide].spot, p = (Math.sin(t * 4) + 1) / 2;
+  const path2 = grow => { c.beginPath(); if (s.el) c.ellipse(s.el[0], s.el[1], s.el[2] + grow, s.el[3] + grow, 0, 0, PI * 2); else c.roundRect(s.rect[0] - grow, s.rect[1] - grow, s.rect[2] + grow * 2, s.rect[3] + grow * 2, 12 + grow); };
+  path2(5 + p * 4); c.strokeStyle = 'rgba(255,200,61,' + (.55 + .4 * p) + ')'; c.lineWidth = 6; c.stroke();
+  path2(5 + p * 4); c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2; c.stroke();
+  const cx = s.el ? s.el[0] : s.rect[0] + s.rect[2] / 2, cy = s.el ? s.el[1] : s.rect[1] + s.rect[3] / 2, rx = (s.el ? s.el[2] : s.rect[2] / 2) + 12, ry = (s.el ? s.el[3] : s.rect[3] / 2) + 12;
+  for (let i = 0; i < 4; i++) { const a2 = t * .9 + i * PI / 2; starShape(c, cx + Math.cos(a2) * rx, cy + Math.sin(a2) * ry, 3 + 3 * Math.abs(Math.sin(t * 3 + i)), '#FFFFFF', '#FFC83D'); }   // ふちを まわる きらきら
 }
 const helpOn = () => data && !data.cleared && keysGot() < 3 && (searchMiss >= STAR_AT || stepTime > STAR_SEC);
 const keysGot = () => (data.s1 ? 1 : 0) + (data.s2 ? 1 : 0) + (data.letter ? 1 : 0);
@@ -962,7 +966,7 @@ function render(t) {
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   if (!two) drawFence(c);
 
-  drawGuideArrow(c, t); drawCandidates(c, t);
+  drawSpotGlow(c, t); drawCandidates(c, t);
   if (!two && keysGot() === 0 && guide >= 2 && isStone(m.x, m.y) && !foundFx) {   // いしを すすむ ときの かず
     const n2 = m.x - START_MAT.x, hit = looked[0] && n2 === data.seed.n && m.p >= 1;
     ci(c, mx * T + 20, my * T - 36, hit ? 15 : 13, hit ? '#FFC83D' : '#FFFFFF', '#3A2D58', 2.5); num(c, n2, mx * T + 20, my * T - 35, 16, '#3A2D58');
