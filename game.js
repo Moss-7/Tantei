@@ -491,7 +491,10 @@ function guideTick() {
   // あるいている とちゅうで とおりすぎた だけでは すすめない。たちどまった ときだけ みる
   if (!steps || busy || m.p < 1 || path.length || held) return;
   const last = steps.length - 1, was = guide;
-  for (let j = last - 1; j >= guide; j--) {
+  // 「ちかくで みる」が まだの ステップは とばせない(いけを みる まえに スタートに たっても、いけの ステップの まま)
+  let limit = last - 1;
+  for (let j = guide; j < last; j++) if (steps[j].look && !looked[j]) { limit = j; break; }
+  for (let j = limit; j >= guide; j--) {
     if (!steps[j].done()) continue;
     if (j === guide && steps[j].look && !looked[j]) {      // ついたら「ちかくで みる」がめんを ひらく
       if (lookArmed) { lookArmed = false; halt(); steps[j].look(() => { looked[j] = true; guide = j + 1; cardNew = true; searchFx = { x: m.x, y: m.y, t: 0 }; showStep(); }); }
