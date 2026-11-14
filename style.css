@@ -325,3 +325,17 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
   .talk{height:66px;padding-block:4px}
   .talk p{font-size:14.5px;line-height:1.4}
 }
+
+/* ---- ちかくで みる がめん ---- */
+.fb.good{color:var(--mint);font-family:var(--display);font-weight:400;font-size:clamp(17px,4.4vw,22px)}
+.choice.wide{min-width:96px;padding:6px 8px}
+.choice.wide canvas{width:104px;height:auto}
+.choice:disabled{opacity:.75}
+.deskgrid{display:grid;grid-template-columns:repeat(3,auto);gap:8px;justify-content:center}
+.choice.desk{min-width:0;min-height:0;padding:4px 6px}
+.choice.desk canvas{width:72px;height:auto}
+@media (max-height:480px){
+  .choice.wide canvas{width:60px}
+  .choice.desk canvas{width:52px}
+  .deskgrid{gap:5px}
+}

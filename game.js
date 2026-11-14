@@ -407,26 +407,31 @@ let guide = -1, sayTimer = null;
 const stoodAt = (x0, x1, y0, y1) => m.x >= x0 && m.x <= x1 && m.y >= y0 && m.y <= y1;
 const nextTo = list => list.some(p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1);
 const BOXES = [0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]);
+/* look: その ばしょに ついたら ひらく「ちかくで みる」がめん。こたえると つぎの ステップへ すすむ。
+   arrive: ついた ときの ちいさな えんしゅつ / pic: ふきだしに だす え(true=てがみの え、かんすう=じぶんで かく) */
+let looked = {}, lookArmed = true;
+const SIDE = ['ひだり', 'まんなか', 'みぎ'];
 const GUIDE = {
   1: [
-    [ { text: () => 'いけの ちかくへ いって、あひるを かぞえよう', spot: { x: 13, y: 3 }, done: () => stoodAt(13, 14, 3, 3) },
-      { text: () => 'かぞえたら、ピンクの スタートに たとう', spot: START_MAT, done: () => stoodAt(START_MAT.x, START_MAT.x, START_MAT.y, START_MAT.y) },
-      { text: () => 'スタートから みぎへ、あひると おなじ かずだけ いしを すすもう', pic: true, done: () => guide >= 2 && isStone(m.x, m.y) },
+    [ { text: () => 'いけの ちかくへ いって、あひるを かぞえよう', spot: { x: 13, y: 3 }, done: () => stoodAt(13, 14, 3, 3), look: lookDucks },
+      { text: () => 'つぎは、ピンクの スタートに たとう', spot: START_MAT, done: () => stoodAt(START_MAT.x, START_MAT.x, START_MAT.y, START_MAT.y),
+        arrive: () => { searchFx = { x: START_MAT.x, y: START_MAT.y, t: 0 }; tone(660, .1, .1, 'triangle', .1); tone(990, .16, .2, 'triangle', .1); } },
+      { text: () => looked[0] ? 'スタートから みぎへ、いしを ' + data.seed.n + 'こ すすもう' : 'スタートから みぎへ、あひると おなじ かずだけ いしを すすもう', pic: true, done: () => guide >= 2 && isStone(m.x, m.y) },
       { text: () => 'ここだと おもったら「さがす」を おそう', near: () => isStone(m.x, m.y) } ],
-    [ { text: () => 'かだんの はなを みに いこう', spot: { x: 11, y: 4 }, done: () => stoodAt(9, 14, 4, 4) || stoodAt(9, 14, 6, 6) },
-      { text: () => '「?」に はいる いろの、おおきな はなの となりへ いこう', pic: true, done: () => nextTo(BIGF) },
-      { text: () => 'この はなだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(BIGF) } ],
-    [ { text: () => 'こやの ちかくへ いこう', spot: { x: 11, y: 6 }, done: () => stoodAt(8, 15, 6, 8) },
-      { text: () => 'えと おなじ やねと いりぐちの こやの となりに たとう', pic: true, done: () => nextTo(HUTS) },
+    [ { text: () => 'かだんの はなを みに いこう', spot: { x: 11, y: 4 }, done: () => stoodAt(9, 14, 4, 4) || stoodAt(9, 14, 6, 6), look: lookPattern },
+      { text: () => looked[0] ? COLORS[data.seed.c].name + 'の おおきな はなの となりへ いこう' : '「?」に はいる いろの、おおきな はなの となりへ いこう', pic: () => looked[0] ? null : riddleParts(1).canvas, done: () => nextTo(BIGF) },
+      { text: () => 'この はなだと おもったら「さがす」を おそう', near: () => nextTo(BIGF) } ],
+    [ { text: () => 'こやを みに いこう', spot: { x: 11, y: 6 }, done: () => stoodAt(8, 15, 6, 8), look: lookHuts },
+      { text: () => looked[0] ? SIDE[data.seed.ans] + 'の こやの となりへ いこう' : 'えと おなじ やねと いりぐちの こやの となりに たとう', pic: true, done: () => nextTo(HUTS) },
       { text: () => 'この こやだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(HUTS) } ],
   ],
   2: [
-    [ { text: () => 'こくばんの まえへ いこう。こくばんの ほうが「まえ」だよ', spot: { x: 3, y: 2 }, done: () => stoodAt(1, 5, 2, 2) },
-      { text: () => CHAIRS[data.seed.col].name + 'の いすの れつで、まえから ' + data.seed.k + 'ばんめの つくえの となりに たとう', pic: true, done: () => nextTo(DESKS) },
-      { text: () => 'この つくえだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(DESKS) } ],
-    [ { text: () => 'とけいを みに いこう', spot: { x: 8, y: 2 }, done: () => stoodAt(7, 9, 2, 2) },
-      { text: () => 'とけいは なんじかな? おなじ ばんごうの はこの まえへ いこう', pic: true, done: () => nextTo(BOXES) },
-      { text: () => 'この はこだと おもったら「さがす」を おそう', pic: true, near: () => nextTo(BOXES) } ],
+    [ { text: () => 'こくばんの まえへ いこう', spot: { x: 3, y: 2 }, done: () => stoodAt(1, 5, 2, 2), look: lookDesks },
+      { text: () => CHAIRS[data.seed.col].name + 'の いすの れつ、まえから ' + data.seed.k + 'ばんめの つくえの となりへ いこう', pic: () => riddleParts(0, looked[0]).canvas, done: () => nextTo(DESKS) },
+      { text: () => 'この つくえだと おもったら「さがす」を おそう', pic: () => riddleParts(0, looked[0]).canvas, near: () => nextTo(DESKS) } ],
+    [ { text: () => 'とけいを みに いこう', spot: { x: 8, y: 2 }, done: () => stoodAt(7, 9, 2, 2), look: lookClock },
+      { text: () => looked[0] ? data.seed.h + 'ばんの はこの まえへ いこう' : 'とけいは なんじかな? おなじ ばんごうの はこの まえへ いこう', pic: () => looked[0] ? null : riddleParts(1).canvas, done: () => nextTo(BOXES) },
+      { text: () => 'この はこだと おもったら「さがす」を おそう', near: () => nextTo(BOXES) } ],
     [ { text: () => 'ロッカーの まえへ いこう', spot: { x: 12, y: 2 }, done: () => stoodAt(10, 14, 2, 2) },
       { text: () => '「さがす」を おして、ロッカーを ちかくで みよう', pic: true, near: () => stoodAt(10, 14, 2, 2) } ],
   ],
@@ -441,20 +446,112 @@ function showStep() {
   const no = document.createElement('span'); no.className = 'stepno'; no.textContent = (guide + 1) + '/' + steps.length;
   box.append(no, s.text());
   pic.replaceChildren();
-  if (s.pic) { const cv2 = riddleParts(keysGot()).canvas; cv2.className = 'say-pic'; pic.appendChild(cv2); }
-  pic.hidden = !s.pic;
+  const cv2 = !s.pic ? null : typeof s.pic === 'function' ? s.pic() : riddleParts(keysGot()).canvas;
+  if (cv2) { cv2.className = 'say-pic'; pic.appendChild(cv2); }
+  pic.hidden = !cv2;
 }
-function startGuide() { guide = 0; showStep(); }
-function stopGuide() { guide = -1; clearTimeout(sayTimer); $('btnDig').classList.remove('pulse'); $('sayPic').hidden = true; }
+function startGuide() { guide = 0; looked = {}; lookArmed = true; showStep(); }
+function stopGuide() { guide = -1; looked = {}; clearTimeout(sayTimer); $('btnDig').classList.remove('pulse'); $('sayPic').hidden = true; }
 function guideTick() {
   const steps = curSteps();
   // あるいている とちゅうで とおりすぎた だけでは すすめない。たちどまった ときだけ みる
   if (!steps || busy || m.p < 1 || path.length || held) return;
   const last = steps.length - 1, was = guide;
-  for (let j = last - 1; j >= guide; j--) if (steps[j].done()) { guide = j + 1; break; }          // さきの ステップを みたして いたら、そこまで すすむ
+  for (let j = last - 1; j >= guide; j--) {
+    if (!steps[j].done()) continue;
+    if (j === guide && steps[j].look && !looked[j]) {      // ついたら「ちかくで みる」がめんを ひらく
+      if (lookArmed) { lookArmed = false; halt(); steps[j].look(() => { looked[j] = true; guide = j + 1; showStep(); }); }
+      return;
+    }
+    guide = j + 1; if (steps[j].arrive) steps[j].arrive(); break;   // さきの ステップを みたして いたら、そこまで すすむ
+  }
+  if (steps[guide].look && !looked[guide] && !steps[guide].done()) lookArmed = true;               // いちど はなれたら、また ひらける
   if (guide === last && was === last && last > 0 && !steps[last - 1].done()) guide = last - 1;   // 「さがす」の ばしょから はなれたら、ひとつ もどる
   if (guide !== was) { showStep(); if (guide > was) tone(880, .1, 0, 'sine', .07); }
   $('btnDig').classList.toggle('pulse', guide === last && steps[last].near());
+}
+
+/* ---------- ちかくで みる がめん ---------- */
+function lookShell(title, cls = '') {
+  sfx.open();
+  const p = openModal('<span class="tag">ちかくで みよう</span><h2>' + title + '</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p><button class="btn sub" id="later" type="button">あとで</button>', cls);
+  p.querySelector('#later').onclick = closeModal;
+  p.miss = 0;
+  return p;
+}
+function lookRight(p, msg, cb) {
+  sfx.ok(); p.querySelector('#fb').textContent = msg; p.querySelector('#fb').classList.add('good');
+  p.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  setTimeout(() => { closeModal(); cb(); }, 1300);
+}
+function lookWrong(p, b, first, hint, onHint) {
+  sfx.ng(); p.miss++; b.classList.remove('no'); void b.offsetWidth; b.classList.add('no');
+  p.querySelector('#fb').textContent = p.miss >= 2 ? hint : first;
+  if (p.miss >= 2 && onHint) onHint();
+}
+function lookDucks(cb) {        // いけ: あひるを かぞえる
+  const p = lookShell('いけの あひるは なんわ?'), n = data.seed.n;
+  const paint = hint => {
+    const cvs = mk(560, 300, x => {
+      x.fillStyle = '#BDE7AE'; x.fillRect(0, 0, 560, 300); drawPond(x, 30, 24, 500, 252);
+      for (let i = 0; i < n; i++) {
+        const dx = 280 + (DUCK_POS[i][0] - 13) * 170, dy = 150 + (DUCK_POS[i][1] - 1.6) * 150;
+        drawDuck(x, dx, dy, i === 1 ? '#FFE38A' : '#FFFFFF', 2.6);
+        if (hint) { ci(x, dx - 6, dy - 44, 15, '#FFC83D', '#FFFFFF', 3); num(x, i + 1, dx - 6, dy - 43, 17, '#3A2D58'); }
+      }
+    });
+    cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs);
+  };
+  paint(false);
+  for (let v = 2; v <= 6; v++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.textContent = v;
+    b.onclick = () => v === n ? lookRight(p, 'せいかい! あひるは ' + n + 'わ', cb) : lookWrong(p, b, 'もういちど よく みてみよう', 'ばんごうを つけたよ。ゆびで さしながら かぞえよう', () => paint(true));
+    p.querySelector('#ch').appendChild(b);
+  }
+}
+function lookPattern(cb) {      // かだん: つぎに さく はなの いろ
+  const p = lookShell('「?」に はいる はなは なにいろ?'), s = data.seed, A = COLORS[s.other], B = COLORS[s.c];
+  const cvs = riddleParts(1).canvas; cvs.className = 'pic'; p.querySelector('#pic').appendChild(cvs);
+  Object.keys(COLORS).forEach(k => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice';
+    b.appendChild(mk(104, 104, x => drawFlower(x, 52, 58, COLORS[k].hex, 3.4)));
+    const sm = document.createElement('small'); sm.textContent = COLORS[k].name; b.appendChild(sm);
+    b.onclick = () => k === s.c ? lookRight(p, 'せいかい! つぎは ' + B.name, cb) : lookWrong(p, b, 'ならびかたの きまりを さがしてみよう', '「' + A.name + '、' + B.name + '、' + A.name + '、' + B.name + '…」と こえに だして よもう');
+    p.querySelector('#ch').appendChild(b);
+  });
+}
+function lookHuts(cb) {         // こや: やねの いろと いりぐちの かたちで えらぶ
+  const s = data.seed;
+  const p = lookShell('やねが ' + ROOFS[s.r].name + 'くて、いりぐちが ' + (s.d === 'round' ? 'まるい' : 'しかくい') + ' こやは どれ?');
+  s.huts.forEach((combo, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice wide';
+    b.appendChild(mk(150, 140, x => { x.scale(3.2, 3.2); drawHut(x, 3.5, 5, combo); }));
+    const sm = document.createElement('small'); sm.textContent = SIDE[i]; b.appendChild(sm);
+    b.onclick = () => i === s.ans ? lookRight(p, 'せいかい! ' + SIDE[i] + 'の こやだね', cb) : lookWrong(p, b, 'やねと いりぐちを もういちど みよう', 'やねの いろと、いりぐちの かたちの りょうほうが あう こやだよ');
+    p.querySelector('#ch').appendChild(b);
+  });
+}
+function lookDesks(cb) {        // こくばん: いすの いろの れつで、まえから なんばんめ
+  const s = data.seed;
+  const p = lookShell(CHAIRS[s.col].name + 'の いすの れつで、まえから ' + s.k + 'ばんめの つくえは どれ?');
+  p.querySelector('#pic').appendChild(Object.assign(mk(360, 44, x => { rr(x, 70, 6, 220, 30, 6, '#5FA98A', '#C98A5E', 4); num(x, 'こくばん(まえ)', 180, 22, 15, '#FFFFFF'); }), { className: 'pic' }));
+  const grid = p.querySelector('#ch'); grid.className = 'deskgrid';
+  for (let r = 0; r < 3; r++) for (let q = 0; q < 3; q++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice desk'; b.setAttribute('aria-label', CHAIRS[q].name + 'の れつ、まえから ' + (r + 1) + 'ばんめ');
+    b.appendChild(mk(120, 96, x => { rr(x, 36, 60, 48, 24, 9, CHAIRS[q].hex, 'rgba(58,45,88,.3)', 2); rr(x, 14, 12, 92, 50, 9, '#E8B07E', '#C98A5E', 4); rr(x, 28, 22, 30, 22, 4, '#FFFFFF'); }));
+    b.onclick = () => (q === s.col && r === s.k - 1) ? lookRight(p, 'せいかい! この つくえだね', cb) : lookWrong(p, b, 'いすの いろと、まえからの じゅんばんを みよう', 'こくばんに ちかい ほうが「まえ」だよ。うえから 1、2、3ばんめ');
+    grid.appendChild(b);
+  }
+}
+function lookClock(cb) {        // とけい: なんじ
+  const h = data.seed.h, p = lookShell('とけいは なんじ?');
+  const paint = hint => { const cvs = mk(300, 300, x => drawClock(x, 150, 150, 132, h, hint)); cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs); };
+  paint(false);
+  for (let v = 2; v <= 6; v++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.innerHTML = v + '<small>じ</small>';
+    b.onclick = () => v === h ? lookRight(p, 'せいかい! ' + h + 'じだね', cb) : lookWrong(p, b, 'ながい はりは 12。みじかい はりは どこ?', 'ピンクの みじかい はりが さす すうじを みよう', () => paint(true));
+    p.querySelector('#ch').appendChild(b);
+  }
 }
 function drawGuideArrow(c, t) {
   const steps = curSteps(); if (!steps || !steps[guide].spot) return;
@@ -588,9 +685,9 @@ function foundPlace(step) {
   p.querySelector('.btn').onclick = () => showRiddle(step + 1);
 }
 /* てがみの なぞ: え(canvas)と ぶん(html) */
-function riddleParts(i) {
+function riddleParts(i, mark) {
   const s = data.seed;
-  if (stageNo === 2) return riddleParts2(i, s);
+  if (stageNo === 2) return riddleParts2(i, s, mark);
   if (i === 0) return {
     html: '<ol class="steps"><li>いけの <b class="hl">あひる</b>を かぞえよう</li><li>ピンクの <b class="hl">スタート</b>に たとう</li><li>あひると おなじ かずだけ、<b class="hl">いし</b>を みぎへ すすもう</li><li>そこで「さがす」を おそう!</li></ol>',
     canvas: mk(520, 124, x => {
@@ -615,14 +712,14 @@ function riddleParts(i) {
       num(x, 'いりぐち', 391, 108, 19, '#3A2D58');
     }) };
 }
-function riddleParts2(i, s) {
+function riddleParts2(i, s, mark) {
   if (i === 0) return {
     html: '<b class="hl">' + CHAIRS[s.col].name + 'の いす</b>の れつで、まえから <b class="hl">' + s.k + 'ばんめ</b>の つくえを さがそう!',
     canvas: mk(520, 170, x => {
       rr(x, 150, 8, 220, 26, 5, '#5FA98A', '#C98A5E', 4); num(x, 'こくばん', 260, 22, 15, '#FFFFFF');
       num(x, 'まえ', 96, 22, 19, '#D9478A'); num(x, 'うしろ', 96, 150, 19, '#6E6390');
       ln(x, 96, 40, 96, 124, '#B3A8D3', 4); poly(x, [[96, 134], [87, 120], [105, 120]], '#B3A8D3');
-      for (let q = 0; q < 3; q++) for (let r = 0; r < 3; r++) { const dx = 176 + q * 70, dy = 46 + r * 40; rr(x, dx + 10, dy + 20, 22, 10, 4, CHAIRS[q].hex); rr(x, dx, dy, 42, 22, 5, '#E8B07E', '#C98A5E', 2.5); }
+      for (let q = 0; q < 3; q++) for (let r = 0; r < 3; r++) { const dx = 176 + q * 70, dy = 46 + r * 40; rr(x, dx + 10, dy + 20, 22, 10, 4, CHAIRS[q].hex); rr(x, dx, dy, 42, 22, 5, '#E8B07E', '#C98A5E', 2.5); if (mark && q === s.col && r === s.k - 1) { ci(x, dx + 21, dy + 14, 27, null, '#D9478A', 4); } }
     }) };
   if (i === 1) return {
     html: 'とけいは なんじ?<br>おなじ ばんごうの <b class="hl">はこ</b>を さがそう!',
