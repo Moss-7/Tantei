@@ -19,7 +19,7 @@ const ANIMALS = [
 ];
 // 1話の ばしょ: ポストの よこの スタート、そこから みぎへ ならぶ いし、おおきな はな、こや
 const START_MAT = { x: 6, y: 3 }, STONE_X0 = 7, STONE_N = 6;
-const BIGF = [[2, 6], [5, 8], [8, 6]];
+const BIGF = [[1, 7], [4, 7], [7, 7]];   // うえきばちの おおきな はな。3ぼんを よこに ならべて、みくらべやすく する
 const HUTS = [[9, 7], [12, 7], [15, 7]];
 const ROOFS = { red: { name: 'あか', hex: '#FF7E8A' }, blue: { name: 'あお', hex: '#6FA8F5' } };
 /* はなしごとの さだめ。あたらしい はなしは ここに たして、マップ・なぞ・けしきを それぞれ かく */
@@ -279,12 +279,15 @@ function drawFlower(c, x, y, col, s = 1) {
   for (let i = 0; i < 5; i++) { const a = i * PI * 2 / 5 - PI / 2; ci(c, x + Math.cos(a) * 5 * s, y - 3 * s + Math.sin(a) * 5 * s, 4 * s, col); }
   ci(c, x, y - 3 * s, 3 * s, '#FFF4B8');
 }
-function drawBigFlower(c, x, b, col) {
-  el(c, x, b, 10, 3, 'rgba(40,20,70,.15)');
-  ln(c, x, b, x, b - 22, '#58B37A', 4);
-  el(c, x - 6, b - 8, 6, 3, '#6CC08B'); el(c, x + 6, b - 12, 6, 3, '#6CC08B');
-  for (let i = 0; i < 6; i++) { const a = i * PI / 3; ci(c, x + Math.cos(a) * 9, b - 30 + Math.sin(a) * 9, 7, col, 'rgba(58,45,88,.25)', 1); }
-  ci(c, x, b - 30, 6, '#FFF4B8', 'rgba(58,45,88,.25)', 1);
+function drawBigFlower(c, x, b, col, s = 1.3) {
+  c.save(); c.translate(x, b); c.scale(s, s);
+  el(c, 0, 0, 12, 3.5, 'rgba(40,20,70,.15)');
+  ln(c, 0, -8, 0, -26, '#58B37A', 4);
+  el(c, -6, -14, 6, 3, '#6CC08B'); el(c, 6, -18, 6, 3, '#6CC08B');
+  for (let i = 0; i < 6; i++) { const a = i * PI / 3; ci(c, Math.cos(a) * 9, -34 + Math.sin(a) * 9, 7, col, 'rgba(58,45,88,.25)', 1); }
+  ci(c, 0, -34, 6, '#FFF4B8', 'rgba(58,45,88,.25)', 1);
+  poly(c, [[-10, -11], [10, -11], [7.5, 0], [-7.5, 0]], '#E08A5B', '#B4663C', 1.2); rr(c, -11.5, -13.5, 23, 4.5, 2, '#EDA57A', '#B4663C', 1.2);   // うえきばち
+  c.restore();
 }
 function drawDuck(c, x, y, col = '#FFFFFF', s = 1) {
   el(c, x, y, 9 * s, 6 * s, col, '#C9D8E4', 1); ci(c, x + 7 * s, y - 6 * s, 5 * s, col, '#C9D8E4', 1);
@@ -418,7 +421,7 @@ const GUIDE = {
       { text: () => looked[0] ? 'カードの かずだけ、いしを みぎへ すすもう' : 'あひると おなじ かずだけ、いしを みぎへ すすもう', done: () => guide >= 2 && isStone(m.x, m.y) },
       { text: () => 'ここだと おもったら「さがす」を おそう', near: () => isStone(m.x, m.y) } ],
     [ { text: () => 'かだんの はなを みに いこう', spot: { x: 11, y: 4 }, done: () => stoodAt(9, 14, 4, 4) || stoodAt(9, 14, 6, 6), look: lookPattern },
-      { text: () => looked[0] ? 'カードと おなじ いろの おおきな はなを さがして、となりに たとう' : '「?」に はいる いろの、おおきな はなの となりへ いこう', done: () => nextTo(BIGF) },
+      { text: () => looked[0] ? 'うえきばちの はなが 3ぼん あるよ。カードと おなじ いろの となりに たとう' : '「?」に はいる いろの、おおきな はなの となりへ いこう', done: () => nextTo(BIGF) },
       { text: () => 'この はなだと おもったら「さがす」を おそう', near: () => nextTo(BIGF) } ],
     [ { text: () => 'こやの ちかくへ いこう', spot: { x: 11, y: 6 }, done: () => stoodAt(8, 15, 6, 8) },
       { text: () => '2まいの カードに あう こやを さがそう。となりで「さがす」だよ', near: () => nextTo(HUTS) } ],
@@ -439,7 +442,7 @@ function cardList() {
   if (stageNo !== 1 || !data || data.cleared) return [];
   const k = keysGot(), s = data.seed;
   if (k === 0) return looked[0] ? [{ id: 'n', label: s.n + ' わ', draw: x => { ci(x, 32, 32, 30, '#BFE9F7'); drawDuck(x, 26, 40, '#FFFFFF', 2.1); } }] : [];
-  if (k === 1) return looked[0] ? [{ id: 'c', label: COLORS[s.c].name, draw: x => drawFlower(x, 32, 34, COLORS[s.c].hex, 2.6) }] : [];
+  if (k === 1) return looked[0] ? [{ id: 'c', label: COLORS[s.c].name, draw: x => drawBigFlower(x, 32, 61, COLORS[s.c].hex, 1.25) }] : [];
   if (k === 2) return [
     { id: 'r', label: ROOFS[s.r].name, draw: x => poly(x, [[32, 10], [58, 44], [6, 44]], ROOFS[s.r].hex, '#3A2D58', 2.5) },
     { id: 'd', label: s.d === 'round' ? 'まる' : 'しかく', draw: x => { rr(x, 6, 8, 52, 46, 6, '#FFF3DC', '#E8D5B5', 2.5); if (s.d === 'round') { x.beginPath(); x.arc(32, 34, 13, PI, 0); x.lineTo(45, 54); x.lineTo(19, 54); x.closePath(); x.fillStyle = '#6B4A3A'; x.fill(); } else rr(x, 19, 24, 26, 30, 2, '#6B4A3A'); } } ];
@@ -574,6 +577,15 @@ function lookClock(cb) {        // とけい: なんじ
     b.onclick = () => v === h ? lookRight(p, 'せいかい! ' + h + 'じだね', cb) : lookWrong(p, b, 'ながい はりは 12。みじかい はりは どこ?', 'ピンクの みじかい はりが さす すうじを みよう', () => paint(true));
     p.querySelector('#ch').appendChild(b);
   }
+}
+function drawCandidates(c, t) {
+  if (stageNo !== 1 || !curSteps() || guide < 1 || foundFx) return;
+  const k = keysGot(), list = k === 1 ? BIGF : k === 2 ? HUTS : null; if (!list) return;
+  list.forEach(([px, py], i) => {
+    const x = px * T + 20, top = py * T - (k === 1 ? 34 : 14) + Math.sin(t * 4 + i * 1.3) * 3;
+    ci(c, x, py * T + 34, 17 + Math.sin(t * 4 + i * 1.3) * 2, null, 'rgba(255,200,61,.9)', 3);
+    poly(c, [[x - 8, top - 10], [x + 8, top - 10], [x, top]], '#FFC83D', '#FFFFFF', 2);
+  });
 }
 function drawGuideArrow(c, t) {
   const steps = curSteps(); if (!steps || !steps[guide].spot) return;
@@ -728,7 +740,7 @@ function riddleParts(i, mark) {
       for (let k = 0; k < STONE_N; k++) el(x, 158 + k * 62, 47, 25, 18, '#EEE9F5', '#CFC4E2', 3);
     }) };
   if (i === 1) return {
-    html: '<b class="hl">かだん</b>の はなが、つぎの いろを しっているよ。<br>おなじ いろの <b class="hl">おおきな はな</b>を さがそう!',
+    html: '<b class="hl">かだん</b>の はなが、つぎの いろを しっているよ。<br>おなじ いろの、<b class="hl">うえきばちの おおきな はな</b>を さがそう!',
     canvas: mk(520, 130, x => {
       rr(x, 10, 62, 500, 52, 16, '#C99B77', '#B4835F', 3);
       for (let k = 0; k < 5; k++) drawFlower(x, 52 + k * 84, 62, COLORS[k % 2 ? s.c : s.other].hex, 2.8);
@@ -950,7 +962,7 @@ function render(t) {
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
   if (!two) drawFence(c);
 
-  drawGuideArrow(c, t);
+  drawGuideArrow(c, t); drawCandidates(c, t);
   if (!two && keysGot() === 0 && guide >= 2 && isStone(m.x, m.y) && !foundFx) {   // いしを すすむ ときの かず
     const n2 = m.x - START_MAT.x, hit = looked[0] && n2 === data.seed.n && m.p >= 1;
     ci(c, mx * T + 20, my * T - 36, hit ? 15 : 13, hit ? '#FFC83D' : '#FFFFFF', '#3A2D58', 2.5); num(c, n2, mx * T + 20, my * T - 35, 16, '#3A2D58');
