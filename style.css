@@ -339,3 +339,17 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
   .choice.desk canvas{width:52px}
   .deskgrid{gap:5px}
 }
+
+/* ---- てがかりカード ---- */
+.say-box{gap:8px}
+.card{position:relative;display:inline-flex;align-items:center;gap:6px;height:54px;padding:3px 12px 3px 6px;background:#fff;border:3px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.talk .card canvas{width:42px;height:42px;flex:none}
+.card b{font-family:var(--display);font-weight:400;font-size:clamp(15px,4.2vw,19px)}
+.card.new{animation:cardin .7s cubic-bezier(.3,1.7,.5,1) both}
+.card.glow{border-color:#E69B00;box-shadow:0 3px 0 #E69B00,0 0 0 5px rgba(255,200,61,.8);animation:cardglow .8s ease-in-out infinite}
+.card i{position:absolute;right:-9px;top:-11px;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#fff;font-style:normal;font-family:var(--display);font-size:16px;border:2.5px solid currentColor}
+.card i.ok{color:var(--mint)}.card i.ng{color:var(--berry)}
+@keyframes cardin{0%{transform:translateY(-34px) scale(.3) rotate(-14deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes cardglow{50%{transform:scale(1.08)}}
+@media (max-height:480px){.card{height:42px;padding:2px 9px 2px 4px}.talk .card canvas{width:32px;height:32px}.card b{font-size:14px}}
+@media (prefers-reduced-motion:reduce){.card.new,.card.glow{animation:none}}
