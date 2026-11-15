@@ -30,8 +30,11 @@ const STAGE = {
   2: { name: 'がっこう', place: 'がっこう', track: 'school', scene: 'school', start: { x: 10, y: 7 },
        treasure: { id: 'musicbox', name: 'ほしの オルゴール', draw: (c, x, y, s) => drawMusicBox(c, x, y, s) },
        foundSay: 'ロッカーの なかに カギと たからばこが あった!' },
+  3: { name: 'こうえん', place: 'こうえん', track: 'park', scene: 'garden', start: { x: 8, y: 7 },
+       treasure: { id: 'marble', name: 'にじいろの ビーだま', draw: (c, x, y, s) => drawMarble(c, x, y, s) },
+       foundSay: 'バスケットの なかに カギと たからばこが あった!' },
 };
-const LAST_STAGE = 2;
+const LAST_STAGE = 3;
 let stageNo = 1;
 const stg = () => STAGE[stageNo];
 const GO_SAY = 'ばしょが わかったら、そこで「さがす」を おそう!';
@@ -62,8 +65,27 @@ function newSeed2() {
   const eq = pick({ 1: [[3, '−', 2], [2, '−', 1], [4, '−', 3]], 2: [[1, '+', 1], [3, '−', 1], [4, '−', 2]], 3: [[2, '+', 1], [1, '+', 2], [5, '−', 2]] }[k]);   // こたえが k に なる しき
   return { col: r(3), k, eq, h: 2 + r(4), lr: 1 + r(4), lc: 1 + r(5) };
 }
+// 3話: かだんの はな(あか a + きいろ b = n)と ベンチの ばんごう、あんごうの みちじゅん、シーソーの おもさくらべ
+function newSeed3() {
+  const r = n => Math.floor(Math.random() * n), sh = a => a.slice().sort(() => Math.random() - 0.5);
+  const n = 5 + r(4), a = 2 + r(2);
+  let dirs;
+  for (;;) {   // ひろばの なかを はみださず、おなじ ますを とおらない みちじゅん(3〜4ます)
+    dirs = []; let x = MAT3.x, y = MAT3.y, ok = true; const seen = new Set([x + ',' + y]), len = 3 + r(2);
+    for (let i = 0; i < len && ok; i++) {
+      const d = pick(['r', 'r', 'u', 'd']), nx = x + DIR3[d][0], ny = y + DIR3[d][1];
+      if (nx < PLAZA.x0 || nx > PLAZA.x1 || ny < PLAZA.y0 || ny > PLAZA.y1 || seen.has(nx + ',' + ny)) ok = false;
+      else { seen.add(nx + ',' + ny); x = nx; y = ny; dirs.push(d); }
+    }
+    if (ok && new Set(dirs).size >= 2) break;
+  }
+  // sym: みぎ・うえ・した に あてる きごう / order: おもい → かるい / bn: ベンチの ばんごう / bk: バスケットの くだもの
+  return { a, b: n - a, n, bn: sh([5, 6, 7, 8]), dirs, sym: sh([0, 1, 2]), order: sh(Object.keys(FRUITS)), q: pick(['light', 'heavy']), bk: sh(Object.keys(FRUITS)) };
+}
+const routeTiles = s => { const out = [[MAT3.x, MAT3.y]]; for (const d of s.dirs) { const l = out[out.length - 1]; out.push([l[0] + DIR3[d][0], l[1] + DIR3[d][1]]); } return out; };
+const fruitAns = s => s.q === 'light' ? s.order[2] : s.order[0];
 function newStage(old, no = 1) {
-  return { stage: no, seed: no === 2 ? newSeed2() : newSeed(), s1: false, s2: false, letter: false, cleared: false, treasures: old ? old.treasures : [] };
+  return { stage: no, seed: no === 3 ? newSeed3() : no === 2 ? newSeed2() : newSeed(), s1: false, s2: false, letter: false, cleared: false, treasures: old ? old.treasures : [] };
 }
 
 /* ---------- おと ---------- */
@@ -133,6 +155,11 @@ const TRACKS = {
     mel: [[77,1],[81,1],[84,1],[81,1], [82,.5],[81,.5],[79,1],[77,2], [79,1],[82,1],[86,1],[82,1], [84,.5],[82,.5],[81,1],[79,2],
           [81,1],[84,1],[89,1],[84,1], [86,.5],[84,.5],[82,1],[81,2], [79,1],[81,.5],[82,.5],[84,1],[76,1], [77,2],[0,2]],
     bass: [[53,2],[60,2], [53,2],[60,2], [46,2],[53,2], [48,2],[55,2], [53,2],[60,2], [46,2],[53,2], [48,2],[48,2], [53,2],[53,2]] },
+  // こうえん: かろやかな ト長調
+  park: { beat: .34, gate: .85,
+    mel: [[74,1],[79,1],[83,1],[79,1], [81,.5],[83,.5],[81,1],[78,2], [76,1],[79,1],[84,1],[79,1], [83,.5],[81,.5],[79,1],[74,2],
+          [79,1],[83,1],[86,1],[83,1], [84,.5],[83,.5],[81,1],[79,2], [81,1],[78,1],[74,1],[78,1], [79,2],[0,2]],
+    bass: [[43,2],[50,2], [50,2],[57,2], [48,2],[55,2], [43,2],[50,2], [43,2],[50,2], [48,2],[55,2], [50,2],[50,2], [43,2],[43,2]] },
   clear: { beat: .3,
     mel: [[72,.5],[76,.5],[79,.5],[84,1.5],[79,.5],[84,.5], [88,2],[86,1],[84,1],
           [81,.5],[84,.5],[81,.5],[77,1.5],[81,.5],[84,.5], [79,2],[83,1],[86,1]],
@@ -326,6 +353,38 @@ function drawMusicBox(c, x, y, s) {
   starShape(c, 26, -22, 5, '#FFFFFF'); starShape(c, -28, 14, 4, '#FFFFFF');
   c.restore();
 }
+function drawMarble(c, x, y, s) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  ci(c, 0, 0, 34, 'rgba(255,220,110,.35)');
+  const cols = ['#FF7E8A', '#FFA63D', '#FFD25E', '#8FD6A6', '#7FB6F0', '#B79CED'];
+  c.save(); c.beginPath(); c.arc(0, 0, 20, 0, PI * 2); c.clip();
+  cols.forEach((col, i) => { c.fillStyle = col; c.beginPath(); c.ellipse(-26 + i * 9, 6, 9, 34, .5, 0, PI * 2); c.fill(); });
+  c.restore();
+  ci(c, 0, 0, 20, null, '#3A2D58', 1.8); el(c, -7, -9, 6, 4, 'rgba(255,255,255,.85)');
+  starShape(c, 26, -20, 5, '#FFFFFF'); starShape(c, -27, 15, 4, '#FFFFFF');
+  c.restore();
+}
+function drawFruit(c, key, x, y, s) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  if (key === 'apple') { ci(c, 0, 1, 9, '#FF6F7D', 'rgba(58,45,88,.3)', 1); ln(c, 0, -8, 1, -12, '#8C5A3C', 1.8); el(c, 5, -11, 4, 2, '#6CC08B'); }
+  else if (key === 'mikan') { el(c, 0, 1, 9.5, 8.5, '#FFA63D', 'rgba(58,45,88,.3)', 1); starShape(c, 0, -7, 3, '#6CC08B'); }
+  else { poly(c, [[-8, -5], [8, -5], [0, 10]], '#FF5F7A', 'rgba(58,45,88,.3)', 1); ci(c, -5, -5, 3.5, '#FF5F7A'); ci(c, 5, -5, 3.5, '#FF5F7A'); starShape(c, 0, -8, 4.5, '#6CC08B'); for (const [dx, dy] of [[-3, -1], [3, -1], [0, 4]]) ci(c, dx, dy, .9, '#FFF4B8'); }
+  c.restore();
+}
+// あんごうの きごう(0=ほし、1=まる、2=さんかく)と やじるし
+function drawSym(c, i, x, y, r) {
+  if (i === 0) starShape(c, x, y, r * 1.15, '#FFC83D', '#3A2D58');
+  else if (i === 1) ci(c, x, y, r * .9, '#7FB6F0', '#3A2D58', 2);
+  else poly(c, [[x, y - r], [x + r, y + r * .8], [x - r, y + r * .8]], '#FF8FB3', '#3A2D58', 2);
+}
+function drawArrow(c, d, x, y, s, col = '#3A2D58') {
+  c.save(); c.translate(x, y); c.rotate(d === 'r' ? 0 : d === 'u' ? -PI / 2 : PI / 2); c.scale(s, s);
+  poly(c, [[-9, -3.5], [1, -3.5], [1, -9], [10, 0], [1, 9], [1, 3.5], [-9, 3.5]], col);
+  c.restore();
+}
+function drawMat(c, x, y) {   // ピンクの スタート
+  rr(c, x + 3, y + 5, 34, 32, 8, '#FF9DB5', '#D9478A', 2); poly(c, [[x + 11, y + 17], [x + 20, y + 17], [x + 20, y + 12], [x + 30, y + 21], [x + 20, y + 30], [x + 20, y + 25], [x + 11, y + 25]], '#FFFFFF');
+}
 function drawKey(c, x, y, s) {
   c.save(); c.translate(x, y); c.scale(s, s);
   ci(c, 0, 0, 22, 'rgba(255,220,110,.35)');
@@ -340,12 +399,25 @@ const DESKS = DESK_X.flatMap(x => DESK_Y.map(y => [x, y]));
 const CHAIRS = [{ name: 'ピンク', hex: '#FF9DB5' }, { name: 'あお', hex: '#7FB6F0' }, { name: 'きいろ', hex: '#FFD25E' }];   // れつごとの いすの いろ
 const BOX_X0 = 9;                                    // ばんごうの はこ 1〜6 は (9〜14, 9)
 const BOX_COL = ['#FF9DB5', '#FFC83D', '#8FD6A6', '#7FB6F0', '#B79CED', '#FF9F6B'];
+/* 3話: こうえん。どの ますも、となりに ある「さがせる もの」は 1しゅるい 1つだけに なる ように おいている */
+const BENCHES = [[0, 3], [0, 6], [3, 8], [6, 8]];
+const BASKETS = [[9, 8], [12, 8], [15, 8]];
+const PLAZA = { x0: 10, x1: 14, y0: 2, y1: 6 }, MAT3 = { x: 10, y: 4 };
+const DIR3 = { r: [1, 0], u: [0, -1], d: [0, 1] }, DIR3_KEYS = ['r', 'u', 'd'];
+const FRUITS = { apple: { name: 'りんご' }, mikan: { name: 'みかん' }, ichigo: { name: 'いちご' } };
+const onPlaza = (x, y) => x >= PLAZA.x0 && x <= PLAZA.x1 && y >= PLAZA.y0 && y <= PLAZA.y1;
 const LOCKER_TILES = [10, 11, 12, 13, 14].map(x => [x, 1]);   // かべの ロッカー。まえの れつ(y=2)から さがす
 const blockedSet = new Set();
 const bk = (x, y) => x + ',' + y;
 function buildBlocked() {
   blockedSet.clear();
   const add = (x0, y0, x1, y1) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) blockedSet.add(bk(x, y)); };
+  if (stageNo === 3) {
+    add(1, 1, 5, 1); add(8, 1, 8, 1); add(3, 4, 6, 5); add(8, 5, 9, 5);        // かだん、かんばん、いけ、シーソー
+    add(11, 0, 12, 0); add(14, 0, 15, 1);                                          // ブランコ、すべりだい
+    [...BENCHES, ...BASKETS, [0, 0], [6, 0], [0, 9]].forEach(p => add(p[0], p[1], p[0], p[1]));
+    return;
+  }
   if (stageNo === 2) {
     add(0, 0, 15, 1);                                   // かべ(こくばん・とけい・ロッカー)
     DESKS.forEach(d => add(d[0], d[1], d[0], d[1]));    // つくえ
@@ -394,12 +466,17 @@ let m, cat, path = [], held = null, dest = null, holes = [], chest = null, digMi
 // いま さがす ばしょ。on: その ますの うえで さがす / それいがいは となりの ますから さがす
 function targetOf(step) {
   const s = data.seed;
+  if (stageNo === 3) {
+    if (step === 0) { const p = BENCHES[s.bn.indexOf(s.n)]; return { x: p[0], y: p[1] }; }
+    if (step === 1) { const p = routeTiles(s).pop(); return { x: p[0], y: p[1], on: true }; }
+    const p = BASKETS[s.bk.indexOf(fruitAns(s))]; return { x: p[0], y: p[1] };
+  }
   if (stageNo === 2) return step === 0 ? { x: DESK_X[s.col], y: DESK_Y[s.k - 1] } : step === 1 ? { x: BOX_X0 + s.h - 1, y: 9 } : { x: 12, y: 1, wall: true };
   return step === 0 ? { x: START_MAT.x + s.n, y: START_MAT.y, on: true }
     : step === 1 ? { x: BIGF[s.lanes.indexOf(s.c)][0], y: BIGF[s.lanes.indexOf(s.c)][1] } : { x: HUTS[s.ans][0], y: HUTS[s.ans][1] };
 }
 // さがせる もの(となりに たつと、ミミが そちらを むく)
-const searchables = () => stageNo === 2 ? [...DESKS, ...BOXES, ...LOCKER_TILES] : [...BIGF, ...HUTS];
+const searchables = () => stageNo === 3 ? [...BENCHES, ...BASKETS] : stageNo === 2 ? [...DESKS, ...BOXES, ...LOCKER_TILES] : [...BIGF, ...HUTS];
 // たすけを だす めやす。すぐには たすけず、じぶんで かんがえる じかんを とる
 const HINT_AT = 3;     // この かいすう まちがえたら、シロの ヒントと ばんごうを だす
 const STAR_AT = 8;     // この かいすう まちがえたら、ただしい ばしょに ほしを だす
@@ -415,7 +492,7 @@ const nextTo = list => list.some(p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y
 const BOXES = [0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]);
 /* look: その ばしょに ついたら ひらく「ちかくで みる」がめん。こたえると つぎの ステップへ すすむ。
    arrive: ついた ときの ちいさな えんしゅつ / pic: ふきだしに だす え(true=てがみの え、かんすう=じぶんで かく) */
-let looked = {}, lookArmed = true;
+let looked = {}, lookArmed = true, trail = [];   // trail: 3話の ひろばで、スタートから あるいた ます
 const GUIDE = {
   1: [
     [ { text: () => 'ひかっている いけへ いって、あひるを かぞえよう', spot: { el: [13 * T, 1.6 * T, 2 * T, 1.3 * T] }, done: () => besideBox(11, 0, 14, 2), look: lookDucks },
@@ -436,11 +513,31 @@ const GUIDE = {
       { text: () => 'この はこだと おもったら「さがす」を おそう', near: () => nextTo(BOXES) } ],
     [ { text: () => 'ひかっている ロッカーの まえで「さがす」を おそう', spot: { rect: [10 * T + 2, 6, 5 * T - 4, 70] }, near: () => stoodAt(10, 14, 2, 2) } ],
   ],
+  3: [
+    [ { text: () => 'ひかっている かだんの はなを かぞえに いこう', spot: { rect: [T + 2, T + 6, 5 * T - 4, T - 8] }, done: () => besideBox(1, 1, 5, 1), look: lookBed3 },
+      { text: () => 'ベンチが 4つ あるよ。カードと おなじ ばんごうの となりに たとう', done: () => nextTo(BENCHES) },
+      { text: () => 'この ベンチだと おもったら「さがす」を おそう', near: () => nextTo(BENCHES) } ],
+    [ { text: () => 'ひかっている かんばんの あんごうを みに いこう', spot: { rect: [8 * T + 4, T - 2, 32, 38] }, done: () => besideBox(8, 1, 8, 1), look: lookCipher },
+      { text: () => 'カードを もって、ひろばの ピンクの スタートに たとう', spot: { rect: [MAT3.x * T + 3, MAT3.y * T + 5, 34, 32] }, done: () => stoodAt(MAT3.x, MAT3.x, MAT3.y, MAT3.y),
+        arrive: () => { searchFx = { x: MAT3.x, y: MAT3.y, t: 0 }; tone(660, .1, .1, 'triangle', .1); tone(990, .16, .2, 'triangle', .1); } },
+      { text: () => 'カードの やじるしの とおりに、1ますずつ すすもう', done: () => guide >= 2 && onPlaza(m.x, m.y) && !stoodAt(MAT3.x, MAT3.x, MAT3.y, MAT3.y) },
+      { text: () => 'ここだと おもったら「さがす」を おそう', near: () => onPlaza(m.x, m.y) && !stoodAt(MAT3.x, MAT3.x, MAT3.y, MAT3.y) } ],
+    [ { text: () => 'ひかっている シーソーを みに いこう', spot: { rect: [8 * T + 2, 5 * T + 4, 2 * T - 4, T - 6] }, done: () => besideBox(8, 5, 9, 5), look: lookSeesaw },
+      { text: () => 'バスケットが 3つ あるよ。カードと おなじ くだものの となりに たとう', done: () => nextTo(BASKETS) },
+      { text: () => 'この バスケットだと おもったら「さがす」を おそう', near: () => nextTo(BASKETS) } ],
+  ],
 };
 /* てがかりカード: なぞを といた こたえ。ふきだしの したの だんに ならび、つかう ばめんで ひかる */
 function cardList() {
   if (!data || data.cleared) return [];
   const k = keysGot(), s = data.seed;
+  if (stageNo === 3) {
+    if (!looked[0]) return [];
+    if (k === 0) return [{ id: 'n', label: 'ばん', draw: x => { ci(x, 32, 32, 28, '#FFE38A'); num(x, s.n, 32, 34, 34, '#3A2D58'); } }];
+    if (k === 1) return [{ id: 'route', label: 'みちじゅん', w: 30 + s.dirs.length * 40, draw: x => { drawMat(x, -2, 11); s.dirs.forEach((d, i) => drawArrow(x, d, 62 + i * 40, 32, 1.5, '#D9478A')); } }];
+    if (k === 2) return [{ id: 'f', label: FRUITS[fruitAns(s)].name, draw: x => drawFruit(x, fruitAns(s), 32, 34, 2.4) }];
+    return [];
+  }
   if (stageNo === 2) {
     const big = (t, col) => x => { ci(x, 32, 32, 28, col); num(x, t, 32, 34, 34, '#3A2D58'); };
     if (k === 0) return [{ id: 'col', label: CHAIRS[s.col].name, draw: x => { rr(x, 18, 38, 28, 16, 6, CHAIRS[s.col].hex, 'rgba(58,45,88,.35)', 2); rr(x, 6, 10, 52, 30, 6, '#E8B07E', '#C98A5E', 3); } }]
@@ -462,6 +559,12 @@ function cardList() {
 function cardGlow() {
   if (!looked[0] || m.p < 1 || path.length || held) return false;
   const k = keysGot(), s = data.seed;
+  if (stageNo === 3) {
+    const beside = p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1;
+    if (k === 0) return beside(BENCHES[s.bn.indexOf(s.n)]);                                     // おなじ ばんごうの ベンチ
+    if (k === 1) { const e = routeTiles(s).pop(); return guide >= 2 && m.x === e[0] && m.y === e[1]; }   // みちじゅんの さき
+    return k === 2 && beside(BASKETS[s.bk.indexOf(fruitAns(s))]);                               // おなじ くだものの バスケット
+  }
   if (stageNo === 2) return k === 1 && Math.abs(BOX_X0 + s.h - 1 - m.x) + Math.abs(9 - m.y) === 1;   // おなじ ばんごうの はこの まえ
   if (k === 0) return guide >= 2 && isStone(m.x, m.y) && m.x - START_MAT.x === s.n;
   if (k === 1) return BIGF.some((p, i) => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1 && s.lanes[i] === s.c);
@@ -473,7 +576,8 @@ function drawCards() {
   tray.replaceChildren();
   for (const cd of list) {
     const el2 = document.createElement('span'); el2.className = 'card' + (cardNew ? ' new' : ''); el2.dataset.id = cd.id;
-    el2.appendChild(mk(64, 64, cd.draw));
+    const cv3 = mk(cd.w || 64, 64, cd.draw); if (cd.w) { cv3.style.width = Math.round(42 * cd.w / 64) + 'px'; cv3.style.height = 'auto'; }   // よこに ながい カード(みちじゅん)
+    el2.appendChild(cv3);
     const lb = document.createElement('b'); lb.textContent = cd.label; el2.appendChild(lb);
     if (cardMarks && cd.id in cardMarks) { const mk2 = document.createElement('i'); mk2.className = cardMarks[cd.id] ? 'ok' : 'ng'; mk2.textContent = cardMarks[cd.id] ? '○' : '×'; el2.appendChild(mk2); }
     tray.appendChild(el2);
@@ -491,7 +595,7 @@ function showStep() {
   box.append(no, s.text());
   drawCards();
 }
-function startGuide() { guide = 0; looked = {}; lookArmed = true; showStep(); }
+function startGuide() { guide = 0; looked = {}; lookArmed = true; trail = []; showStep(); }
 function stopGuide() { guide = -1; looked = {}; cardMarks = null; markFx = null; clearTimeout(sayTimer); $('btnDig').classList.remove('pulse'); $('sayPic').hidden = true; }
 function guideTick() {
   const steps = curSteps();
@@ -587,6 +691,64 @@ function lookBoard(cb) {        // こくばん: けいさんの こたえが「
     p.querySelector('#ch').appendChild(b);
   }
 }
+function lookBed3(cb) {         // かだん: あかい はな + きいろい はな
+  const s = data.seed, p = lookShell('あかい はなと きいろい はな、あわせて なんぼん?');
+  const paint = hint => {
+    const cvs = mk(560, 230, x => {
+      x.fillStyle = '#BDE7AE'; x.fillRect(0, 0, 560, 230); rr(x, 14, 120, 532, 84, 22, '#C99B77', '#B4835F', 4);
+      for (let i = 0; i < s.n; i++) {
+        const fx = 50 + i * (460 / (s.n - 1));
+        drawFlower(x, fx, 118, COLORS[i < s.a ? 'red' : 'yellow'].hex, 3.6);
+        if (hint) { ci(x, fx, 40, 15, '#FFC83D', '#FFFFFF', 3); num(x, i + 1, fx, 41, 17, '#3A2D58'); }
+      }
+    });
+    cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs);
+  };
+  paint(false);
+  for (let v = 4; v <= 9; v++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.textContent = v;
+    b.onclick = () => v === s.n ? lookRight(p, 'せいかい! あわせて ' + s.n + 'ほん', cb) : lookWrong(p, b, 'あかと きいろを ぜんぶ かぞえよう', 'ばんごうを つけたよ。いちばん みぎの かずを みよう', () => paint(true));
+    p.querySelector('#ch').appendChild(b);
+  }
+}
+function lookCipher(cb) {       // かんばん: きごうを やじるしに なおす あんごう
+  const s = data.seed, p = lookShell('あんごうを やじるしに なおそう', 'cipher');
+  // ひょう: きごう = やじるし
+  const table = document.createElement('div'); table.className = 'ctable';
+  DIR3_KEYS.forEach((d, i) => { const chip = document.createElement('span'); chip.className = 'cpair';
+    chip.append(mk(56, 56, x => drawSym(x, s.sym[i], 28, 29, 17)), '=', mk(56, 56, x => drawArrow(x, d, 28, 28, 1.9))); table.appendChild(chip); });
+  // あんごうの ならび: したの ますに やじるしを 1つずつ いれる
+  const row = document.createElement('div'); row.className = 'crow';
+  const slots = s.dirs.map(d => { const sl = document.createElement('span'); sl.className = 'cslot';
+    sl.append(mk(56, 56, x => drawSym(x, s.sym[DIR3_KEYS.indexOf(d)], 28, 29, 17))); const box = document.createElement('i'); box.textContent = '?'; sl.appendChild(box); row.appendChild(sl); return sl; });
+  p.querySelector('#pic').append(table, row);
+  let at = 0; slots[0].classList.add('now');
+  DIR3_KEYS.forEach(d => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.setAttribute('aria-label', { r: 'みぎ', u: 'うえ', d: 'した' }[d]);
+    b.appendChild(mk(64, 64, x => drawArrow(x, d, 32, 32, 2.3)));
+    b.onclick = () => {
+      if (d !== s.dirs[at]) { lookWrong(p, b, 'うえの ひょうで、おなじ きごうを さがそう', 'ひかっている きごうと おなじ きごうを、ひょうで みつけよう'); return; }
+      tone(700 + at * 90, .1, 0, 'triangle', .1);
+      const box = slots[at].querySelector('i'); box.textContent = ''; box.appendChild(mk(48, 48, x => drawArrow(x, d, 24, 24, 1.7, '#D9478A')));
+      slots[at].classList.remove('now'); slots[at].classList.add('ok'); at++;
+      if (at < slots.length) slots[at].classList.add('now'); else lookRight(p, 'せいかい! みちじゅんが わかった', cb);
+    };
+    p.querySelector('#ch').appendChild(b);
+  });
+}
+function lookSeesaw(cb) {       // シーソー: おもさくらべ(A は B より おもい、B は C より おもい)
+  const s = data.seed, ans = fruitAns(s);
+  const p = lookShell('いちばん ' + (s.q === 'light' ? 'かるい' : 'おもい') + ' くだものは どれ?');
+  const cvs = mk(560, 220, x => { x.fillStyle = '#BDE7AE'; x.fillRect(0, 0, 560, 220); drawSeesaw(x, 148, 130, s.order[0], s.order[1], 1.15); drawSeesaw(x, 412, 130, s.order[1], s.order[2], 1.15); });
+  cvs.className = 'pic'; p.querySelector('#pic').appendChild(cvs);
+  ['apple', 'mikan', 'ichigo'].forEach(f => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice';
+    b.appendChild(mk(104, 104, x => drawFruit(x, f, 52, 54, 4)));
+    const sm = document.createElement('small'); sm.textContent = FRUITS[f].name; b.appendChild(sm);
+    b.onclick = () => f === ans ? lookRight(p, 'せいかい! ' + FRUITS[f].name + 'だね', cb) : lookWrong(p, b, 'シーソーは、さがっている ほうが おもいよ', '2つの シーソーを くらべよう。まんなかの くだものは、どちらにも のっているよ');
+    p.querySelector('#ch').appendChild(b);
+  });
+}
 function lookClock(cb) {        // とけい: なんじ
   const h = data.seed.h, p = lookShell('とけいは なんじ?');
   const paint = hint => { const cvs = mk(300, 300, x => drawClock(x, 150, 150, 132, h, hint)); cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs); };
@@ -599,12 +761,13 @@ function lookClock(cb) {        // とけい: なんじ
 }
 function drawCandidates(c, t) {
   if (!curSteps() || foundFx) return;
-  const k = keysGot(), one = stageNo === 1;
-  const list = one ? (k === 1 && guide >= 1 ? BIGF : k === 2 ? HUTS : null) : (k === 1 && guide >= 1 ? BOXES : null); if (!list) return;
-  const up = one ? (k === 1 ? 34 : 14) : 4;
+  const k = keysGot(), on = guide >= 1;
+  // えらぶ もの: 1話=うえきばちの はな・こや / 2話=ばんごうの はこ / 3話=ベンチ・バスケット
+  const list = { 1: [null, on ? BIGF : null, HUTS], 2: [null, on ? BOXES : null, null], 3: [on ? BENCHES : null, null, on ? BASKETS : null] }[stageNo][k]; if (!list) return;
+  const up = stageNo === 1 ? (k === 1 ? 34 : 14) : stageNo === 2 ? 4 : 8, ring = stageNo === 2 ? 20 : 34;
   list.forEach(([px, py], i) => {
     const x = px * T + 20, top = py * T - up + Math.sin(t * 4 + i * 1.3) * 3;
-    ci(c, x, py * T + (one ? 34 : 20), 17 + Math.sin(t * 4 + i * 1.3) * 2, null, 'rgba(255,200,61,.9)', 3);
+    ci(c, x, py * T + ring, 17 + Math.sin(t * 4 + i * 1.3) * 2, null, 'rgba(255,200,61,.9)', 3);
     poly(c, [[x - 8, top - 10], [x + 8, top - 10], [x, top]], '#FFC83D', '#FFFFFF', 2);
   });
 }
@@ -682,7 +845,15 @@ function startStep(nx, ny) {
 function update(dt) {
   if (m.p < 1) {
     m.p = Math.min(1, m.p + dt * 5.5);
-    if (m.p >= 1) { m.fresh = true; if (!path.length) dest = null; }
+    if (m.p >= 1) {
+      m.fresh = true; if (!path.length) dest = null;
+      if (stageNo === 3) {   // ひろば: スタートに たつと かぞえなおし。1ますずつ つづけて あるいた ぶんだけ おぼえる
+        const l = trail[trail.length - 1];
+        if (m.x === MAT3.x && m.y === MAT3.y) trail = [[m.x, m.y]];
+        else if (l && onPlaza(m.x, m.y) && Math.abs(l[0] - m.x) + Math.abs(l[1] - m.y) === 1) trail.push([m.x, m.y]);
+        else trail = [];
+      }
+    }
     return;
   }
   if (busy) return;
@@ -694,6 +865,7 @@ function halt() { path = []; held = null; dest = null; document.querySelectorAll
 /* ---------- さがす(1話) ---------- */
 const MISS_HINT = {
   1: ['ピンクの スタートから、いしを 1、2、3と かぞえよう。ばんごうを つけたよ', 'かだんの はなの ならびを みて、つぎの いろを かんがえよう', 'やねの いろと、いりぐちの かたちを りょうほう みてみよう'],
+  3: ['かだんの はなを かぞえて、おなじ ばんごうの ベンチを さがそう', 'ピンクの スタートから、やじるしを 1つずつ たどろう', 'シーソーで さがっている ほうが おもいよ。カードの くだものを さがそう'],
   2: ['こくばんに ちかい ほうが「まえ」だよ。つくえに ばんごうを つけたよ', 'みじかい はりが さす すうじを みよう。ながい はりは 12だよ', 'うえの かべに ならんでいる ロッカーの まえで さがそう'],
 };
 function search() {
@@ -706,7 +878,7 @@ function search() {
   // となりに ある ものを さがす ときは、そちらを むく(めあての ものが となりなら、それを えらぶ)
   const list = searchables().filter(p => dist(p[0], p[1]) === 1);
   // いま さがしている しゅるいの ものを ゆうせんする(こやを さがしている ときは、となりの はなより こや)
-  const kind = stageNo === 1 ? (step === 1 ? BIGF : step === 2 ? HUTS : []) : (step === 0 ? DESKS : step === 1 ? BOXES : LOCKER_TILES);
+  const kind = { 1: [[], BIGF, HUTS], 2: [DESKS, BOXES, LOCKER_TILES], 3: [BENCHES, [], BASKETS] }[stageNo][step];
   // 2つの ものの あいだに たっている ときは、ミミが むいている ほうの ものを しらべる
   const fd = DIRS[m.dir] || [0, 1], faced = p => p[0] === m.x + fd[0] && p[1] === m.y + fd[1];
   const near = list.find(p => p[0] === tg.x && p[1] === tg.y) || list.find(p => kind.includes(p) && faced(p)) || list.find(p => kind.includes(p)) || list[0];
@@ -760,6 +932,7 @@ function foundPlace(step) {
 /* てがみの なぞ: え(canvas)と ぶん(html) */
 function riddleParts(i, mark) {
   const s = data.seed;
+  if (stageNo === 3) return riddleParts3(i, s);
   if (stageNo === 2) return riddleParts2(i, s, mark);
   if (i === 0) return {
     html: 'いけの <b class="hl">あひる</b>が、すすむ かずを しっているよ。<br>ピンクの <b class="hl">スタート</b>から、その かずだけ いしを すすもう!',
@@ -784,6 +957,38 @@ function riddleParts(i, mark) {
       if (s.d === 'round') { x.beginPath(); x.arc(391, 58, 22, PI, 0); x.lineTo(413, 88); x.lineTo(369, 88); x.closePath(); x.fillStyle = '#6B4A3A'; x.fill(); } else rr(x, 369, 40, 44, 48, 2, '#6B4A3A');
       num(x, 'いりぐち', 391, 108, 19, '#3A2D58');
     }) };
+}
+function riddleParts3(i, s) {
+  if (i === 0) return {
+    html: '<b class="hl">かだん</b>の はなが、ベンチの ばんごうを しっているよ。<br>あかと きいろを あわせた かずの <b class="hl">ベンチ</b>を さがそう!',
+    canvas: mk(520, 130, x => {
+      drawFlower(x, 90, 62, COLORS.red.hex, 3.4); num(x, '+', 168, 62, 44, '#3A2D58'); drawFlower(x, 246, 62, COLORS.yellow.hex, 3.4);
+      ln(x, 310, 62, 350, 62, '#B3A8D3', 5); poly(x, [[364, 62], [348, 51], [348, 73]], '#B3A8D3');
+      rr(x, 392, 52, 100, 18, 6, '#E8B07E', '#C98A5E', 3); rr(x, 392, 30, 100, 16, 6, '#D89B6A', '#C98A5E', 3); rr(x, 400, 70, 8, 22, 2, '#8C6A55'); rr(x, 476, 70, 8, 22, 2, '#8C6A55');
+      ci(x, 442, 38, 17, '#FFFFFF', '#3A2D58', 3); num(x, '?', 442, 40, 22, '#D9478A');
+    }) };
+  if (i === 1) return {
+    html: '<b class="hl">かんばん</b>に、あんごうの ひみつが かいてあるよ。<br>あんごうを といて、ひろばの <b class="hl">スタート</b>から すすもう!',
+    canvas: mk(520, 130, x => {
+      s.dirs.forEach((d, j) => drawSym(x, s.sym[DIR3_KEYS.indexOf(d)], 70 + j * 62, 62, 20));
+      ln(x, 70 + s.dirs.length * 62, 62, 100 + s.dirs.length * 62, 62, '#B3A8D3', 5); poly(x, [[114 + s.dirs.length * 62, 62], [98 + s.dirs.length * 62, 51], [98 + s.dirs.length * 62, 73]], '#B3A8D3');
+      num(x, '?', 420, 64, 54, '#D9478A');
+    }) };
+  return {
+    html: '<b class="hl">シーソー</b>が、くだものの おもさを しっているよ。<br>いちばん <b class="hl">' + (s.q === 'light' ? 'かるい' : 'おもい') + '</b> くだものの <b class="hl">バスケット</b>を さがそう!',
+    canvas: mk(520, 130, x => {
+      drawSeesaw(x, 150, 78, null, null, .8);
+      ['apple', 'mikan', 'ichigo'].forEach((f, j) => drawFruit(x, f, 320 + j * 62, 62, 2.6));
+    }) };
+}
+function drawSeesaw(c, cx, cy, heavy, light, s = 1) {   // ひだりが さがっている(おもい)。くだものを のせない ときは null
+  c.save(); c.translate(cx, cy); c.scale(s, s);
+  poly(c, [[0, -6], [20, 30], [-20, 30]], '#8C6A55', '#3A2D58', 2);
+  c.save(); c.rotate(-.24);
+  rr(c, -104, -12, 208, 12, 6, '#FF9DB5', '#3A2D58', 2.5); rr(c, -100, -30, 8, 20, 3, '#7FB6F0', '#3A2D58', 2); rr(c, 92, -30, 8, 20, 3, '#7FB6F0', '#3A2D58', 2);
+  if (heavy) drawFruit(c, heavy, -70, -38, 3.2);
+  if (light) drawFruit(c, light, 70, -38, 3.2);
+  c.restore(); c.restore();
 }
 function riddleParts2(i, s, mark) {
   if (i === 0) return {
@@ -970,32 +1175,92 @@ function drawFoundFx(c, fx) {
     c.restore();
   }
 }
+/* 3話の マップ: こうえん */
+function drawGround3(c) {
+  for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) {
+    const x = q * T, y = r * T;
+    if (onPlaza(q, r)) {   // ひろば: 1ますずつ わかれた いしだたみ
+      c.fillStyle = '#C9BFE0'; c.fillRect(x, y, T, T); rr(c, x + 2, y + 2, T - 4, T - 4, 6, (q + r) % 2 ? '#EFEAF7' : '#E4DDF0');
+      if (q === MAT3.x && r === MAT3.y) drawMat(c, x, y);
+      continue;
+    }
+    c.fillStyle = (q + r) % 2 ? '#B3E0A3' : '#BDE7AE'; c.fillRect(x, y, T, T);
+    if (hash(q, r) > .62) { const tx = x + 8 + hash(r, q) * 22, ty = y + 10 + hash(q + 3, r) * 22; ln(c, tx, ty, tx - 3, ty - 6, '#93CC86', 2); ln(c, tx, ty, tx + 3, ty - 6, '#93CC86', 2); }
+  }
+}
+function flats3(c, t) {
+  drawPond(c, 3 * T, 3.75 * T, 4 * T, 2.5 * T);
+  drawDuck(c, 4.4 * T, 4.8 * T + Math.sin(t * 2) * 1.5); drawDuck(c, 5.7 * T, 5.3 * T + Math.sin(t * 2 + 2) * 1.5, '#FFE38A');
+  rr(c, T + 2, T + 6, 5 * T - 4, T - 8, 10, '#C99B77', '#B4835F', 2);   // かだん
+  if (searchFx) { const k = searchFx.t / .55, fx = searchFx.x * T + 20, fy = searchFx.y * T + 20; ci(c, fx, fy, 10 + k * 22, null, 'rgba(255,255,255,' + (1 - k) + ')', 4); ci(c, fx, fy, 6 + k * 14, null, 'rgba(255,200,61,' + (1 - k) + ')', 3); }
+}
+function items3(c, t, items) {
+  const s = data.seed;
+  items.push({ y: 1, f: () => drawTree(c, 0, 0) }, { y: 1, f: () => drawTree(c, 6, 0, true) }, { y: 10, f: () => drawTree(c, 0, 9) });
+  items.push({ y: 2, f: () => { for (let i = 0; i < s.n; i++) drawFlower(c, T + 16 + i * ((5 * T - 32) / (s.n - 1)), T + 20, COLORS[i < s.a ? 'red' : 'yellow'].hex); } });
+  if (data.s1 || (keysGot() === 0 && looked[0])) items.push({ y: 2.1, f: () => {   // かだんの たてふだ: かぞえた かず
+    const x = 6 * T + 12, b = T + 40; rr(c, x - 2, b - 16, 4, 16, 1, '#A9744F'); rr(c, x - 13, b - 38, 26, 24, 5, '#FFF8E1', '#3A2D58', 2); num(c, s.n, x, b - 25, 15, '#D9478A');
+  } });
+  items.push({ y: 2, f: () => {   // かんばん(あんごうの ひょう)
+    const x = 8 * T, y = T; rr(c, x + 17, y + 20, 6, 18, 2, '#A9744F'); rr(c, x + 3, y - 4, 34, 28, 5, '#FFF8E1', '#3A2D58', 2.5);
+    [0, 1, 2].forEach(i => drawSym(c, i, x + 10 + i * 10, y + 10, 4));
+  } });
+  items.push({ y: 6, f: () => {   // シーソー
+    const x = 9 * T, y = 5 * T + 18; poly(c, [[x, y - 4], [x + 9, y + 18], [x - 9, y + 18]], '#8C6A55', '#3A2D58', 1.5);
+    c.save(); c.translate(x, y - 4); c.rotate(-.2 + Math.sin(t * 1.4) * .05); rr(c, -36, -4, 72, 7, 3.5, '#FF9DB5', '#3A2D58', 1.8); rr(c, -34, -13, 4, 10, 2, '#7FB6F0'); rr(c, 30, -13, 4, 10, 2, '#7FB6F0'); c.restore();
+  } });
+  BENCHES.forEach(([bx, by], i) => items.push({ y: by + .9, f: () => {   // ばんごうの ベンチ
+    const x = bx * T, y = by * T; rr(c, x + 5, y + 26, 4, 11, 1, '#8C6A55'); rr(c, x + 31, y + 26, 4, 11, 1, '#8C6A55');
+    rr(c, x + 2, y + 8, 36, 10, 3, '#D89B6A', '#B4835F', 1.5); rr(c, x + 2, y + 19, 36, 9, 3, '#E8B07E', '#B4835F', 1.5);
+    ci(c, x + 20, y + 13, 9.5, '#FFFFFF', '#3A2D58', 2); num(c, s.bn[i], x + 20, y + 14, 12, '#3A2D58');
+  } }));
+  BASKETS.forEach(([bx, by], i) => items.push({ y: by + .9, f: () => {   // くだものの バスケット
+    const x = bx * T, y = by * T; el(c, x + 20, y + 36, 15, 3.5, 'rgba(40,20,70,.15)');
+    c.beginPath(); c.arc(x + 20, y + 20, 13, PI, 0); c.strokeStyle = '#B4835F'; c.lineWidth = 3; c.stroke();
+    poly(c, [[x + 4, y + 20], [x + 36, y + 20], [x + 32, y + 37], [x + 8, y + 37]], '#E8B07E', '#B4835F', 2); ln(c, x + 7, y + 28, x + 33, y + 28, '#C98A5E', 2);
+    drawFruit(c, s.bk[i], x + 20, y + 15, 1.15);
+  } }));
+  items.push({ y: 1, f: () => {   // ブランコ
+    const x = 11 * T, y = 0; ln(c, x + 4, y + 38, x + 12, y + 4, '#FF8A7A', 4); ln(c, x + 76, y + 38, x + 68, y + 4, '#FF8A7A', 4); ln(c, x + 10, y + 4, x + 70, y + 4, '#FF8A7A', 4);
+    for (const sx of [28, 52]) { ln(c, x + sx - 6, y + 4, x + sx - 6, y + 26, '#9C8FB8', 1.5); ln(c, x + sx + 6, y + 4, x + sx + 6, y + 26, '#9C8FB8', 1.5); rr(c, x + sx - 9, y + 26, 18, 5, 2, '#FFD25E'); }
+  } });
+  items.push({ y: 2, f: () => {   // すべりだい
+    const x = 14 * T, y = 0; ln(c, x + 10, y + 12, x + 10, y + 72, '#7FB6F0', 4); ln(c, x + 26, y + 12, x + 26, y + 72, '#7FB6F0', 4);
+    for (let i = 0; i < 5; i++) ln(c, x + 10, y + 24 + i * 11, x + 26, y + 24 + i * 11, '#7FB6F0', 3);
+    rr(c, x + 4, y + 6, 28, 10, 3, '#7FB6F0'); poly(c, [[x + 28, y + 8], [x + 40, y + 8], [x + 78, y + 68], [x + 60, y + 74]], '#FF9DB5');
+  } });
+}
+
 function render(t) {
   const c = ctx, s = cv.width / (COLS * T);
   c.setTransform(s, 0, 0, s, 0, 0);
-  const two = stageNo === 2;
-  if (two) { drawGround2(c); flats2(c, t); } else { drawGround(c); flats1(c, t); }
+  const one = stageNo === 1, two = stageNo === 2, three = stageNo === 3;
+  if (two) { drawGround2(c); flats2(c, t); } else if (three) { drawGround3(c); flats3(c, t); } else { drawGround(c); flats1(c, t); }
   if (dest) ci(c, dest.x * T + 20, dest.y * T + 22, 9 + Math.sin(t * 6) * 2, null, 'rgba(217,71,138,.7)', 3);
 
 
   // たっている もの(うしろから まえへ)
   const items = [];
-  if (two) items2(c, t, items); else items1(c, t, items);
+  if (two) items2(c, t, items); else if (three) items3(c, t, items); else items1(c, t, items);
   if (chest) items.push({ y: chest.y + .9, f: () => { const k = Math.min(1, chest.t * 2.5), sc = k * (1 + .25 * Math.sin(k * PI)); drawChest(c, chest.x * T + 20 - 20 * sc, chest.y * T + 38 - 38 * sc, sc); } });
 
   const e = m.p, mx = m.fx + (m.x - m.fx) * e, my = m.fy + (m.y - m.fy) * e;
   const cx = cat.fx + (cat.x - cat.fx) * e, cy = cat.fy + (cat.y - cat.fy) * e;
   const walking = m.p < 1, bob = foundFx && !calm ? Math.abs(Math.sin(foundFx.t * 8)) * 8 : walking ? Math.abs(Math.sin(e * PI)) * 3 : Math.sin(t * 2.4) * .6 + .6;   // みつけたら とびはねる
   items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 37, 1.6, m.dir, bob) });
-  if (!two && (data.s1 || (keysGot() === 0 && looked[0]))) items.push({ y: 3.2, f: () => {   // いけの たてふだ: かぞえた かず
+  if (one && (data.s1 || (keysGot() === 0 && looked[0]))) items.push({ y: 3.2, f: () => {   // いけの たてふだ: かぞえた かず
     const x = 11 * T + 8, b = 2 * T + 40; rr(c, x - 2, b - 16, 4, 16, 1, '#A9744F'); rr(c, x - 13, b - 38, 26, 24, 5, '#FFF8E1', '#3A2D58', 2); num(c, data.seed.n, x, b - 25, 15, '#D9478A');
   } });
   items.push({ y: cy + .94, f: () => drawCatDir(c, cx * T + 20, cy * T + 37, 1.35, cat.dir, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0, walking ? Math.sin(t * 8) * .5 : Math.sin(t * 1.2) * .4) });
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
-  if (!two) drawFence(c);
+  if (one) drawFence(c);
 
   drawSpotGlow(c, t); drawCandidates(c, t);
-  if (!two && keysGot() === 0 && guide >= 2 && isStone(m.x, m.y) && !foundFx) {   // いしを すすむ ときの かず
+  if (three && keysGot() === 1 && guide >= 2 && trail.length > 1 && !foundFx) {   // ひろばを すすんだ ますの かず。みちじゅんの とおりなら きいろ
+    const rt = routeTiles(data.seed), good = trail.every((p, i) => rt[i] && rt[i][0] === p[0] && rt[i][1] === p[1]), end = good && trail.length === rt.length && m.p >= 1;
+    ci(c, mx * T + 20, my * T - 36, end ? 15 : 13, end ? '#FFC83D' : good ? '#FFF4B8' : '#FFFFFF', '#3A2D58', 2.5); num(c, trail.length - 1, mx * T + 20, my * T - 35, 16, '#3A2D58');
+  }
+  if (one && keysGot() === 0 && guide >= 2 && isStone(m.x, m.y) && !foundFx) {   // いしを すすむ ときの かず
     const n2 = m.x - START_MAT.x, hit = looked[0] && n2 === data.seed.n && m.p >= 1;
     ci(c, mx * T + 20, my * T - 36, hit ? 15 : 13, hit ? '#FFC83D' : '#FFFFFF', '#3A2D58', 2.5); num(c, n2, mx * T + 20, my * T - 35, 16, '#3A2D58');
   }
