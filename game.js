@@ -27,7 +27,7 @@ const STAGE = {
   1: { name: 'おうちと にわ', place: 'にわ', track: 'field', scene: 'garden', start: { x: 4, y: 3 },
        treasure: { id: 'brooch', name: 'おはなの ブローチ', draw: (c, x, y, s) => drawBrooch(c, x, y, s) },
        foundSay: 'こやの なかに カギと たからばこが あった!' },
-  2: { name: 'がっこう', place: 'がっこう', track: 'school', scene: 'school', start: { x: 8, y: 6 },
+  2: { name: 'がっこう', place: 'がっこう', track: 'school', scene: 'school', start: { x: 10, y: 7 },
        treasure: { id: 'musicbox', name: 'ほしの オルゴール', draw: (c, x, y, s) => drawMusicBox(c, x, y, s) },
        foundSay: 'ロッカーの なかに カギと たからばこが あった!' },
 };
@@ -335,7 +335,7 @@ function drawKey(c, x, y, s) {
 }
 
 /* ---------- マップ ---------- */
-const DESK_X = [2, 4, 6], DESK_Y = [4, 6, 8];
+const DESK_X = [1, 4, 7], DESK_Y = [3, 6, 9];   // あいだを 2ます あける: どの ますも、となりの つくえは 1つだけ
 const DESKS = DESK_X.flatMap(x => DESK_Y.map(y => [x, y]));
 const CHAIRS = [{ name: 'ピンク', hex: '#FF9DB5' }, { name: 'あお', hex: '#7FB6F0' }, { name: 'きいろ', hex: '#FFD25E' }];   // れつごとの いすの いろ
 const BOX_X0 = 9;                                    // ばんごうの はこ 1〜6 は (9〜14, 9)
@@ -349,7 +349,7 @@ function buildBlocked() {
   if (stageNo === 2) {
     add(0, 0, 15, 1);                                   // かべ(こくばん・とけい・ロッカー)
     DESKS.forEach(d => add(d[0], d[1], d[0], d[1]));    // つくえ
-    add(0, 9, 1, 9); add(15, 4, 15, 5); add(15, 9, 15, 9);     // ピアノ、たな、うえきばち
+    add(13, 3, 14, 3); add(15, 4, 15, 5); add(15, 9, 15, 9);   // ピアノ、たな、うえきばち
     add(BOX_X0, 9, BOX_X0 + 5, 9);                              // ばんごうの はこ
     return;
   }
@@ -411,8 +411,6 @@ let searchMiss = 0, stepTime = 0, helpSaid = false, searchFx = null, foundFx = n
 let guide = -1, sayTimer = null;
 const stoodAt = (x0, x1, y0, y1) => m.x >= x0 && m.x <= x1 && m.y >= y0 && m.y <= y1;
 const besideBox = (x0, y0, x1, y1) => stoodAt(x0 - 1, x1 + 1, y0 - 1, y1 + 1) && !stoodAt(x0, x1, y0, y1) && !((m.x < x0 || m.x > x1) && (m.y < y0 || m.y > y1));
-// つくえは、いすの がわ(てまえの ます)に たって しらべる。つくえの あいだに たっても どちらか まよわない
-const atChair = () => DESKS.some(p => p[0] === m.x && p[1] === m.y - 1);
 const nextTo = list => list.some(p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1);
 const BOXES = [0, 1, 2, 3, 4, 5].map(i => [BOX_X0 + i, 9]);
 /* look: その ばしょに ついたら ひらく「ちかくで みる」がめん。こたえると つぎの ステップへ すすむ。
@@ -432,7 +430,7 @@ const GUIDE = {
   ],
   2: [
     [ { text: () => 'ひかっている こくばんの けいさんを みに いこう', spot: { rect: [T + 4, 12, 5 * T - 8, 54] }, done: () => stoodAt(1, 5, 2, 2), look: lookBoard },
-      { text: () => '2まいの カードに あう つくえを さがそう。いすの ところに たって「さがす」だよ', near: () => atChair() } ],
+      { text: () => '2まいの カードに あう つくえを さがそう。となりに たって「さがす」だよ', near: () => nextTo(DESKS) } ],
     [ { text: () => 'ひかっている とけいを みに いこう', spot: { el: [8 * T + 20, 36, 22, 22] }, done: () => stoodAt(7, 9, 2, 2), look: lookClock },
       { text: () => 'カードと おなじ ばんごうの はこを さがして、まえに たとう', done: () => nextTo(BOXES) },
       { text: () => 'この はこだと おもったら「さがす」を おそう', near: () => nextTo(BOXES) } ],
@@ -704,11 +702,9 @@ function search() {
   const step = keysGot();
   if (step >= 3) { showChest(); return; }
   const tg = targetOf(step), dist = (x, y) => Math.abs(x - m.x) + Math.abs(y - m.y);
-  const reach = p => DESKS.includes(p) ? (p[0] === m.x && p[1] === m.y - 1) : dist(p[0], p[1]) === 1;   // つくえは てまえからだけ
-  const deskStep = stageNo === 2 && step === 0;
-  const hit = tg.on ? dist(tg.x, tg.y) === 0 : tg.wall ? LOCKER_TILES.some(p => dist(p[0], p[1]) === 1) : deskStep ? (m.x === tg.x && m.y === tg.y + 1) : dist(tg.x, tg.y) === 1;
+  const hit = tg.on ? dist(tg.x, tg.y) === 0 : tg.wall ? LOCKER_TILES.some(p => dist(p[0], p[1]) === 1) : dist(tg.x, tg.y) === 1;
   // となりに ある ものを さがす ときは、そちらを むく(めあての ものが となりなら、それを えらぶ)
-  const list = searchables().filter(reach);
+  const list = searchables().filter(p => dist(p[0], p[1]) === 1);
   // いま さがしている しゅるいの ものを ゆうせんする(こやを さがしている ときは、となりの はなより こや)
   const kind = stageNo === 1 ? (step === 1 ? BIGF : step === 2 ? HUTS : []) : (step === 0 ? DESKS : step === 1 ? BOXES : LOCKER_TILES);
   // 2つの ものの あいだに たっている ときは、ミミが むいている ほうの ものを しらべる
@@ -945,7 +941,7 @@ function items2(c, t, items) {
     const x = (BOX_X0 + i) * T, y = 9 * T;
     rr(c, x + 3, y + 4, 34, 32, 5, BOX_COL[i], '#3A2D58', 2); rr(c, x + 3, y + 4, 34, 9, [5, 5, 0, 0], 'rgba(255,255,255,.45)'); ci(c, x + 20, y + 24, 9.5, '#FFFFFF'); num(c, i + 1, x + 20, y + 25, 13, '#3A2D58');
   } });
-  items.push({ y: 9.9, f: () => { const x = 0, y = 9 * T; rr(c, x + 2, y - 8, 76, 38, 6, '#3F3458'); rr(c, x + 6, y + 16, 68, 12, 2, '#FFFFFF'); for (let i = 1; i < 9; i++) ln(c, x + 6 + i * 7.5, y + 16, x + 6 + i * 7.5, y + 28, '#B3A8D3', 1); for (let i = 0; i < 8; i++) if (i % 7 !== 2 && i % 7 !== 6) rr(c, x + 11 + i * 7.5, y + 16, 4, 7, 1, '#3F3458'); rr(c, x + 28, y + 32, 24, 6, 3, '#FF9DB5'); } });
+  items.push({ y: 3.9, f: () => { const x = 13 * T, y = 3 * T; rr(c, x + 2, y - 8, 76, 38, 6, '#3F3458'); rr(c, x + 6, y + 16, 68, 12, 2, '#FFFFFF'); for (let i = 1; i < 9; i++) ln(c, x + 6 + i * 7.5, y + 16, x + 6 + i * 7.5, y + 28, '#B3A8D3', 1); for (let i = 0; i < 8; i++) if (i % 7 !== 2 && i % 7 !== 6) rr(c, x + 11 + i * 7.5, y + 16, 4, 7, 1, '#3F3458'); rr(c, x + 28, y + 32, 24, 6, 3, '#FF9DB5'); } });
   items.push({ y: 5.9, f: () => { const x = 15 * T, y = 4 * T; rr(c, x + 3, y - 6, 34, 82, 4, '#B98058', '#8C5A3C', 2); const cols = ['#FF8FB3', '#7FB6F0', '#FFD25E', '#8FD6A6', '#B79CED']; for (let r = 0; r < 3; r++) for (let i = 0; i < 4; i++) rr(c, x + 7 + i * 6.6, y - 1 + r * 25, 5.4, 19, 1, cols[(i + r * 2) % 5]); } });
   items.push({ y: 9.9, f: () => { const x = 15 * T, y = 9 * T; ci(c, x + 20, y + 6, 15, '#6CC08B'); ci(c, x + 13, y, 8, '#8FD6A6'); rr(c, x + 9, y + 18, 22, 18, 4, '#E8B07E', '#C98A5E', 2); } });
 }
