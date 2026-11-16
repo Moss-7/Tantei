@@ -511,7 +511,7 @@ const GUIDE = {
     [ { text: () => 'ひかっている とけいを みに いこう', spot: { el: [8 * T + 20, 36, 22, 22] }, done: () => stoodAt(7, 9, 2, 2), look: lookClock },
       { text: () => 'カードと おなじ ばんごうの はこを さがして、まえに たとう', done: () => nextTo(BOXES) },
       { text: () => 'この はこだと おもったら「さがす」を おそう', near: () => nextTo(BOXES) } ],
-    [ { text: () => 'ひかっている ロッカーの まえで「さがす」を おそう', spot: { rect: [10 * T + 2, 6, 5 * T - 4, 70] }, near: () => stoodAt(10, 14, 2, 2) } ],
+    [ { text: () => 'ひかっている ロッカーを みに いこう', spot: { rect: [10 * T + 2, 6, 5 * T - 4, 70] }, done: () => stoodAt(10, 14, 2, 2), look: () => showLockers() } ],   // ついたら ロッカーの がめんが ひらく(ほかの なぞと おなじ うごき)
   ],
   3: [
     [ { text: () => 'ひかっている かだんの はなを かぞえに いこう', spot: { rect: [T + 2, T + 6, 5 * T - 4, T - 8] }, done: () => besideBox(1, 1, 5, 1), look: lookBed3 },
@@ -603,8 +603,9 @@ function guideTick() {
   if (!steps || busy || m.p < 1 || path.length || held) return;
   const last = steps.length - 1, was = guide;
   // 「ちかくで みる」が まだの ステップは とばせない(いけを みる まえに スタートに たっても、いけの ステップの まま)
-  let limit = last - 1;
-  for (let j = guide; j < last; j++) if (steps[j].look && !looked[j]) { limit = j; break; }
+  // さいごの ステップが「ちかくで みる」の とき(ロッカー)は、それも ついたら ひらく
+  let limit = steps[last].look ? last : last - 1;
+  for (let j = guide; j <= limit; j++) if (steps[j].look && !looked[j]) { limit = j; break; }
   for (let j = limit; j >= guide; j--) {
     if (!steps[j].done()) continue;
     if (j === guide && steps[j].look && !looked[j]) {      // ついたら「ちかくで みる」がめんを ひらく
@@ -616,7 +617,7 @@ function guideTick() {
   if (steps[guide].look && !looked[guide] && !steps[guide].done()) lookArmed = true;               // いちど はなれたら、また ひらける
   if (guide === last && was === last && last > 0 && !steps[last - 1].look && !steps[last - 1].done()) guide = last - 1;   // 「さがす」の ばしょから はなれたら、ひとつ もどる
   if (guide !== was) { showStep(); if (guide > was) tone(880, .1, 0, 'sine', .07); }
-  $('btnDig').classList.toggle('pulse', guide === last && steps[last].near());
+  $('btnDig').classList.toggle('pulse', guide === last && !!steps[last].near && steps[last].near());
   const glow = cardGlow();
   document.querySelectorAll('#sayPic .card').forEach(e => { if (e.classList.contains('glow') !== glow) { e.classList.toggle('glow', glow); if (glow) tone(1320, .12, 0, 'sine', .07); } });
 }
