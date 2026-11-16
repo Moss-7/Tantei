@@ -367,3 +367,8 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .cslot.ok i{border-style:solid;border-color:var(--mint)}
 .panel.cipher .choice canvas{width:44px;height:44px}
 @media (max-height:480px){.cpair canvas,.cslot canvas{width:28px;height:28px}.cslot i{width:34px;height:34px}.cslot i canvas{width:26px;height:26px}.ctable{margin-bottom:4px}}
+
+/* ---- 4話: はんにんの てがかり ---- */
+.steps.clues{max-width:420px;margin:0 auto 6px;padding:8px 14px;background:#FFF8E1;border:3px dashed #E2AD5E;border-radius:14px;text-align:left;font-size:clamp(15px,3.8vw,19px);line-height:1.9}
+
+@media (max-width:420px){.choice.wide{min-width:0;padding:4px 5px}.choice.wide canvas{width:76px}}

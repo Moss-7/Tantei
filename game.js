@@ -33,8 +33,11 @@ const STAGE = {
   3: { name: 'こうえん', place: 'こうえん', track: 'park', scene: 'garden', start: { x: 8, y: 7 },
        treasure: { id: 'marble', name: 'にじいろの ビーだま', draw: (c, x, y, s) => drawMarble(c, x, y, s) },
        foundSay: 'バスケットの なかに カギと たからばこが あった!' },
+  4: { name: 'しょうてんがい', place: 'しょうてんがい', track: 'town', scene: 'town', start: { x: 9, y: 6 },
+       treasure: { id: 'tiara', name: 'リボンの ティアラ', draw: (c, x, y, s) => drawTiara(c, x, y, s) },
+       foundSay: 'はんにんが カギと たからばこを かくしていた!' },
 };
-const LAST_STAGE = 3;
+const LAST_STAGE = 4;
 let stageNo = 1;
 const stg = () => STAGE[stageNo];
 const GO_SAY = 'ばしょが わかったら、そこで「さがす」を おそう!';
@@ -84,8 +87,22 @@ function newSeed3() {
 }
 const routeTiles = s => { const out = [[MAT3.x, MAT3.y]]; for (const d of s.dirs) { const l = out[out.length - 1]; out.push([l[0] + DIR3[d][0], l[1] + DIR3[d][1]]); } return out; };
 const fruitAns = s => s.q === 'light' ? s.order[2] : s.order[0];
+// 4話: クッキーの ひきざん(t − d = n)と やたいの ばんめ、かずくらべと みせ(やねの いろ + ばんごう)、てがかり 2つで はんにんさがし
+function newSeed4() {
+  const r = n => Math.floor(Math.random() * n), sh = a => a.slice().sort(() => Math.random() - 0.5);
+  const n = 3 + r(4), d = 2 + r(2);
+  const nums = sh(pick([[12, 9, 15], [8, 13, 11], [14, 17, 10], [16, 7, 18]])), q = pick(['big', 'small']);
+  const want = q === 'big' ? Math.max(...nums) : Math.min(...nums), rest = nums.filter(v => v !== want);
+  const col = pick(['red', 'blue']), other = col === 'red' ? 'blue' : 'red';
+  // みせ 4けん: りょうほう あうのは 1けんだけ(いろだけ あう・ばんごうだけ あう みせも ある)
+  const shops = sh([{ c: col, num: want }, { c: col, num: rest[0] }, { c: other, num: want }, { c: other, num: rest[1] }]);
+  // どうぶつ 3びき: ぼうし と リボン。りょうほうの てがかりに あうのは 1ぴきだけ
+  const hat = r(2) === 1, rib = r(2) === 1, kinds = sh(['rabbit', 'bear', 'cat']);
+  const npc = sh([{ hat, rib, bad: true }, { hat, rib: !rib }, { hat: !hat, rib }]).map((o, i) => Object.assign(o, { kind: kinds[i] }));
+  return { t: n + d, d, n, nums, q, want, col, shops, sAns: shops.findIndex(o => o.c === col && o.num === want), hat, rib, npc, nAns: npc.findIndex(o => o.bad) };
+}
 function newStage(old, no = 1) {
-  return { stage: no, seed: no === 3 ? newSeed3() : no === 2 ? newSeed2() : newSeed(), s1: false, s2: false, letter: false, cleared: false, treasures: old ? old.treasures : [] };
+  return { stage: no, seed: no === 4 ? newSeed4() : no === 3 ? newSeed3() : no === 2 ? newSeed2() : newSeed(), s1: false, s2: false, letter: false, cleared: false, treasures: old ? old.treasures : [] };
 }
 
 /* ---------- おと ---------- */
@@ -160,6 +177,11 @@ const TRACKS = {
     mel: [[74,1],[79,1],[83,1],[79,1], [81,.5],[83,.5],[81,1],[78,2], [76,1],[79,1],[84,1],[79,1], [83,.5],[81,.5],[79,1],[74,2],
           [79,1],[83,1],[86,1],[83,1], [84,.5],[83,.5],[81,1],[79,2], [81,1],[78,1],[74,1],[78,1], [79,2],[0,2]],
     bass: [[43,2],[50,2], [50,2],[57,2], [48,2],[55,2], [43,2],[50,2], [43,2],[50,2], [48,2],[55,2], [50,2],[50,2], [43,2],[43,2]] },
+  // しょうてんがい: にぎやかな ハ長調
+  town: { beat: .3, gate: .8,
+    mel: [[72,.5],[76,.5],[79,1],[76,.5],[79,.5],[84,1], [83,.5],[81,.5],[79,1],[76,2], [77,.5],[81,.5],[84,1],[81,.5],[84,.5],[89,1], [88,.5],[86,.5],[84,1],[79,2],
+          [81,1],[81,.5],[83,.5],[84,1],[81,1], [79,1],[79,.5],[81,.5],[83,1],[79,1], [77,.5],[79,.5],[81,.5],[83,.5],[84,1],[86,1], [84,2],[0,2]],
+    bass: [[48,2],[55,2], [48,2],[55,2], [53,2],[60,2], [48,2],[55,2], [53,2],[53,2], [55,2],[55,2], [53,2],[55,2], [48,2],[48,2]] },
   clear: { beat: .3,
     mel: [[72,.5],[76,.5],[79,.5],[84,1.5],[79,.5],[84,.5], [88,2],[86,1],[84,1],
           [81,.5],[84,.5],[81,.5],[77,1.5],[81,.5],[84,.5], [79,2],[83,1],[86,1]],
@@ -385,6 +407,31 @@ function drawArrow(c, d, x, y, s, col = '#3A2D58') {
 function drawMat(c, x, y) {   // ピンクの スタート
   rr(c, x + 3, y + 5, 34, 32, 8, '#FF9DB5', '#D9478A', 2); poly(c, [[x + 11, y + 17], [x + 20, y + 17], [x + 20, y + 12], [x + 30, y + 21], [x + 20, y + 30], [x + 20, y + 25], [x + 11, y + 25]], '#FFFFFF');
 }
+function drawTiara(c, x, y, s) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  ci(c, 0, 0, 34, 'rgba(255,220,110,.35)');
+  poly(c, [[-24, 12], [-26, -6], [-13, 3], [0, -16], [13, 3], [26, -6], [24, 12]], '#FFD25E', '#B58A1F', 1.8);
+  rr(c, -24, 10, 48, 7, 3, '#FFC83D', '#B58A1F', 1.5);
+  ci(c, 0, -16, 4, '#FF7EB6', '#D9478A', 1); ci(c, -26, -6, 3, '#7FB6F0', '#3A6FB0', 1); ci(c, 26, -6, 3, '#7FB6F0', '#3A6FB0', 1);
+  poly(c, [[0, 2], [-9, -3], [-9, 7]], '#FF7EB6', '#D9478A', 1); poly(c, [[0, 2], [9, -3], [9, 7]], '#FF7EB6', '#D9478A', 1); ci(c, 0, 2, 2.6, '#D9478A');
+  starShape(c, 28, -22, 5, '#FFFFFF'); starShape(c, -28, 18, 4, '#FFFFFF');
+  c.restore();
+}
+// まちの どうぶつ: ぼうしと リボンで みわける。(x, by) は あしもと
+function drawNpc(c, o, x, by, s) {
+  c.save(); c.translate(x, by); c.scale(s, s);
+  el(c, 0, 0, 9, 2.8, 'rgba(40,20,70,.18)');
+  el(c, 0, -8, 8, 8, { rabbit: '#FFFFFF', bear: '#B98058', cat: '#FFE2A8' }[o.kind], 'rgba(58,45,88,.3)', 1);
+  drawAnimal(c, o.kind, 0, -22, 1);
+  if (o.rib) { poly(c, [[0, -12], [-6, -15], [-6, -9]], '#FF5FA2', '#B03A72', .8); poly(c, [[0, -12], [6, -15], [6, -9]], '#FF5FA2', '#B03A72', .8); ci(c, 0, -12, 1.8, '#B03A72'); }
+  if (o.hat) { rr(c, -9, -33, 18, 3.4, 1.5, '#3F3458'); rr(c, -6, -42, 12, 10, 2, '#3F3458'); rr(c, -6, -36, 12, 2.6, 0, '#FFC83D'); }
+  c.restore();
+}
+function drawCookie(c, x, y, r, gone) {
+  ci(c, x, y, r, gone ? 'rgba(214,170,120,.28)' : '#E0A866', gone ? 'rgba(160,110,70,.35)' : '#B4763F', 2);
+  if (!gone) for (const [dx, dy] of [[-.35, -.25], [.3, -.35], [.05, .3], [-.4, .35], [.42, .2]]) ci(c, x + dx * r, y + dy * r, r * .13, '#7A4B2A');
+  else { ln(c, x - r * .6, y - r * .6, x + r * .6, y + r * .6, '#D9478A', 3); ln(c, x + r * .6, y - r * .6, x - r * .6, y + r * .6, '#D9478A', 3); }
+}
 function drawKey(c, x, y, s) {
   c.save(); c.translate(x, y); c.scale(s, s);
   ci(c, 0, 0, 22, 'rgba(255,220,110,.35)');
@@ -406,12 +453,25 @@ const PLAZA = { x0: 10, x1: 14, y0: 2, y1: 6 }, MAT3 = { x: 10, y: 4 };
 const DIR3 = { r: [1, 0], u: [0, -1], d: [0, 1] }, DIR3_KEYS = ['r', 'u', 'd'];
 const FRUITS = { apple: { name: 'りんご' }, mikan: { name: 'みかん' }, ichigo: { name: 'いちご' } };
 const onPlaza = (x, y) => x >= PLAZA.x0 && x <= PLAZA.x1 && y >= PLAZA.y0 && y <= PLAZA.y1;
+/* 4話: しょうてんがい。やたいは うえの ます(まえ)から、みせは まえの れつから、どうぶつは となりから しらべる */
+const STALLS = [1, 3, 5, 7, 9, 11, 13].map(x => [x, 8]);
+const SHOPS4 = [[1, 2], [5, 6], [9, 10], [13, 14]];                                    // みせ 4けん(よこ 2ます)
+const SHOP_TILES = SHOPS4.flatMap((r, i) => [[r[0], 1, i], [r[1], 1, i]]);
+const SHOP_MARK = SHOPS4.map(r => [(r[0] + r[1]) / 2, 1]);
+const NPCS = [[2, 6], [6, 6], [14, 6]];
+const ANIMAL_NAME = { rabbit: 'うさぎ', bear: 'くま', cat: 'ねこ' };
 const LOCKER_TILES = [10, 11, 12, 13, 14].map(x => [x, 1]);   // かべの ロッカー。まえの れつ(y=2)から さがす
 const blockedSet = new Set();
 const bk = (x, y) => x + ',' + y;
 function buildBlocked() {
   blockedSet.clear();
   const add = (x0, y0, x1, y1) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) blockedSet.add(bk(x, y)); };
+  if (stageNo === 4) {
+    add(0, 0, 15, 1); add(0, 8, 13, 9);                       // みせの かべ、やたいの れつ
+    add(3, 4, 4, 4); add(7, 4, 8, 4); add(11, 4, 12, 4);      // クッキーの ワゴン、くだものの かご、ケーキの テーブル
+    NPCS.forEach(p => add(p[0], p[1], p[0], p[1]));
+    return;
+  }
   if (stageNo === 3) {
     add(1, 1, 5, 1); add(8, 1, 8, 1); add(3, 4, 6, 5); add(8, 5, 9, 5);        // かだん、かんばん、いけ、シーソー
     add(11, 0, 12, 0); add(14, 0, 15, 1);                                          // ブランコ、すべりだい
@@ -466,6 +526,11 @@ let m, cat, path = [], held = null, dest = null, holes = [], chest = null, digMi
 // いま さがす ばしょ。on: その ますの うえで さがす / それいがいは となりの ますから さがす
 function targetOf(step) {
   const s = data.seed;
+  if (stageNo === 4) {
+    if (step === 0) return { x: 2 * s.n - 1, y: 8 };                                                   // ひだりから n ばんめの やたい
+    if (step === 1) { const r = SHOPS4[s.sAns]; return { x: r[0], y: 1, tiles: [[r[0], 1], [r[1], 1]] }; }   // みせは まえの れつ(2ます)から
+    return { x: NPCS[s.nAns][0], y: NPCS[s.nAns][1] };
+  }
   if (stageNo === 3) {
     if (step === 0) { const p = BENCHES[s.bn.indexOf(s.n)]; return { x: p[0], y: p[1] }; }
     if (step === 1) { const p = routeTiles(s).pop(); return { x: p[0], y: p[1], on: true }; }
@@ -476,7 +541,7 @@ function targetOf(step) {
     : step === 1 ? { x: BIGF[s.lanes.indexOf(s.c)][0], y: BIGF[s.lanes.indexOf(s.c)][1] } : { x: HUTS[s.ans][0], y: HUTS[s.ans][1] };
 }
 // さがせる もの(となりに たつと、ミミが そちらを むく)
-const searchables = () => stageNo === 3 ? [...BENCHES, ...BASKETS] : stageNo === 2 ? [...DESKS, ...BOXES, ...LOCKER_TILES] : [...BIGF, ...HUTS];
+const searchables = () => stageNo === 4 ? [...STALLS, ...SHOP_TILES, ...NPCS] : stageNo === 3 ? [...BENCHES, ...BASKETS] : stageNo === 2 ? [...DESKS, ...BOXES, ...LOCKER_TILES] : [...BIGF, ...HUTS];
 // たすけを だす めやす。すぐには たすけず、じぶんで かんがえる じかんを とる
 const HINT_AT = 3;     // この かいすう まちがえたら、シロの ヒントと ばんごうを だす
 const STAR_AT = 8;     // この かいすう まちがえたら、ただしい ばしょに ほしを だす
@@ -526,11 +591,29 @@ const GUIDE = {
       { text: () => 'バスケットが 3つ あるよ。カードと おなじ くだものの となりに たとう', done: () => nextTo(BASKETS) },
       { text: () => 'この バスケットだと おもったら「さがす」を おそう', near: () => nextTo(BASKETS) } ],
   ],
+  4: [
+    [ { text: () => 'ひかっている クッキーの ワゴンを みに いこう', spot: { rect: [3 * T + 2, 4 * T + 2, 2 * T - 4, T - 4] }, done: () => besideBox(3, 4, 4, 4), look: lookCookies },
+      { text: () => 'やたいを ひだりから かぞえて、カードの ばんめの まえに たとう', done: () => nextTo(STALLS) },
+      { text: () => 'この やたいだと おもったら「さがす」を おそう', near: () => nextTo(STALLS) } ],
+    [ { text: () => 'ひかっている くだものの かごを みに いこう', spot: { rect: [7 * T + 2, 4 * T + 2, 2 * T - 4, T - 4] }, done: () => besideBox(7, 4, 8, 4), look: lookCrates },
+      { text: () => '2まいの カードに あう みせを さがそう。みせの まえで「さがす」だよ', near: () => nextTo(SHOP_TILES) } ],
+    [ { text: () => 'ひかっている ケーキの テーブルを みに いこう', spot: { rect: [11 * T + 2, 4 * T + 2, 2 * T - 4, T - 4] }, done: () => besideBox(11, 4, 12, 4), look: lookCake },
+      { text: () => 'どうぶつが 3びき いるよ。カードの どうぶつの となりに たとう', done: () => nextTo(NPCS) },
+      { text: () => 'この どうぶつだと おもったら「さがす」を おそう', near: () => nextTo(NPCS) } ],
+  ],
 };
 /* てがかりカード: なぞを といた こたえ。ふきだしの したの だんに ならび、つかう ばめんで ひかる */
 function cardList() {
   if (!data || data.cleared) return [];
   const k = keysGot(), s = data.seed;
+  if (stageNo === 4) {
+    const big = (t, col) => x => { ci(x, 32, 32, 28, col); num(x, t, 32, 34, String(t).length > 1 ? 27 : 34, '#3A2D58'); };
+    if (k === 0) return looked[0] ? [{ id: 'n', label: 'ばんめ', draw: big(s.n, '#FFE38A') }] : [];
+    if (k === 1) return [{ id: 'col', label: ROOFS[s.col].name, draw: x => { rr(x, 8, 26, 48, 30, 4, '#FFF8EA', '#E8D5B5', 2); for (let i = 0; i < 4; i++) { x.beginPath(); x.roundRect(6 + i * 13, 10, 13, 20, [0, 0, 6, 6]); x.fillStyle = i % 2 ? '#FFFFFF' : ROOFS[s.col].hex; x.fill(); } } }]
+      .concat(looked[0] ? [{ id: 'num', label: 'ばん', draw: big(s.want, '#B4E8DC') }] : []);
+    if (k === 2) return looked[0] ? [{ id: 'who', label: ANIMAL_NAME[s.npc[s.nAns].kind], draw: x => drawNpc(x, s.npc[s.nAns], 32, 60, 1.35) }] : [];
+    return [];
+  }
   if (stageNo === 3) {
     if (!looked[0]) return [];
     if (k === 0) return [{ id: 'n', label: 'ばん', draw: x => { ci(x, 32, 32, 28, '#FFE38A'); num(x, s.n, 32, 34, 34, '#3A2D58'); } }];
@@ -559,6 +642,10 @@ function cardList() {
 function cardGlow() {
   if (!looked[0] || m.p < 1 || path.length || held) return false;
   const k = keysGot(), s = data.seed;
+  if (stageNo === 4) {
+    if (k === 0) return m.x === 2 * s.n - 1 && m.y === 7;                                                              // ひだりから n ばんめの やたいの まえ
+    return k === 2 && Math.abs(NPCS[s.nAns][0] - m.x) + Math.abs(NPCS[s.nAns][1] - m.y) === 1;                        // カードの どうぶつの となり
+  }
   if (stageNo === 3) {
     const beside = p => Math.abs(p[0] - m.x) + Math.abs(p[1] - m.y) === 1;
     if (k === 0) return beside(BENCHES[s.bn.indexOf(s.n)]);                                     // おなじ ばんごうの ベンチ
@@ -692,6 +779,56 @@ function lookBoard(cb) {        // こくばん: けいさんの こたえが「
     p.querySelector('#ch').appendChild(b);
   }
 }
+function lookCookies(cb) {      // クッキーの ワゴン: ひきざん
+  const s = data.seed, p = lookShell('クッキーが ' + s.t + 'まい。' + s.d + 'まい うれたよ。のこりは なんまい?');
+  const paint = hint => {
+    const cvs = mk(560, 240, x => {
+      rr(x, 10, 10, 540, 220, 20, '#FFF8E1', '#E2AD5E', 4);
+      const per = Math.ceil(s.t / 2);
+      for (let i = 0; i < s.t; i++) {
+        const cx = 280 + (i % per - (per - 1) / 2) * 96, cy = 74 + Math.floor(i / per) * 96, gone = i >= s.n;   // うれた ぶんは ばつ
+        drawCookie(x, cx, cy, 34, gone);
+        if (hint && !gone) { ci(x, cx + 26, cy - 26, 15, '#FFC83D', '#FFFFFF', 3); num(x, i + 1, cx + 26, cy - 25, 17, '#3A2D58'); }
+      }
+    });
+    cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs);
+  };
+  paint(false);
+  for (let v = 2; v <= 7; v++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.textContent = v;
+    b.onclick = () => v === s.n ? lookRight(p, 'せいかい! のこりは ' + s.n + 'まい', cb) : lookWrong(p, b, 'ばつの ついていない クッキーを かぞえよう', 'ばんごうを つけたよ。いちばん おおきい かずを みよう', () => paint(true));
+    p.querySelector('#ch').appendChild(b);
+  }
+}
+function lookCrates(cb) {       // くだものの かご: かずの おおきさくらべ
+  const s = data.seed, big = s.q === 'big', p = lookShell('いちばん ' + (big ? 'おおきい' : 'ちいさい') + ' かずは どれ?');
+  const cvs = mk(560, 210, x => {
+    x.fillStyle = '#EAE4F3'; x.fillRect(0, 0, 560, 210);
+    s.nums.forEach((v, j) => { const cx = 100 + j * 180;
+      poly(x, [[cx - 64, 96], [cx + 64, 96], [cx + 52, 186], [cx - 52, 186]], '#E8B07E', '#B4835F', 4);
+      ['apple', 'mikan', 'ichigo'].forEach((f, q2) => drawFruit(x, [['apple', 'mikan', 'ichigo'][(j + q2) % 3]][0], cx - 40 + q2 * 40, 86, 2.6));
+      ci(x, cx, 142, 34, '#FFFFFF', '#3A2D58', 4); num(x, v, cx, 145, 36, '#D9478A'); });
+  });
+  cvs.className = 'pic'; p.querySelector('#pic').appendChild(cvs);
+  s.nums.forEach(v => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.textContent = v;
+    b.onclick = () => v === s.want ? lookRight(p, 'せいかい! ' + s.want + 'ばんだね', cb) : lookWrong(p, b, '3つの かずを くらべよう', '10より おおきいか ちいさいかを みよう。かぞえて あとに でる かずが おおきいよ');
+    p.querySelector('#ch').appendChild(b);
+  });
+}
+function lookCake(cb) {         // ケーキの テーブル: 2つの てがかりで はんにんを しぼる
+  const s = data.seed, p = lookShell('ケーキを たべたのは だれ?');
+  const clue = document.createElement('ol'); clue.className = 'steps clues';
+  clue.innerHTML = '<li>はんにんは <b class="hl">ぼうし</b>を ' + (s.hat ? 'かぶっている' : 'かぶっていない') + '</li><li>はんにんは <b class="hl">リボン</b>を ' + (s.rib ? 'つけている' : 'つけていない') + '</li>';
+  p.querySelector('#pic').appendChild(clue);
+  s.npc.forEach((o, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice wide';
+    b.appendChild(mk(130, 150, x => drawNpc(x, o, 65, 140, 2.9)));
+    const sm = document.createElement('small'); sm.textContent = ANIMAL_NAME[o.kind]; b.appendChild(sm);
+    b.onclick = () => i === s.nAns ? lookRight(p, 'せいかい! はんにんは ' + ANIMAL_NAME[o.kind], cb) : lookWrong(p, b, 'てがかりを 1つずつ たしかめよう', 'てがかりに あわない どうぶつを、1ぴきずつ はずして いこう');
+    p.querySelector('#ch').appendChild(b);
+  });
+}
 function lookBed3(cb) {         // かだん: あかい はな + きいろい はな
   const s = data.seed, p = lookShell('あかい はなと きいろい はな、あわせて なんぼん?');
   const paint = hint => {
@@ -764,8 +901,8 @@ function drawCandidates(c, t) {
   if (!curSteps() || foundFx) return;
   const k = keysGot(), on = guide >= 1;
   // えらぶ もの: 1話=うえきばちの はな・こや / 2話=ばんごうの はこ / 3話=ベンチ・バスケット
-  const list = { 1: [null, on ? BIGF : null, HUTS], 2: [null, on ? BOXES : null, null], 3: [on ? BENCHES : null, null, on ? BASKETS : null] }[stageNo][k]; if (!list) return;
-  const up = stageNo === 1 ? (k === 1 ? 34 : 14) : stageNo === 2 ? 4 : 8, ring = stageNo === 2 ? 20 : 34;
+  const list = { 1: [null, on ? BIGF : null, HUTS], 2: [null, on ? BOXES : null, null], 3: [on ? BENCHES : null, null, on ? BASKETS : null], 4: [on ? STALLS : null, on ? SHOP_MARK : null, on ? NPCS : null] }[stageNo][k]; if (!list) return;
+  const up = stageNo === 1 ? (k === 1 ? 34 : 14) : stageNo === 2 ? 4 : stageNo === 4 ? (k === 1 ? -8 : k === 2 ? 26 : 4) : 8, ring = stageNo === 2 ? 20 : stageNo === 4 && k === 0 ? 14 : 34;
   list.forEach(([px, py], i) => {
     const x = px * T + 20, top = py * T - up + Math.sin(t * 4 + i * 1.3) * 3;
     ci(c, x, py * T + ring, 17 + Math.sin(t * 4 + i * 1.3) * 2, null, 'rgba(255,200,61,.9)', 3);
@@ -866,6 +1003,7 @@ function halt() { path = []; held = null; dest = null; document.querySelectorAll
 /* ---------- さがす(1話) ---------- */
 const MISS_HINT = {
   1: ['ピンクの スタートから、いしを 1、2、3と かぞえよう。ばんごうを つけたよ', 'かだんの はなの ならびを みて、つぎの いろを かんがえよう', 'やねの いろと、いりぐちの かたちを りょうほう みてみよう'],
+  4: ['いちばん ひだりの やたいから、1、2、3と かぞえよう', 'みせの やねの いろと、かんばんの ばんごうを みよう', 'ぼうしと リボンを みて、カードの どうぶつを さがそう'],
   3: ['かだんの はなを かぞえて、おなじ ばんごうの ベンチを さがそう', 'ピンクの スタートから、やじるしを 1つずつ たどろう', 'シーソーで さがっている ほうが おもいよ。カードの くだものを さがそう'],
   2: ['こくばんに ちかい ほうが「まえ」だよ。つくえに ばんごうを つけたよ', 'みじかい はりが さす すうじを みよう。ながい はりは 12だよ', 'うえの かべに ならんでいる ロッカーの まえで さがそう'],
 };
@@ -875,14 +1013,15 @@ function search() {
   const step = keysGot();
   if (step >= 3) { showChest(); return; }
   const tg = targetOf(step), dist = (x, y) => Math.abs(x - m.x) + Math.abs(y - m.y);
-  const hit = tg.on ? dist(tg.x, tg.y) === 0 : tg.wall ? LOCKER_TILES.some(p => dist(p[0], p[1]) === 1) : dist(tg.x, tg.y) === 1;
+  const isTg = p => tg.tiles ? tg.tiles.some(q => q[0] === p[0] && q[1] === p[1]) : (p[0] === tg.x && p[1] === tg.y);
+  const hit = tg.on ? dist(tg.x, tg.y) === 0 : tg.wall ? LOCKER_TILES.some(p => dist(p[0], p[1]) === 1) : tg.tiles ? tg.tiles.some(p => dist(p[0], p[1]) === 1) : dist(tg.x, tg.y) === 1;
   // となりに ある ものを さがす ときは、そちらを むく(めあての ものが となりなら、それを えらぶ)
   const list = searchables().filter(p => dist(p[0], p[1]) === 1);
   // いま さがしている しゅるいの ものを ゆうせんする(こやを さがしている ときは、となりの はなより こや)
-  const kind = { 1: [[], BIGF, HUTS], 2: [DESKS, BOXES, LOCKER_TILES], 3: [BENCHES, [], BASKETS] }[stageNo][step];
+  const kind = { 1: [[], BIGF, HUTS], 2: [DESKS, BOXES, LOCKER_TILES], 3: [BENCHES, [], BASKETS], 4: [STALLS, SHOP_TILES, NPCS] }[stageNo][step];
   // 2つの ものの あいだに たっている ときは、ミミが むいている ほうの ものを しらべる
   const fd = DIRS[m.dir] || [0, 1], faced = p => p[0] === m.x + fd[0] && p[1] === m.y + fd[1];
-  const near = list.find(p => p[0] === tg.x && p[1] === tg.y) || list.find(p => kind.includes(p) && faced(p)) || list.find(p => kind.includes(p)) || list[0];
+  const near = list.find(isTg) || list.find(p => kind.includes(p) && faced(p)) || list.find(p => kind.includes(p)) || list[0];
   if (near) m.dir = near[0] > m.x ? 'right' : near[0] < m.x ? 'left' : near[1] > m.y ? 'down' : 'up'; else m.dir = 'down';
   searchFx = { x: near ? near[0] : m.x, y: near ? near[1] : m.y, t: 0 };
   tone(740, .07, 0, 'triangle', .1); tone(1100, .1, .07, 'triangle', .08);
@@ -893,6 +1032,7 @@ function search() {
   const isAt = list2 => near && list2.some(p => p[0] === near[0] && p[1] === near[1]);
   let pair = null;
   if (stageNo === 1 && step === 2 && isAt(HUTS)) { const s = data.seed, h = s.huts[HUTS.findIndex(p => p[0] === near[0] && p[1] === near[1])]; pair = ['r', h[0] === s.r, 'やね', 'd', h[1] === s.d, 'いりぐち', 'こや']; }
+  if (stageNo === 4 && step === 1 && isAt(SHOP_TILES)) { const s = data.seed, sh2 = s.shops[near[2]]; pair = ['col', sh2.c === s.col, 'やねの いろ', 'num', sh2.num === s.want, 'ばんごう', 'みせ']; }
   if (stageNo === 2 && step === 0 && isAt(DESKS)) { const s = data.seed; pair = ['col', near[0] === DESK_X[s.col], 'いすの いろ', 'k', near[1] === DESK_Y[s.k - 1], 'ばんめ', 'つくえ']; }
   if (pair) {
     cardMarks = { [pair[0]]: pair[1], [pair[3]]: pair[4] }; markFx = { x: near[0], y: near[1], a: pair[1], b: pair[4], t: 0 };
@@ -933,6 +1073,7 @@ function foundPlace(step) {
 /* てがみの なぞ: え(canvas)と ぶん(html) */
 function riddleParts(i, mark) {
   const s = data.seed;
+  if (stageNo === 4) return riddleParts4(i, s);
   if (stageNo === 3) return riddleParts3(i, s);
   if (stageNo === 2) return riddleParts2(i, s, mark);
   if (i === 0) return {
@@ -957,6 +1098,28 @@ function riddleParts(i, mark) {
       rr(x, 316, 14, 150, 74, 8, '#FFF3DC', '#E8D5B5', 3);
       if (s.d === 'round') { x.beginPath(); x.arc(391, 58, 22, PI, 0); x.lineTo(413, 88); x.lineTo(369, 88); x.closePath(); x.fillStyle = '#6B4A3A'; x.fill(); } else rr(x, 369, 40, 44, 48, 2, '#6B4A3A');
       num(x, 'いりぐち', 391, 108, 19, '#3A2D58');
+    }) };
+}
+function riddleParts4(i, s) {
+  if (i === 0) return {
+    html: '<b class="hl">クッキーの ワゴン</b>が、やたいの ばしょを しっているよ。<br>のこった かずを かぞえて、ひだりから その かずばんめの <b class="hl">やたい</b>を さがそう!',
+    canvas: mk(520, 130, x => {
+      for (let j = 0; j < 3; j++) drawCookie(x, 60 + j * 52, 62, 22, j === 2);
+      ln(x, 212, 62, 252, 62, '#B3A8D3', 5); poly(x, [[266, 62], [250, 51], [250, 73]], '#B3A8D3');
+      for (let j = 0; j < 4; j++) { rr(x, 290 + j * 56, 56, 46, 40, 5, '#FFF8EA', '#E8D5B5', 2.5); rr(x, 286 + j * 56, 34, 54, 24, [0, 0, 8, 8], ['#FF9DB5', '#7FB6F0', '#FFC83D', '#8FD6A6'][j], '#3A2D58', 2); }
+    }) };
+  if (i === 1) return {
+    html: '<b class="hl">くだものの かご</b>が、みせの ばんごうを しっているよ。<br>やねが <b class="hl">' + ROOFS[s.col].name + 'くて</b>、その ばんごうの <b class="hl">みせ</b>を さがそう!',
+    canvas: mk(520, 130, x => {
+      rr(x, 180, 44, 160, 76, 6, '#FFF8EA', '#E8D5B5', 3);
+      for (let j = 0; j < 8; j++) { x.beginPath(); x.roundRect(172 + j * 22, 22, 22, 32, [0, 0, 9, 9]); x.fillStyle = j % 2 ? '#FFFFFF' : ROOFS[s.col].hex; x.fill(); }
+      ci(x, 260, 88, 24, '#FFFFFF', '#3A2D58', 3); num(x, '?', 260, 90, 30, '#D9478A');
+    }) };
+  return {
+    html: '<b class="hl">ケーキの テーブル</b>に、はんにんの てがかりが あるよ。<br>ケーキを たべた <b class="hl">どうぶつ</b>を さがそう!',
+    canvas: mk(520, 130, x => {
+      el(x, 180, 84, 86, 22, '#FFFFFF', '#CFC4E2', 4); for (const [dx, dy] of [[-30, -4], [-8, 5], [16, -6], [34, 4]]) ci(x, 180 + dx, 84 + dy, 4, '#E0A866');
+      ci(x, 380, 66, 40, '#FFFFFF', '#3A2D58', 4); num(x, '?', 380, 69, 50, '#D9478A');
     }) };
 }
 function riddleParts3(i, s) {
@@ -1176,6 +1339,52 @@ function drawFoundFx(c, fx) {
     c.restore();
   }
 }
+/* 4話の マップ: しょうてんがい */
+function drawGround4(c) {
+  for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) {
+    const x = q * T, y = r * T;
+    if (r < 2) { c.fillStyle = '#EBDCCB'; c.fillRect(x, y, T, T); c.fillStyle = '#DCC8B2'; c.fillRect(x, y + (r ? 19 : 9), T, 2); c.fillRect(x + (r ? 12 : 30), y, 2, T); if (r === 1) { c.fillStyle = '#C9B299'; c.fillRect(x, y + T - 5, T, 5); } continue; }
+    c.fillStyle = (q + r) % 2 ? '#E1DAEC' : '#EAE4F3'; c.fillRect(x, y, T, T);
+    if (r >= 8 && q <= 13) { c.fillStyle = 'rgba(58,45,88,.07)'; c.fillRect(x, y, T, T); }
+  }
+}
+function flats4(c, t) {
+  if (searchFx) { const k = searchFx.t / .55, fx = searchFx.x * T + 20, fy = searchFx.y * T + 20; ci(c, fx, fy, 10 + k * 22, null, 'rgba(255,255,255,' + (1 - k) + ')', 4); ci(c, fx, fy, 6 + k * 14, null, 'rgba(255,200,61,' + (1 - k) + ')', 3); }
+}
+function items4(c, t, items) {
+  const s = data.seed, tag = (x, b, v) => { rr(c, x - 2, b - 14, 4, 14, 1, '#A9744F'); rr(c, x - 14, b - 36, 28, 24, 5, '#FFF8E1', '#3A2D58', 2); num(c, v, x, b - 23, String(v).length > 1 ? 12 : 15, '#D9478A'); };
+  SHOPS4.forEach(([x0, x1], i) => items.push({ y: 2, f: () => {   // みせ: しまの やねの いろと、かんばんの ばんごう
+    const x = x0 * T, o = s.shops[i];
+    rr(c, x + 2, 22, 76, 58, 4, '#FFF8EA', '#E8D5B5', 2);
+    for (let j = 0; j < 6; j++) { c.beginPath(); c.roundRect(x - 1 + j * 13.7, 24, 13.7, 17, [0, 0, 6, 6]); c.fillStyle = j % 2 ? '#FFFFFF' : ROOFS[o.c].hex; c.fill(); }
+    rr(c, x + 6, 46, 36, 26, 6, '#FFFFFF', '#3A2D58', 2.5); num(c, o.num, x + 24, 60, 17, '#3A2D58');   // ばんごうの かんばん(カギの ふだに かくれない たかさ)
+    rr(c, x + 48, 46, 22, 34, [5, 5, 0, 0], '#C98A5E', '#A56D45', 2); ci(c, x + 65, 64, 1.8, '#FFD25E');
+  } }));
+  items.push({ y: 5, f: () => {   // クッキーの ワゴン
+    const x = 3 * T, y = 4 * T; ci(c, x + 16, y + 34, 6, '#6E6390'); ci(c, x + 64, y + 34, 6, '#6E6390'); rr(c, x + 4, y + 10, 72, 22, 5, '#FF9DB5', '#3A2D58', 2);
+    rr(c, x + 2, y - 8, 76, 14, [8, 8, 0, 0], '#FFF8E1', '#3A2D58', 2); for (let j = 0; j < 4; j++) drawCookie(c, x + 16 + j * 16, y + 20, 6, false);
+  } });
+  items.push({ y: 5, f: () => {   // くだものの かご 3つ(かずの ふだ つき)
+    const x = 7 * T, y = 4 * T;
+    s.nums.forEach((v, j) => { const cx = x + 14 + j * 26; poly(c, [[cx - 12, y + 14], [cx + 12, y + 14], [cx + 9, y + 36], [cx - 9, y + 36]], '#E8B07E', '#B4835F', 1.5); drawFruit(c, ['apple', 'mikan', 'ichigo'][j], cx, y + 11, .9); });
+  } });
+  items.push({ y: 5, f: () => {   // ケーキの テーブル(からっぽの おさら)
+    const x = 11 * T, y = 4 * T; rr(c, x + 36, y + 18, 8, 20, 2, '#8C6A55'); el(c, x + 40, y + 14, 36, 12, '#FFFFFF', '#3A2D58', 2); el(c, x + 40, y + 12, 14, 5, '#F3EFFB', '#CFC4E2', 1.5);
+    for (const [dx, dy] of [[-6, -1], [2, 1], [8, -2]]) ci(c, x + 40 + dx, y + 12 + dy, 1.3, '#E0A866');
+  } });
+  if (data.s1 || (keysGot() === 0 && looked[0])) items.push({ y: 5.1, f: () => tag(5 * T + 12, 4 * T + 40, s.n) });         // こたえた かずの ふだ
+  if (data.s2 || (keysGot() === 1 && looked[0])) items.push({ y: 5.1, f: () => tag(9 * T + 12, 4 * T + 40, s.want) });
+  NPCS.forEach(([nx, ny], i) => items.push({ y: ny + .9, f: () => drawNpc(c, s.npc[i], nx * T + 20, ny * T + 37 - Math.abs(Math.sin(t * 2 + i * 2)) * 1.5, 1.25) }));
+  // やたい: ひだりの はたが かぞえはじめ
+  items.push({ y: 9, f: () => { const x = 16, b = 8 * T + 38; ln(c, x, b, x, b - 44, '#8C6A55', 3); poly(c, [[x, b - 44], [x + 20, b - 36], [x, b - 28]], '#FF9DB5', '#D9478A', 1.5); } });
+  STALLS.forEach(([sx, sy], i) => items.push({ y: 9, f: () => {
+    const x = sx * T, y = sy * T; rr(c, x + 1, y + 16, 38, 44, 4, '#FFF8EA', '#E8D5B5', 2);
+    for (let j = 0; j < 4; j++) { c.beginPath(); c.roundRect(x - 2 + j * 11, y + 2, 11, 18, [0, 0, 5, 5]); c.fillStyle = j % 2 ? '#FFFFFF' : ['#FF9DB5', '#7FB6F0', '#FFC83D', '#8FD6A6', '#B79CED', '#FF9F6B', '#7FD2C8'][i]; c.fill(); }
+    for (let j = 0; j < 3; j++) ci(c, x + 10 + j * 10, y + 30, 3.6, ['#FF6F7D', '#FFA63D', '#8FD6A6'][(i + j) % 3]);
+  } }));
+  [2, 4, 6, 8, 10, 12].forEach(q => items.push({ y: 9, f: () => rr(c, q * T + 8, 8 * T + 22, 24, 20, 3, '#D8B58A', '#B4835F', 2) }));   // やたいの あいだの きばこ
+}
+
 /* 3話の マップ: こうえん */
 function drawGround3(c) {
   for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) {
@@ -1235,14 +1444,14 @@ function items3(c, t, items) {
 function render(t) {
   const c = ctx, s = cv.width / (COLS * T);
   c.setTransform(s, 0, 0, s, 0, 0);
-  const one = stageNo === 1, two = stageNo === 2, three = stageNo === 3;
-  if (two) { drawGround2(c); flats2(c, t); } else if (three) { drawGround3(c); flats3(c, t); } else { drawGround(c); flats1(c, t); }
+  const one = stageNo === 1, two = stageNo === 2, three = stageNo === 3, four = stageNo === 4;
+  if (two) { drawGround2(c); flats2(c, t); } else if (three) { drawGround3(c); flats3(c, t); } else if (four) { drawGround4(c); flats4(c, t); } else { drawGround(c); flats1(c, t); }
   if (dest) ci(c, dest.x * T + 20, dest.y * T + 22, 9 + Math.sin(t * 6) * 2, null, 'rgba(217,71,138,.7)', 3);
 
 
   // たっている もの(うしろから まえへ)
   const items = [];
-  if (two) items2(c, t, items); else if (three) items3(c, t, items); else items1(c, t, items);
+  if (two) items2(c, t, items); else if (three) items3(c, t, items); else if (four) items4(c, t, items); else items1(c, t, items);
   if (chest) items.push({ y: chest.y + .9, f: () => { const k = Math.min(1, chest.t * 2.5), sc = k * (1 + .25 * Math.sin(k * PI)); drawChest(c, chest.x * T + 20 - 20 * sc, chest.y * T + 38 - 38 * sc, sc); } });
 
   const e = m.p, mx = m.fx + (m.x - m.fx) * e, my = m.fy + (m.y - m.fy) * e;
@@ -1257,6 +1466,10 @@ function render(t) {
   if (one) drawFence(c);
 
   drawSpotGlow(c, t); drawCandidates(c, t);
+  if (four && keysGot() === 0 && guide >= 1 && m.y === 7 && m.x % 2 === 1 && m.x <= 13 && !foundFx) {   // やたいの まえ: ひだりから なんばんめ
+    const n2 = (m.x + 1) / 2, hit = looked[0] && n2 === data.seed.n && m.p >= 1;
+    ci(c, mx * T + 20, my * T - 36, hit ? 15 : 13, hit ? '#FFC83D' : '#FFFFFF', '#3A2D58', 2.5); num(c, n2, mx * T + 20, my * T - 35, 16, '#3A2D58');
+  }
   if (three && keysGot() === 1 && guide >= 2 && trail.length > 1 && !foundFx) {   // ひろばを すすんだ ますの かず。みちじゅんの とおりなら きいろ
     const rt = routeTiles(data.seed), good = trail.every((p, i) => rt[i] && rt[i][0] === p[0] && rt[i][1] === p[1]), end = good && trail.length === rt.length && m.p >= 1;
     ci(c, mx * T + 20, my * T - 36, end ? 15 : 13, end ? '#FFC83D' : good ? '#FFF4B8' : '#FFFFFF', '#3A2D58', 2.5); num(c, trail.length - 1, mx * T + 20, my * T - 35, 16, '#3A2D58');
@@ -1270,7 +1483,7 @@ function render(t) {
     [[markFx.a, -15], [markFx.b, 15]].forEach(([ok, dx]) => { ci(c, x + dx, y, 13 * k, '#FFFFFF', ok ? '#2E9C82' : '#D9478A', 3); num(c, ok ? '○' : '×', x + dx, y + 1, 17 * k, ok ? '#2E9C82' : '#D9478A'); });
   }
   if (foundFx) drawFoundFx(c, foundFx);
-  if (helpOn()) { const tg = targetOf(keysGot()); drawStar(c, { id: 9, label: '!', x: tg.x, y: tg.wall ? 2 : tg.on ? tg.y : tg.y - 1 }, t); }   // こまった ときの たすけの ほし
+  if (helpOn()) { const tg = targetOf(keysGot()); drawStar(c, { id: 9, label: '!', x: tg.x, y: tg.wall || tg.tiles ? 2 : tg.on ? tg.y : tg.y - 1 }, t); }   // こまった ときの たすけの ほし
   if (intro) {   // はねの ついた てがみが ミミの ところへ とんでくる
     const p = Math.min(1, intro.t / 1.5), k = 1 - Math.pow(1 - p, 2);
     const ex = m.x * T + 20, ey = m.y * T - 42, sx = COLS * T + 40, sy = -30;
@@ -1332,6 +1545,17 @@ function drawScenery(W, H, hz, bgId = 'bg', cloudId = 'clouds', scene = 'garden'
   c.fillStyle = sky; c.fillRect(0, 0, W, hz);
   if (hz > 70) {                                   // おひさま
     ci(c, W - 46, Math.min(44, hz * .3), 30, 'rgba(255,236,150,.5)'); ci(c, W - 46, Math.min(44, hz * .3), 19, '#FFE38A');
+  }
+  if (scene === 'town') {                           // まちの やねと いしだたみ
+    const bh = Math.min(64, hz * .5);
+    for (let x = -10, i = 0; x < W + 20; x += 52, i++) {
+      const hh = bh * (.7 + .3 * hash(i, 51)), wallC = ['#FFF3DC', '#FBE3EA', '#E6F1FA', '#EEF7E4'][i % 4], roofC = ['#F08A7A', '#7FB6F0', '#FFC83D', '#B79CED'][i % 4];
+      c.fillStyle = wallC; c.fillRect(x, hz - hh, 50, hh); poly(c, [[x - 4, hz - hh], [x + 54, hz - hh], [x + 25, hz - hh - bh * .42]], roofC);
+      rr(c, x + 16, hz - hh * .62, 18, hh * .3, 3, '#BFE9F7', '#FFFFFF', 2);
+    }
+    c.fillStyle = '#E4DDF0'; c.fillRect(0, hz, W, H - hz);
+    for (let i = 0; i < Math.floor(W * (H - hz) / 2200); i++) rr(c, hash(i, 61) * W, hz + 6 + hash(i, 63) * (H - hz - 14), 16, 8, 3, 'rgba(58,45,88,.06)');
+    return;
   }
   if (scene === 'school') {                         // こうしゃと こうてい
     const bh = Math.min(70, hz * .55), top = hz - bh;
