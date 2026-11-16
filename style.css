@@ -372,3 +372,20 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .steps.clues{max-width:420px;margin:0 auto 6px;padding:8px 14px;background:#FFF8E1;border:3px dashed #E2AD5E;border-radius:14px;text-align:left;font-size:clamp(15px,3.8vw,19px);line-height:1.9}
 
 @media (max-width:420px){.choice.wide{min-width:0;padding:4px 5px}.choice.wide canvas{width:76px}}
+
+/* ---- 5話: しかけの がめん ---- */
+.cardrow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;min-height:0}
+.cardrow .card canvas{width:42px;height:42px;flex:none}
+.bookbtn{width:74px;height:150px;border:3px solid var(--ink);border-radius:8px;box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;padding:0;transition:transform .15s}
+.bookbtn span{background:rgba(255,255,255,.85);border-radius:6px;padding:2px 6px;font-family:var(--display);font-size:15px;writing-mode:vertical-rl}
+.bookbtn.in{transform:translateY(-14px) scale(.9);box-shadow:0 2px 0 var(--ink);filter:brightness(.8)}
+.boxrow{display:flex;justify-content:center;gap:10px;padding:10px;background:#B98058;border:3px solid #8C5A3C;border-radius:14px}
+.boxbtn{padding:2px;border:3px solid transparent;border-radius:14px;background:transparent}
+.boxbtn canvas{display:block;width:84px;height:auto}
+.boxbtn.sel{border-color:var(--star);background:#FFF4B8;transform:translateY(-8px)}
+.hints{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.hint{margin:0;padding:8px;background:#FBF3DF;border:5px solid #E2AD5E;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.hint canvas{width:200px;height:auto}
+.hint figcaption{font-size:15px;line-height:1.5}
+@media (max-width:420px){.bookbtn{width:64px;height:128px}.boxbtn canvas{width:72px}.hint canvas{width:170px}}
+@media (max-height:480px){.bookbtn{width:56px;height:84px}.boxbtn canvas{width:60px}.hint canvas{width:130px}.hint figcaption{font-size:13px}.panel.mech canvas.pic{max-height:30vh}}

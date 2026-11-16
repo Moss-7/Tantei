@@ -36,8 +36,11 @@ const STAGE = {
   4: { name: 'しょうてんがい', place: 'しょうてんがい', track: 'town', scene: 'town', start: { x: 9, y: 6 },
        treasure: { id: 'tiara', name: 'リボンの ティアラ', draw: (c, x, y, s) => drawTiara(c, x, y, s) },
        foundSay: 'はんにんが カギと たからばこを かくしていた!' },
+  5: { name: 'ふしぎな おやしき', place: 'おやしき', track: 'manor', scene: 'night', start: { x: 8, y: 8 },
+       treasure: { id: 'moon', name: 'つきの ほうせき', draw: (c, x, y, s) => drawMoonGem(c, x, y, s) },
+       foundSay: 'はこの おくから、カギと たからばこが でてきた!' },
 };
-const LAST_STAGE = 4;
+const LAST_STAGE = 5;
 let stageNo = 1;
 const stg = () => STAGE[stageNo];
 const GO_SAY = 'ばしょが わかったら、そこで「さがす」を おそう!';
@@ -101,8 +104,18 @@ function newSeed4() {
   const npc = sh([{ hat, rib, bad: true }, { hat, rib: !rib }, { hat: !hat, rib }]).map((o, i) => Object.assign(o, { kind: kinds[i] }));
   return { t: n + d, d, n, nums, q, want, col, shops, sAns: shops.findIndex(o => o.c === col && o.num === want), hat, rib, npc, nAns: npc.findIndex(o => o.bad) };
 }
+// 5話: ろうそく(k ほん ついている。あと n ほんで 10)と とけい、あんごう(きごう → ほんの いろの じゅんばん)、ヒント 2まいで はこの ならびかえ
+function newSeed5() {
+  const r = n => Math.floor(Math.random() * n), sh = a => a.slice().sort(() => Math.random() - 0.5), cols = ['red', 'blue', 'yellow'];
+  const k = 3 + r(6), boxes = sh(cols), side = pick(['left', 'right']);
+  let cur; do { cur = sh(cols); } while (cur.join() === boxes.join());
+  return { k, n: 10 - k, sym5: sh([0, 1, 2]), order: sh(cols), boxes, cur, side };
+}
+// はこの ヒント: ① はしの はこ(X は いちばん ひだり/みぎ) ② のこり 2つの ならび(Y の みぎが Z)
+const boxHints = s => s.side === 'left' ? { x: s.boxes[0], at: 0, y: s.boxes[1], z: s.boxes[2] } : { x: s.boxes[2], at: 2, y: s.boxes[0], z: s.boxes[1] };
+const boxCheck = (s, arr) => { const h = boxHints(s); return [arr[h.at] === h.x, arr.indexOf(h.z) === arr.indexOf(h.y) + 1]; };
 function newStage(old, no = 1) {
-  return { stage: no, seed: no === 4 ? newSeed4() : no === 3 ? newSeed3() : no === 2 ? newSeed2() : newSeed(), s1: false, s2: false, letter: false, cleared: false, treasures: old ? old.treasures : [] };
+  return { stage: no, seed: no === 5 ? newSeed5() : no === 4 ? newSeed4() : no === 3 ? newSeed3() : no === 2 ? newSeed2() : newSeed(), s1: false, s2: false, letter: false, cleared: false, treasures: old ? old.treasures : [] };
 }
 
 /* ---------- おと ---------- */
@@ -182,6 +195,11 @@ const TRACKS = {
     mel: [[72,.5],[76,.5],[79,1],[76,.5],[79,.5],[84,1], [83,.5],[81,.5],[79,1],[76,2], [77,.5],[81,.5],[84,1],[81,.5],[84,.5],[89,1], [88,.5],[86,.5],[84,1],[79,2],
           [81,1],[81,.5],[83,.5],[84,1],[81,1], [79,1],[79,.5],[81,.5],[83,1],[79,1], [77,.5],[79,.5],[81,.5],[83,.5],[84,1],[86,1], [84,2],[0,2]],
     bass: [[48,2],[55,2], [48,2],[55,2], [53,2],[60,2], [48,2],[55,2], [53,2],[53,2], [55,2],[55,2], [53,2],[55,2], [48,2],[48,2]] },
+  // おやしき: すこし ふしぎな ニ短調。ゆったり
+  manor: { beat: .38, gate: .9,
+    mel: [[74,1],[77,1],[81,2], [79,1],[82,1],[81,2], [77,1],[81,1],[86,2], [84,1],[82,1],[81,2],
+          [82,1],[81,1],[79,1],[77,1], [76,1],[79,1],[77,2], [76,1],[77,1],[79,1],[76,1], [74,2],[0,2]],
+    bass: [[50,2],[57,2], [43,2],[50,2], [50,2],[57,2], [53,2],[60,2], [46,2],[53,2], [45,2],[52,2], [45,2],[52,2], [50,2],[50,2]] },
   clear: { beat: .3,
     mel: [[72,.5],[76,.5],[79,.5],[84,1.5],[79,.5],[84,.5], [88,2],[86,1],[84,1],
           [81,.5],[84,.5],[81,.5],[77,1.5],[81,.5],[84,.5], [79,2],[83,1],[86,1]],
@@ -432,6 +450,46 @@ function drawCookie(c, x, y, r, gone) {
   if (!gone) for (const [dx, dy] of [[-.35, -.25], [.3, -.35], [.05, .3], [-.4, .35], [.42, .2]]) ci(c, x + dx * r, y + dy * r, r * .13, '#7A4B2A');
   else { ln(c, x - r * .6, y - r * .6, x + r * .6, y + r * .6, '#D9478A', 3); ln(c, x + r * .6, y - r * .6, x - r * .6, y + r * .6, '#D9478A', 3); }
 }
+function drawMoonGem(c, x, y, s) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  ci(c, 0, 0, 34, 'rgba(255,220,110,.35)');
+  ci(c, -2, 0, 20, '#FFE38A', '#B58A1F', 1.8); ci(c, 7, -5, 16, '#FFF8E1');   // みかづき
+  c.save(); c.beginPath(); c.arc(7, -5, 16, 0, PI * 2); c.clip(); ci(c, 0, 0, 40, 'rgba(255,248,225,1)'); c.restore();
+  ci(c, -2, 0, 20, null, '#B58A1F', 1.8);
+  poly(c, [[6, -2], [14, 6], [6, 16], [-2, 6]], '#B79CED', '#6B4FB0', 1.5); poly(c, [[6, -2], [10, 6], [6, 16], [2, 6]], '#D7C6F8');   // ほうせき
+  starShape(c, 26, -22, 5, '#FFFFFF'); starShape(c, -28, 16, 4, '#FFFFFF');
+  c.restore();
+}
+function drawBox5(c, key, x, y, s) {   // いろつきの はこ(リボンつき)
+  c.save(); c.translate(x, y); c.scale(s, s);
+  rr(c, -13, -8, 26, 20, 3, COLORS[key].hex, '#3A2D58', 1.6); rr(c, -15, -13, 30, 8, 3, COLORS[key].hex, '#3A2D58', 1.6);
+  rr(c, -2.5, -13, 5, 25, 0, '#FFFFFF'); ci(c, -4, -15, 3.2, '#FFFFFF', '#3A2D58', 1); ci(c, 4, -15, 3.2, '#FFFFFF', '#3A2D58', 1);
+  c.restore();
+}
+function drawBook5(c, key, x, y, w, h) { rr(c, x, y, w, h, 3, COLORS[key].hex, '#3A2D58', 2); rr(c, x + w * .2, y + h * .14, w * .6, h * .1, 1, 'rgba(255,255,255,.75)'); rr(c, x + w * .2, y + h * .76, w * .6, h * .06, 1, 'rgba(255,255,255,.75)'); }
+// ヒントの え: ① かべと はしの はこ ② 2つの はこの ならび
+function drawHint1(c, s, cx, cy, sc) {
+  const h = boxHints(s), left = h.at === 0;
+  c.save(); c.translate(cx, cy); c.scale(sc, sc);
+  rr(c, left ? -52 : 46, -24, 6, 48, 2, '#8C6A55');
+  drawBox5(c, h.x, left ? -30 : 30, 4, 1.25);
+  for (const dx of left ? [6, 36] : [-36, -6]) { rr(c, dx - 13, -8, 26, 22, 4, null, '#B3A8D3', 2); num(c, '?', dx, 4, 15, '#B3A8D3'); }
+  c.restore();
+}
+function drawHint2(c, s, cx, cy, sc) {
+  const h = boxHints(s);
+  c.save(); c.translate(cx, cy); c.scale(sc, sc);
+  drawBox5(c, h.y, -24, 4, 1.25); drawBox5(c, h.z, 24, 4, 1.25);
+  poly(c, [[-5, -24], [3, -24], [3, -29], [11, -21], [3, -13], [3, -18], [-5, -18]], '#D9478A');
+  c.restore();
+}
+function drawCandles(c, k, x0, y, gap, sc, t) {   // 10ぽんの ろうそく。ひだりから k ほんに ひが ついている
+  for (let i = 0; i < 10; i++) {
+    const x = x0 + i * gap; rr(c, x - 3 * sc, y - 16 * sc, 6 * sc, 16 * sc, 1.5 * sc, '#FFF8E1', '#E2AD5E', sc);
+    if (i < k) { const f = 1 + Math.sin(t * 9 + i) * .12; ci(c, x, y - 21 * sc, 8 * sc, 'rgba(255,214,110,.3)'); el(c, x, y - 21 * sc, 3 * sc, 5.5 * sc * f, '#FFB347'); el(c, x, y - 20 * sc, 1.4 * sc, 3 * sc, '#FFF1B0'); }
+    else ln(c, x, y - 16 * sc, x, y - 19 * sc, '#8C7CA8', 1.2 * sc);
+  }
+}
 function drawKey(c, x, y, s) {
   c.save(); c.translate(x, y); c.scale(s, s);
   ci(c, 0, 0, 22, 'rgba(255,220,110,.35)');
@@ -460,12 +518,18 @@ const SHOP_TILES = SHOPS4.flatMap((r, i) => [[r[0], 1, i], [r[1], 1, i]]);
 const SHOP_MARK = SHOPS4.map(r => [(r[0] + r[1]) / 2, 1]);
 const NPCS = [[2, 6], [6, 6], [14, 6]];
 const ANIMAL_NAME = { rabbit: 'うさぎ', bear: 'くま', cat: 'ねこ' };
+/* 5話: ふしぎな おやしき。こたえの カードで「しかけ」を うごかす */
+const MECH5 = [{ x: 6, y: 2 }, { x: 13, y: 2 }, { x: 8, y: 7 }];   // とけい、ほんだな、はこの まえ(たすけの ほしを だす ばしょ)
 const LOCKER_TILES = [10, 11, 12, 13, 14].map(x => [x, 1]);   // かべの ロッカー。まえの れつ(y=2)から さがす
 const blockedSet = new Set();
 const bk = (x, y) => x + ',' + y;
 function buildBlocked() {
   blockedSet.clear();
   const add = (x0, y0, x1, y1) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) blockedSet.add(bk(x, y)); };
+  if (stageNo === 5) {
+    add(0, 0, 15, 1); add(1, 5, 2, 5); add(7, 6, 9, 6); add(14, 6, 14, 6); add(0, 9, 0, 9);   // かべ、しょくだい、はこの テーブル、いす、うえきばち
+    return;
+  }
   if (stageNo === 4) {
     add(0, 0, 15, 1); add(0, 8, 13, 9);                       // みせの かべ、やたいの れつ
     add(3, 4, 4, 4); add(7, 4, 8, 4); add(11, 4, 12, 4);      // クッキーの ワゴン、くだものの かご、ケーキの テーブル
@@ -526,6 +590,7 @@ let m, cat, path = [], held = null, dest = null, holes = [], chest = null, digMi
 // いま さがす ばしょ。on: その ますの うえで さがす / それいがいは となりの ますから さがす
 function targetOf(step) {
   const s = data.seed;
+  if (stageNo === 5) return { x: MECH5[step].x, y: MECH5[step].y, on: true };
   if (stageNo === 4) {
     if (step === 0) return { x: 2 * s.n - 1, y: 8 };                                                   // ひだりから n ばんめの やたい
     if (step === 1) { const r = SHOPS4[s.sAns]; return { x: r[0], y: 1, tiles: [[r[0], 1], [r[1], 1]] }; }   // みせは まえの れつ(2ます)から
@@ -541,7 +606,7 @@ function targetOf(step) {
     : step === 1 ? { x: BIGF[s.lanes.indexOf(s.c)][0], y: BIGF[s.lanes.indexOf(s.c)][1] } : { x: HUTS[s.ans][0], y: HUTS[s.ans][1] };
 }
 // さがせる もの(となりに たつと、ミミが そちらを むく)
-const searchables = () => stageNo === 4 ? [...STALLS, ...SHOP_TILES, ...NPCS] : stageNo === 3 ? [...BENCHES, ...BASKETS] : stageNo === 2 ? [...DESKS, ...BOXES, ...LOCKER_TILES] : [...BIGF, ...HUTS];
+const searchables = () => stageNo === 5 ? [] : stageNo === 4 ? [...STALLS, ...SHOP_TILES, ...NPCS] : stageNo === 3 ? [...BENCHES, ...BASKETS] : stageNo === 2 ? [...DESKS, ...BOXES, ...LOCKER_TILES] : [...BIGF, ...HUTS];
 // たすけを だす めやす。すぐには たすけず、じぶんで かんがえる じかんを とる
 const HINT_AT = 3;     // この かいすう まちがえたら、シロの ヒントと ばんごうを だす
 const STAR_AT = 8;     // この かいすう まちがえたら、ただしい ばしょに ほしを だす
@@ -601,11 +666,28 @@ const GUIDE = {
       { text: () => 'どうぶつが 3びき いるよ。カードの どうぶつの となりに たとう', done: () => nextTo(NPCS) },
       { text: () => 'この どうぶつだと おもったら「さがす」を おそう', near: () => nextTo(NPCS) } ],
   ],
+  5: [
+    [ { text: () => 'ひかっている しょくだいの ろうそくを みに いこう', spot: { rect: [T + 2, 5 * T - 14, 2 * T - 4, T + 12] }, done: () => besideBox(1, 5, 2, 5), look: lookCandles },
+      { text: () => 'カードを もって、ひかっている おおきな とけいの まえへ いこう', spot: { rect: [6 * T + 5, 2, 30, 78] }, done: () => stoodAt(5, 7, 2, 2), look: () => mechClock() } ],
+    [ { text: () => 'ひかっている はりがみの あんごうを みに いこう', spot: { rect: [10 * T + 4, 22, 32, 40] }, done: () => stoodAt(9, 11, 2, 2), look: lookCipher5 },
+      { text: () => 'カードを もって、ひかっている ほんだなの まえへ いこう', spot: { rect: [12 * T + 2, 6, 3 * T - 4, 72] }, done: () => stoodAt(12, 14, 2, 2), look: () => mechBooks() } ],
+    [ { text: () => 'ひかっている えの ヒントを みに いこう', spot: { rect: [2 * T - 2, 16, 2 * T + 4, 46] }, done: () => stoodAt(1, 4, 2, 2), look: lookHints },
+      { text: () => 'カードを もって、ひかっている はこの ところへ いこう', spot: { rect: [7 * T + 2, 6 * T - 4, 3 * T - 4, T + 2] }, done: () => besideBox(7, 6, 9, 6), look: () => mechBoxes() } ],
+  ],
 };
 /* てがかりカード: なぞを といた こたえ。ふきだしの したの だんに ならび、つかう ばめんで ひかる */
 function cardList() {
   if (!data || data.cleared) return [];
   const k = keysGot(), s = data.seed;
+  if (stageNo === 5) {
+    if (!looked[0]) return [];
+    if (k === 0) return [{ id: 'n', label: 'ほん', draw: x => { ci(x, 32, 32, 28, '#FFE38A'); num(x, s.n, 32, 34, 34, '#3A2D58'); } }];
+    if (k === 1) return [{ id: 'ord', label: 'じゅんばん', w: 150, draw: x => s.order.forEach((col, i) => { drawBook5(x, col, 8 + i * 50, 8, 26, 48); if (i < 2) drawArrow(x, 'r', 44 + i * 50, 32, .9, '#D9478A'); }) }];
+    if (k === 2) return [
+      { id: 'h1', label: s.side === 'left' ? 'ひだり' : 'みぎ', w: 110, draw: x => drawHint1(x, s, 55, 30, 1) },
+      { id: 'h2', label: 'ならび', w: 100, draw: x => drawHint2(x, s, 50, 34, 1) } ];
+    return [];
+  }
   if (stageNo === 4) {
     const big = (t, col) => x => { ci(x, 32, 32, 28, col); num(x, t, 32, 34, String(t).length > 1 ? 27 : 34, '#3A2D58'); };
     if (k === 0) return looked[0] ? [{ id: 'n', label: 'ばんめ', draw: big(s.n, '#FFE38A') }] : [];
@@ -642,6 +724,7 @@ function cardList() {
 function cardGlow() {
   if (!looked[0] || m.p < 1 || path.length || held) return false;
   const k = keysGot(), s = data.seed;
+  if (stageNo === 5) return false;   // おやしきの カードは、しかけの がめんで つかう
   if (stageNo === 4) {
     if (k === 0) return m.x === 2 * s.n - 1 && m.y === 7;                                                              // ひだりから n ばんめの やたいの まえ
     return k === 2 && Math.abs(NPCS[s.nAns][0] - m.x) + Math.abs(NPCS[s.nAns][1] - m.y) === 1;                        // カードの どうぶつの となり
@@ -658,19 +741,20 @@ function cardGlow() {
   return false;
 }
 let cardNew = false, cardMarks = null, markFx = null;
-function drawCards() {
-  const tray = $('sayPic'), list = cardList();
+function buildCards(tray) {
+  const list = cardList();
   tray.replaceChildren();
   for (const cd of list) {
     const el2 = document.createElement('span'); el2.className = 'card' + (cardNew ? ' new' : ''); el2.dataset.id = cd.id;
-    const cv3 = mk(cd.w || 64, 64, cd.draw); if (cd.w) { cv3.style.width = Math.round(42 * cd.w / 64) + 'px'; cv3.style.height = 'auto'; }   // よこに ながい カード(みちじゅん)
+    const cv3 = mk(cd.w || 64, 64, cd.draw); if (cd.w) { cv3.style.width = Math.round(42 * cd.w / 64) + 'px'; cv3.style.height = 'auto'; }   // よこに ながい カード
     el2.appendChild(cv3);
     const lb = document.createElement('b'); lb.textContent = cd.label; el2.appendChild(lb);
     if (cardMarks && cd.id in cardMarks) { const mk2 = document.createElement('i'); mk2.className = cardMarks[cd.id] ? 'ok' : 'ng'; mk2.textContent = cardMarks[cd.id] ? '○' : '×'; el2.appendChild(mk2); }
     tray.appendChild(el2);
   }
-  tray.hidden = !list.length; cardNew = false;
+  return list.length;
 }
+function drawCards() { const tray = $('sayPic'); tray.hidden = !buildCards(tray); cardNew = false; }
 const curSteps = () => (data && !data.cleared && keysGot() < 3 && guide >= 0) ? GUIDE[stageNo][keysGot()] : null;
 // シロの ふきだしに、いまの ステップを だす
 function showStep() {
@@ -778,6 +862,127 @@ function lookBoard(cb) {        // こくばん: けいさんの こたえが「
     b.onclick = () => v === s.k ? lookRight(p, 'せいかい! まえから ' + s.k + 'ばんめだね', cb) : lookWrong(p, b, 'ゆびを つかって かぞえてみよう', op === '+' ? 'まるを ぜんぶ かぞえよう' : 'ばつの ついていない まるを かぞえよう', () => paint(true));
     p.querySelector('#ch').appendChild(b);
   }
+}
+function lookCandles(cb) {      // しょくだい: 10を つくる
+  const s = data.seed, p = lookShell('ろうそくが ' + s.k + 'ほん ついているよ。あと なんぼんで 10ぽん?');
+  const paint = hint => {
+    const cvs = mk(560, 200, x => {
+      x.fillStyle = '#4B3C74'; x.beginPath(); x.roundRect(0, 0, 560, 200, 16); x.fill(); rr(x, 24, 150, 512, 14, 6, '#E2AD5E', '#B58A1F', 3);
+      drawCandles(x, s.k, 54, 150, 50, 3.6, 0);
+      if (hint) for (let i = s.k; i < 10; i++) { ci(x, 54 + i * 50, 36, 15, '#FFC83D', '#FFFFFF', 3); num(x, i - s.k + 1, 54 + i * 50, 37, 17, '#3A2D58'); }   // ついていない ろうそくに ばんごう
+    });
+    cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs);
+  };
+  paint(false);
+  for (let v = 2; v <= 7; v++) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.textContent = v;
+    b.onclick = () => v === s.n ? lookRight(p, 'せいかい! あと ' + s.n + 'ほんで 10ぽん', cb) : lookWrong(p, b, 'ひが ついていない ろうそくを かぞえよう', 'ばんごうを つけたよ。いちばん みぎの かずを みよう', () => paint(true));
+    p.querySelector('#ch').appendChild(b);
+  }
+}
+function lookCipher5(cb) {      // はりがみ: きごうを ほんの いろに なおす あんごう
+  const s = data.seed, cols = ['red', 'blue', 'yellow'], p = lookShell('あんごうを ほんの いろに なおそう', 'cipher');
+  const table = document.createElement('div'); table.className = 'ctable';
+  cols.forEach((col, i) => { const chip = document.createElement('span'); chip.className = 'cpair';
+    chip.append(mk(56, 56, x => drawSym(x, s.sym5[i], 28, 29, 17)), '=', mk(56, 56, x => drawBook5(x, col, 16, 6, 24, 44))); table.appendChild(chip); });
+  const row = document.createElement('div'); row.className = 'crow';
+  const slots = s.order.map(col => { const sl = document.createElement('span'); sl.className = 'cslot';
+    sl.append(mk(56, 56, x => drawSym(x, s.sym5[cols.indexOf(col)], 28, 29, 17))); const box = document.createElement('i'); box.textContent = '?'; sl.appendChild(box); row.appendChild(sl); return sl; });
+  p.querySelector('#pic').append(table, row);
+  let at = 0; slots[0].classList.add('now');
+  cols.forEach(col => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; b.setAttribute('aria-label', COLORS[col].name);
+    b.appendChild(mk(64, 64, x => drawBook5(x, col, 18, 6, 28, 52)));
+    const sm = document.createElement('small'); sm.textContent = COLORS[col].name; b.appendChild(sm);
+    b.onclick = () => {
+      if (col !== s.order[at]) { lookWrong(p, b, 'うえの ひょうで、おなじ きごうを さがそう', 'ひかっている きごうと おなじ きごうを、ひょうで みつけよう'); return; }
+      tone(700 + at * 90, .1, 0, 'triangle', .1);
+      const box = slots[at].querySelector('i'); box.textContent = ''; box.appendChild(mk(48, 48, x => drawBook5(x, col, 13, 4, 22, 40)));
+      slots[at].classList.remove('now'); slots[at].classList.add('ok'); at++;
+      if (at < slots.length) slots[at].classList.add('now'); else lookRight(p, 'せいかい! ほんを おす じゅんばんが わかった', cb);
+    };
+    p.querySelector('#ch').appendChild(b);
+  });
+}
+function lookHints(cb) {        // 2まいの え: はこの ならべかたの ヒント(えで みる)
+  const s = data.seed, h = boxHints(s), p = lookShell('えの ヒントを よく みよう');
+  const wrap = document.createElement('div'); wrap.className = 'hints';
+  [[x => drawHint1(x, s, 130, 62, 2), COLORS[h.x].name + 'の はこは、いちばん ' + (h.at === 0 ? 'ひだり' : 'みぎ')],
+   [x => drawHint2(x, s, 130, 66, 2), COLORS[h.z].name + 'の はこは、' + COLORS[h.y].name + 'の すぐ みぎ']].forEach(([draw, text], i) => {
+    const f = document.createElement('figure'); f.className = 'hint';
+    f.appendChild(mk(260, 120, draw)); const cap = document.createElement('figcaption'); cap.textContent = 'ヒント ' + (i + 1) + ': ' + text; f.appendChild(cap); wrap.appendChild(f);
+  });
+  p.querySelector('#pic').appendChild(wrap);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = 'カードに する';
+  b.onclick = () => lookRight(p, 'ヒントの カードを 2まい てに いれた!', cb);
+  p.querySelector('#ch').appendChild(b);
+}
+/* しかけ: こたえの カードを つかって うごかす。あうと、かくれていた ものが みつかる */
+function mechShell(title) {
+  sfx.open();
+  const p = openModal('<span class="tag">しかけ</span><h2>' + title + '</h2><div class="cardrow" id="cr"></div><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p><button class="btn sub" id="later" type="button">あとで</button>', 'mech');
+  buildCards(p.querySelector('#cr')); p.querySelector('#later').onclick = closeModal; p.miss = 0;
+  return p;
+}
+function mechDone(p, msg) {
+  p.querySelectorAll('button').forEach(b => { b.disabled = true; }); p.querySelector('#fb').textContent = msg; p.querySelector('#fb').classList.add('good'); sfx.ok();
+  const step = keysGot(), at = MECH5[step];
+  setTimeout(() => { closeModal(); busy = true; foundFx = { x: at.x, y: at.y - (step === 2 ? 1 : 1), t: 0 }; sfx.hit(); setTimeout(() => foundPlace(step), calm ? 700 : 1700); }, 900);
+}
+function mechClock() {          // おおきな とけい: みじかい はりを カードの かずに あわせる
+  const s = data.seed, p = mechShell('とけいの はりを、カードの かずに あわせよう');
+  let h = 12;
+  const paint = () => { const cvs = mk(300, 300, x => drawClock(x, 150, 150, 132, h, p.miss >= 2)); cvs.className = 'pic'; p.querySelector('#pic').replaceChildren(cvs); };
+  const move = d => { h = (h - 1 + d + 12) % 12 + 1; tone(520 + h * 20, .06, 0, 'triangle', .08); paint(); };
+  const back = Object.assign(document.createElement('button'), { type: 'button', className: 'btn sub', textContent: '◀ もどす' }), fwd = Object.assign(document.createElement('button'), { type: 'button', className: 'btn sub', textContent: 'すすめる ▶' });
+  const ok = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', textContent: 'これで きまり' });
+  back.onclick = () => move(-1); fwd.onclick = () => move(1);
+  ok.onclick = () => {
+    if (h === s.n) { mechDone(p, s.n + 'じ! とけいの したの ひきだしが あいた!'); return; }
+    sfx.ng(); p.miss++; paint(); p.querySelector('#fb').textContent = p.miss >= 2 ? 'ピンクの みじかい はりを、カードの すうじに あわせよう' : 'カードの かずと おなじ じかんに しよう';
+  };
+  p.querySelector('#ch').append(back, fwd, ok); paint();
+}
+function mechBooks() {          // ほんだな: 3しょくの ほんを カードの じゅんばんに おす
+  const s = data.seed, p = mechShell('カードの じゅんばんに、ほんを おそう');
+  let at = 0; const btns = {};
+  ['red', 'blue', 'yellow'].forEach(col => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'bookbtn'; b.style.background = COLORS[col].hex; b.setAttribute('aria-label', COLORS[col].name + 'の ほん');
+    b.innerHTML = '<span>' + COLORS[col].name + '</span>'; btns[col] = b;
+    b.onclick = () => {
+      if (col === s.order[at]) {
+        b.classList.add('in'); b.disabled = true; tone(600 + at * 120, .12, 0, 'triangle', .1); at++;
+        if (at === 3) mechDone(p, 'ほんだなの おくから、こばこが でてきた!');
+        return;
+      }
+      sfx.ng(); p.miss++; at = 0; Object.values(btns).forEach(e => { e.classList.remove('in'); e.disabled = false; });   // まちがえたら さいしょから
+      p.querySelector('#fb').textContent = p.miss >= 2 ? 'カードの いちばん ひだりの いろから、じゅんに おそう' : 'じゅんばんが ちがうよ。さいしょから やりなおそう';
+    };
+    p.querySelector('#ch').appendChild(b);
+  });
+}
+function mechBoxes() {          // 3つの はこ: 2つを えらぶと いれかわる。ヒント 2まいに あう ならびに する
+  const s = data.seed, p = mechShell('ヒントの カードに あう ように、はこを ならべかえよう');
+  let cur = s.cur.slice(), sel = -1;
+  const rowEl = document.createElement('div'); rowEl.className = 'boxrow'; p.querySelector('#pic').appendChild(rowEl);
+  const paint = () => {
+    rowEl.replaceChildren();
+    cur.forEach((col, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'boxbtn' + (i === sel ? ' sel' : ''); b.setAttribute('aria-label', COLORS[col].name + 'の はこ');
+      b.appendChild(mk(120, 110, x => drawBox5(x, col, 60, 66, 3)));
+      b.onclick = () => {
+        if (sel < 0) { sel = i; tone(620, .06, 0, 'triangle', .08); } else { if (sel !== i) { [cur[sel], cur[i]] = [cur[i], cur[sel]]; tone(820, .08, 0, 'triangle', .1); } sel = -1; }
+        paint();
+      };
+      rowEl.appendChild(b); });
+  };
+  const ok = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', textContent: 'これで きまり' });
+  ok.onclick = () => {
+    const [a2, b2] = boxCheck(s, cur);
+    cardMarks = { h1: a2, h2: b2 }; buildCards(p.querySelector('#cr'));   // カードごとに ○×
+    if (a2 && b2) { data.seed.cur = cur; mechDone(p, 'ぴったり! はこが ひらいた!'); return; }
+    sfx.ng(); p.miss++; p.querySelector('#fb').textContent = 'ヒント1は ' + (a2 ? '○' : '×') + '、ヒント2は ' + (b2 ? '○' : '×') + (p.miss >= 2 ? '。×の ヒントを もういちど みよう' : '');
+  };
+  p.querySelector('#ch').appendChild(ok); p.querySelector('#fb').textContent = 'はこを 2つ タッチすると、いれかわるよ'; paint();
 }
 function lookCookies(cb) {      // クッキーの ワゴン: ひきざん
   const s = data.seed, p = lookShell('クッキーが ' + s.t + 'まい。' + s.d + 'まい うれたよ。のこりは なんまい?');
@@ -901,7 +1106,7 @@ function drawCandidates(c, t) {
   if (!curSteps() || foundFx) return;
   const k = keysGot(), on = guide >= 1;
   // えらぶ もの: 1話=うえきばちの はな・こや / 2話=ばんごうの はこ / 3話=ベンチ・バスケット
-  const list = { 1: [null, on ? BIGF : null, HUTS], 2: [null, on ? BOXES : null, null], 3: [on ? BENCHES : null, null, on ? BASKETS : null], 4: [on ? STALLS : null, on ? SHOP_MARK : null, on ? NPCS : null] }[stageNo][k]; if (!list) return;
+  const list = { 1: [null, on ? BIGF : null, HUTS], 2: [null, on ? BOXES : null, null], 3: [on ? BENCHES : null, null, on ? BASKETS : null], 4: [on ? STALLS : null, on ? SHOP_MARK : null, on ? NPCS : null], 5: [null, null, null] }[stageNo][k]; if (!list) return;
   const up = stageNo === 1 ? (k === 1 ? 34 : 14) : stageNo === 2 ? 4 : stageNo === 4 ? (k === 1 ? -8 : k === 2 ? 26 : 4) : 8, ring = stageNo === 2 ? 20 : stageNo === 4 && k === 0 ? 14 : 34;
   list.forEach(([px, py], i) => {
     const x = px * T + 20, top = py * T - up + Math.sin(t * 4 + i * 1.3) * 3;
@@ -1003,6 +1208,7 @@ function halt() { path = []; held = null; dest = null; document.querySelectorAll
 /* ---------- さがす(1話) ---------- */
 const MISS_HINT = {
   1: ['ピンクの スタートから、いしを 1、2、3と かぞえよう。ばんごうを つけたよ', 'かだんの はなの ならびを みて、つぎの いろを かんがえよう', 'やねの いろと、いりぐちの かたちを りょうほう みてみよう'],
+  5: ['ひかっている ものを みに いこう', 'ひかっている ものを みに いこう', 'ひかっている ものを みに いこう'],
   4: ['いちばん ひだりの やたいから、1、2、3と かぞえよう', 'みせの やねの いろと、かんばんの ばんごうを みよう', 'ぼうしと リボンを みて、カードの どうぶつを さがそう'],
   3: ['かだんの はなを かぞえて、おなじ ばんごうの ベンチを さがそう', 'ピンクの スタートから、やじるしを 1つずつ たどろう', 'シーソーで さがっている ほうが おもいよ。カードの くだものを さがそう'],
   2: ['こくばんに ちかい ほうが「まえ」だよ。つくえに ばんごうを つけたよ', 'みじかい はりが さす すうじを みよう。ながい はりは 12だよ', 'うえの かべに ならんでいる ロッカーの まえで さがそう'],
@@ -1012,13 +1218,20 @@ function search() {
   halt();
   const step = keysGot();
   if (step >= 3) { showChest(); return; }
+  if (stageNo === 5) {   // おやしきは「しかけ」を うごかして みつける。しかけの まえで おすと、しかけの がめんを ひらく
+    const st5 = GUIDE[5][step], mech = st5[st5.length - 1];
+    tone(740, .07, 0, 'triangle', .1); tone(1100, .1, .07, 'triangle', .08); searchFx = { x: m.x, y: m.y, t: 0 };
+    if (mech.done() && looked[0]) mech.look();
+    else { searchMiss++; sfx.miss(); if (searchMiss < STAR_AT) say(mech.done() ? 'さきに、ひかっている ものを みに いこう' : 'ここには なにも ないみたい。ひかっている ものを さがそう'); }
+    return;
+  }
   const tg = targetOf(step), dist = (x, y) => Math.abs(x - m.x) + Math.abs(y - m.y);
   const isTg = p => tg.tiles ? tg.tiles.some(q => q[0] === p[0] && q[1] === p[1]) : (p[0] === tg.x && p[1] === tg.y);
   const hit = tg.on ? dist(tg.x, tg.y) === 0 : tg.wall ? LOCKER_TILES.some(p => dist(p[0], p[1]) === 1) : tg.tiles ? tg.tiles.some(p => dist(p[0], p[1]) === 1) : dist(tg.x, tg.y) === 1;
   // となりに ある ものを さがす ときは、そちらを むく(めあての ものが となりなら、それを えらぶ)
   const list = searchables().filter(p => dist(p[0], p[1]) === 1);
   // いま さがしている しゅるいの ものを ゆうせんする(こやを さがしている ときは、となりの はなより こや)
-  const kind = { 1: [[], BIGF, HUTS], 2: [DESKS, BOXES, LOCKER_TILES], 3: [BENCHES, [], BASKETS], 4: [STALLS, SHOP_TILES, NPCS] }[stageNo][step];
+  const kind = { 1: [[], BIGF, HUTS], 2: [DESKS, BOXES, LOCKER_TILES], 3: [BENCHES, [], BASKETS], 4: [STALLS, SHOP_TILES, NPCS], 5: [[], [], []] }[stageNo][step];
   // 2つの ものの あいだに たっている ときは、ミミが むいている ほうの ものを しらべる
   const fd = DIRS[m.dir] || [0, 1], faced = p => p[0] === m.x + fd[0] && p[1] === m.y + fd[1];
   const near = list.find(isTg) || list.find(p => kind.includes(p) && faced(p)) || list.find(p => kind.includes(p)) || list[0];
@@ -1073,6 +1286,7 @@ function foundPlace(step) {
 /* てがみの なぞ: え(canvas)と ぶん(html) */
 function riddleParts(i, mark) {
   const s = data.seed;
+  if (stageNo === 5) return riddleParts5(i, s);
   if (stageNo === 4) return riddleParts4(i, s);
   if (stageNo === 3) return riddleParts3(i, s);
   if (stageNo === 2) return riddleParts2(i, s, mark);
@@ -1098,6 +1312,29 @@ function riddleParts(i, mark) {
       rr(x, 316, 14, 150, 74, 8, '#FFF3DC', '#E8D5B5', 3);
       if (s.d === 'round') { x.beginPath(); x.arc(391, 58, 22, PI, 0); x.lineTo(413, 88); x.lineTo(369, 88); x.closePath(); x.fillStyle = '#6B4A3A'; x.fill(); } else rr(x, 369, 40, 44, 48, 2, '#6B4A3A');
       num(x, 'いりぐち', 391, 108, 19, '#3A2D58');
+    }) };
+}
+function riddleParts5(i, s) {
+  if (i === 0) return {
+    html: '<b class="hl">しょくだい</b>の ろうそくが、とけいの じかんを しっているよ。<br>あと なんぼんで 10ぽんかを かぞえて、<b class="hl">おおきな とけい</b>を あわせよう!',
+    canvas: mk(520, 130, x => {
+      x.fillStyle = '#4B3C74'; x.beginPath(); x.roundRect(0, 0, 520, 130, 12); x.fill();
+      drawCandles(x, 4, 34, 96, 26, 2, 0); ln(x, 300, 66, 340, 66, '#D7C6F8', 5); poly(x, [[354, 66], [338, 55], [338, 77]], '#D7C6F8');
+      drawClock(x, 432, 66, 48, null, false); num(x, '?', 432, 92, 22, '#D9478A');
+    }) };
+  if (i === 1) return {
+    html: 'かべの <b class="hl">はりがみ</b>に、あんごうの ひみつが かいてあるよ。<br>あんごうを といて、<b class="hl">ほんだな</b>の ほんを じゅんばんに おそう!',
+    canvas: mk(520, 130, x => {
+      s.order.forEach((col, j) => drawSym(x, s.sym5[['red', 'blue', 'yellow'].indexOf(col)], 70 + j * 62, 64, 20));
+      ln(x, 250, 64, 290, 64, '#B3A8D3', 5); poly(x, [[304, 64], [288, 53], [288, 75]], '#B3A8D3');
+      for (let j = 0; j < 3; j++) { rr(x, 334 + j * 52, 28, 36, 72, 4, '#FFFFFF', '#B3A8D3', 3); num(x, '?', 352 + j * 52, 66, 24, '#B3A8D3'); }
+    }) };
+  return {
+    html: 'かべの <b class="hl">2まいの え</b>に、はこの ならべかたの ヒントが あるよ。<br>ヒントの とおりに、<b class="hl">はこ</b>を ならべかえよう!',
+    canvas: mk(520, 130, x => {
+      for (const fx of [70, 200]) { rr(x, fx - 54, 16, 108, 96, 6, '#FBF3DF', '#E2AD5E', 6); num(x, '?', fx, 66, 44, '#D9478A'); }
+      ln(x, 280, 66, 320, 66, '#B3A8D3', 5); poly(x, [[334, 66], [318, 55], [318, 77]], '#B3A8D3');
+      ['red', 'blue', 'yellow'].forEach((col, j) => drawBox5(x, col, 380 + j * 50, 70, 1.5));
     }) };
 }
 function riddleParts4(i, s) {
@@ -1339,6 +1576,50 @@ function drawFoundFx(c, fx) {
     c.restore();
   }
 }
+/* 5話の マップ: ふしぎな おやしき(よるの しつない。ろうそくの あかりで あたたかく) */
+function drawGround5(c) {
+  for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) {
+    const x = q * T, y = r * T;
+    if (r < 2) { c.fillStyle = '#4B3C74'; c.fillRect(x, y, T, T); c.fillStyle = 'rgba(255,255,255,.05)'; c.fillRect(x + 19, y, 2, T); if (r === 1) { c.fillStyle = '#8E7BC0'; c.fillRect(x, y + T - 6, T, 6); } continue; }
+    c.fillStyle = (q + r) % 2 ? '#665490' : '#6E5C99'; c.fillRect(x, y, T, T);
+  }
+  rr(c, 5 * T + 4, 4 * T + 4, 7 * T - 8, 5 * T - 8, 14, '#9C4A70'); rr(c, 5 * T + 12, 4 * T + 12, 7 * T - 24, 5 * T - 24, 9, null, '#F2C14E', 2.5);   // じゅうたん
+}
+function flats5(c, t) {
+  if (searchFx) { const k = searchFx.t / .55, fx = searchFx.x * T + 20, fy = searchFx.y * T + 20; ci(c, fx, fy, 10 + k * 22, null, 'rgba(255,255,255,' + (1 - k) + ')', 4); ci(c, fx, fy, 6 + k * 14, null, 'rgba(255,200,61,' + (1 - k) + ')', 3); }
+}
+function items5(c, t, items) {
+  const s = data.seed, k = keysGot();
+  items.push({ y: 2, f: () => {
+    for (const wx of [0, 15]) { const x = wx * T; rr(c, x + 5, 6, 30, 46, [15, 15, 2, 2], '#2B2452', '#B7A6E0', 3); ci(c, x + 22, 22, 7, '#FFE38A'); ci(c, x + 25, 20, 6, '#2B2452'); ci(c, x + 13, 38, 1.2, '#FFFFFF'); }   // まどと つき
+    // 2まいの え(ヒント)。みる まえは「?」
+    [0, 1].forEach(i => { const x = (2 + i) * T + 2; rr(c, x, 18, 36, 42, 3, '#FBF3DF', '#E2AD5E', 4);
+      if (k > 2 || (k === 2 && looked[0])) { c.save(); c.beginPath(); c.rect(x + 2, 20, 32, 38); c.clip(); (i ? drawHint2 : drawHint1)(c, s, x + 18, 40, .38); c.restore(); } else num(c, '?', x + 18, 40, 20, '#D9478A'); });
+    // おおきな とけい(あわせた あとは その じかん。ひきだしが あく)
+    const cx = 6 * T; rr(c, cx + 7, 4, 26, 74, [10, 10, 3, 3], '#8C5A3C', '#5E3A26', 2); drawClock(c, cx + 20, 22, 10.5, data.s1 ? s.n : 12, false);
+    rr(c, cx + 13, 40, 14, 22, 3, '#3F2A4E'); ln(c, cx + 20, 42, cx + 20 + Math.sin(t * 2.4) * 4, 56, '#FFD25E', 1.5); ci(c, cx + 20 + Math.sin(t * 2.4) * 4.6, 58, 3.4, '#FFD25E');
+    rr(c, cx + 10, 64, 20, 9, 2, data.s1 ? '#3F2A4E' : '#A56D45', '#5E3A26', 1.5);
+    // はりがみ(あんごうの ひょう)
+    const px = 10 * T; rr(c, px + 6, 24, 28, 36, 3, '#FFF8E1', '#3A2D58', 2); [0, 1, 2].forEach(i => drawSym(c, i, px + 20, 32 + i * 10, 3.4)); ci(c, px + 20, 25, 2.2, '#FF6F7D');
+    // ほんだな(3しょくの おおきな ほん)
+    const bx = 12 * T; rr(c, bx + 2, 6, 3 * T - 4, 72, 4, '#8C5A8C', '#5E3A5E', 2); rr(c, bx + 6, 40, 3 * T - 12, 3, 1, '#5E3A5E');
+    const small = ['#FF8FB3', '#7FB6F0', '#FFD25E', '#8FD6A6', '#B79CED', '#FF9F6B']; for (let i = 0; i < 13; i++) rr(c, bx + 8 + i * 8, 12, 6.5, 26, 1, small[(i * 5) % 6]);
+    ['red', 'blue', 'yellow'].forEach((col, i) => drawBook5(c, col, bx + 20 + i * 28, 46 + (data.s2 ? 4 : 0), 18, 28 - (data.s2 ? 4 : 0)));
+  } });
+  items.push({ y: 6, f: () => {   // しょくだい
+    const x = T, y = 5 * T; rr(c, x + 34, y + 12, 12, 26, 3, '#E2AD5E', '#B58A1F', 1.5); rr(c, x + 20, y + 34, 40, 6, 3, '#E2AD5E', '#B58A1F', 1.5); rr(c, x + 2, y + 8, 76, 6, 3, '#E2AD5E', '#B58A1F', 1.5);
+    drawCandles(c, s.k, x + 7, y + 8, 7.3, .62, t);
+  } });
+  if (data.s1 || (k === 0 && looked[0])) items.push({ y: 6.1, f: () => { const x = 3 * T + 12, b = 5 * T + 40; rr(c, x - 2, b - 14, 4, 14, 1, '#A9744F'); rr(c, x - 13, b - 36, 26, 24, 5, '#FFF8E1', '#3A2D58', 2); num(c, s.n, x, b - 23, 15, '#D9478A'); } });   // こたえた かずの ふだ
+  items.push({ y: 7, f: () => {   // はこの テーブル(いまの ならび)
+    const x = 7 * T, y = 6 * T; rr(c, x + 4, y + 22, 3 * T - 8, 12, 4, '#B98058', '#8C5A3C', 2); rr(c, x + 12, y + 32, 6, 8, 1, '#8C5A3C'); rr(c, x + 3 * T - 18, y + 32, 6, 8, 1, '#8C5A3C');
+    (data.letter ? s.boxes : s.cur).forEach((col, i) => drawBox5(c, col, x + 20 + i * T, y + 12, 1.05));
+  } });
+  items.push({ y: 7, f: () => { const x = 14 * T, y = 6 * T; rr(c, x + 3, y - 6, 34, 30, [12, 12, 4, 4], '#B0537A', '#7A3554', 2); rr(c, x + 1, y + 16, 38, 16, 6, '#C4688E', '#7A3554', 2); rr(c, x + 6, y + 30, 5, 8, 1, '#5E3A26'); rr(c, x + 29, y + 30, 5, 8, 1, '#5E3A26'); } });   // いす
+  items.push({ y: 10, f: () => { const x = 0, y = 9 * T; ci(c, x + 20, y + 6, 15, '#5FA98A'); ci(c, x + 13, y, 8, '#7FC4A3'); rr(c, x + 9, y + 18, 22, 18, 4, '#E8B07E', '#C98A5E', 2); } });
+  for (const lx of [4.5, 8.5, 11.2]) items.push({ y: 2, f: () => { const x = lx * T, f2 = 1 + Math.sin(t * 8 + lx) * .15; ci(c, x, 30, 15, 'rgba(255,214,110,.22)'); rr(c, x - 2, 34, 4, 12, 1, '#E2AD5E'); el(c, x, 30, 3, 5.5 * f2, '#FFB347'); el(c, x, 31, 1.4, 3, '#FFF1B0'); } });   // かべの ろうそく
+}
+
 /* 4話の マップ: しょうてんがい */
 function drawGround4(c) {
   for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) {
@@ -1444,14 +1725,14 @@ function items3(c, t, items) {
 function render(t) {
   const c = ctx, s = cv.width / (COLS * T);
   c.setTransform(s, 0, 0, s, 0, 0);
-  const one = stageNo === 1, two = stageNo === 2, three = stageNo === 3, four = stageNo === 4;
-  if (two) { drawGround2(c); flats2(c, t); } else if (three) { drawGround3(c); flats3(c, t); } else if (four) { drawGround4(c); flats4(c, t); } else { drawGround(c); flats1(c, t); }
+  const one = stageNo === 1, two = stageNo === 2, three = stageNo === 3, four = stageNo === 4, five = stageNo === 5;
+  if (two) { drawGround2(c); flats2(c, t); } else if (three) { drawGround3(c); flats3(c, t); } else if (four) { drawGround4(c); flats4(c, t); } else if (five) { drawGround5(c); flats5(c, t); } else { drawGround(c); flats1(c, t); }
   if (dest) ci(c, dest.x * T + 20, dest.y * T + 22, 9 + Math.sin(t * 6) * 2, null, 'rgba(217,71,138,.7)', 3);
 
 
   // たっている もの(うしろから まえへ)
   const items = [];
-  if (two) items2(c, t, items); else if (three) items3(c, t, items); else if (four) items4(c, t, items); else items1(c, t, items);
+  if (two) items2(c, t, items); else if (three) items3(c, t, items); else if (four) items4(c, t, items); else if (five) items5(c, t, items); else items1(c, t, items);
   if (chest) items.push({ y: chest.y + .9, f: () => { const k = Math.min(1, chest.t * 2.5), sc = k * (1 + .25 * Math.sin(k * PI)); drawChest(c, chest.x * T + 20 - 20 * sc, chest.y * T + 38 - 38 * sc, sc); } });
 
   const e = m.p, mx = m.fx + (m.x - m.fx) * e, my = m.fy + (m.y - m.fy) * e;
@@ -1525,7 +1806,7 @@ function drawClouds(t, id = 'clouds') {
   const { W, hz, dpr } = box, cl = $(id), c = cl.getContext('2d');
   const top = hz - Math.min(70, hz * .55);          // おかの てっぺんより うえだけに かく
   c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, cl.height / dpr);
-  if (hz <= 70) return;
+  if (hz <= 70 || box.scene === 'night') return;   // よるは くもを ださない
   const n = Math.max(2, Math.floor(W / 150)), span = W + 140;
   c.save(); c.beginPath(); c.rect(0, 0, W, top + 6); c.clip();
   for (let i = 0; i < n; i++) {
@@ -1538,13 +1819,22 @@ function drawClouds(t, id = 'clouds') {
 function drawScenery(W, H, hz, bgId = 'bg', cloudId = 'clouds', scene = 'garden') {
   const bg = $(bgId), dpr = Math.min(2, window.devicePixelRatio || 1);
   bg.width = Math.round(W * dpr); bg.height = Math.round(H * dpr);
-  const cl = $(cloudId); cl.width = bg.width; cl.height = bg.height; sceneryBoxes[cloudId] = { W, hz, dpr }; drawClouds(tNow, cloudId);
+  const cl = $(cloudId); cl.width = bg.width; cl.height = bg.height; sceneryBoxes[cloudId] = { W, hz, dpr, scene }; drawClouds(tNow, cloudId);
   const c = bg.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   const sky = c.createLinearGradient(0, 0, 0, Math.max(1, hz));
   sky.addColorStop(0, '#AEDCF7'); sky.addColorStop(1, '#EAF7FD');
   c.fillStyle = sky; c.fillRect(0, 0, W, hz);
   if (hz > 70) {                                   // おひさま
     ci(c, W - 46, Math.min(44, hz * .3), 30, 'rgba(255,236,150,.5)'); ci(c, W - 46, Math.min(44, hz * .3), 19, '#FFE38A');
+  }
+  if (scene === 'night') {                          // よるの そら、つき、ほし、くらい もり
+    const ns = c.createLinearGradient(0, 0, 0, Math.max(1, hz)); ns.addColorStop(0, '#221C44'); ns.addColorStop(1, '#5B4A8A');
+    c.fillStyle = ns; c.fillRect(0, 0, W, hz);
+    for (let i = 0; i < Math.floor(W * hz / 2600); i++) starShape(c, hash(i, 71) * W, hash(i, 73) * hz * .8, 1.5 + hash(i, 75) * 2.5, 'rgba(255,255,255,.85)');
+    if (hz > 70) { const my2 = Math.min(46, hz * .3); ci(c, W - 50, my2, 30, 'rgba(255,236,150,.25)'); ci(c, W - 50, my2, 19, '#FFE38A'); ci(c, W - 42, my2 - 5, 16, '#3A2F68'); }
+    for (let x = -10, i = 0; x < W + 20; x += 34 + hash(i, 2) * 18, i++) { const r = 15 + hash(i, 7) * 9; ci(c, x, hz - r * .55, r, i % 3 ? '#3F3A6E' : '#35305F'); }
+    c.fillStyle = '#4A4378'; c.fillRect(0, hz, W, H - hz);
+    return;
   }
   if (scene === 'town') {                           // まちの やねと いしだたみ
     const bh = Math.min(64, hz * .5);
@@ -1718,7 +2008,7 @@ function drawChestOpening(c, x, y, s, open) {
 }
 function openChestScene() {
   const p = openModal('<h2 id="ttl">カギを さしこむよ…</h2><div id="pic"></div><div id="after" hidden><p>' + stageNo + '話 クリア! めいたんていだね</p>' +
-    (stageNo < LAST_STAGE ? '' : '<p class="small">つづきの おはなしは じゅんびちゅうだよ</p>') + '</div><div class="row" id="fins" hidden>' +
+    (stageNo < LAST_STAGE ? '' : '<p class="small">さいごの たからものだよ!</p>') + '</div><div class="row" id="fins" hidden>' +
     (stageNo < LAST_STAGE ? '<button class="btn" id="next" type="button">つぎの おはなしへ</button>' : '') + '<button class="btn' + (stageNo < LAST_STAGE ? ' sub' : '') + '" id="fin" type="button">タイトルへ</button></div>');
   if (stageNo < LAST_STAGE) p.querySelector('#next').onclick = () => startGame(slotIx, stageNo + 1);
   const cvs = document.createElement('canvas'); cvs.width = 420; cvs.height = 340; cvs.className = 'pic'; p.querySelector('#pic').appendChild(cvs);
@@ -1726,6 +2016,7 @@ function openChestScene() {
   let t0 = null, opened = false, done = false;
   for (const d of [0, .18, .36]) tone(300, .06, d, 'square', .05);   // カギが カチャカチャ なる
   p.querySelector('#fin').onclick = goTitle;
+  if (stageNo === LAST_STAGE) { const f = p.querySelector('#fin'); f.textContent = 'つぎへ'; f.onclick = showEnding; }
   const tick = ts => {
     if (!cvs.isConnected) return;
     if (t0 === null) t0 = ts;
@@ -1750,6 +2041,29 @@ function openChestScene() {
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
+}
+
+/* さいごの しめ: 5つの たからものが ならび、ミミと シロが よろこぶ */
+function showEnding() {
+  playMusic('clear'); sfx.fanfare();
+  const p = openModal('<h2 class="pop">ぜんぶの たからものを みつけた!</h2><div id="pic"></div><p>ミミは めいたんていに なったよ。<br>いっしょに さがしてくれて ありがとう!</p><button class="btn" data-focus type="button">タイトルへ</button>');
+  const cvs = document.createElement('canvas'); cvs.width = 520; cvs.height = 300; cvs.className = 'pic'; p.querySelector('#pic').appendChild(cvs);
+  const c = cvs.getContext('2d'); let t0 = null;
+  const tick = ts => {
+    if (!cvs.isConnected) return;
+    if (t0 === null) t0 = ts;
+    const t = calm ? 3 : (ts - t0) / 1000;
+    c.clearRect(0, 0, 520, 300);
+    c.save(); c.translate(260, 190); c.rotate(t * .35);
+    for (let i = 0; i < 14; i++) { c.rotate(PI / 7); poly(c, [[-16, 0], [16, 0], [0, -330]], 'rgba(255,225,120,' + (i % 2 ? .28 : .14) + ')'); }
+    c.restore();
+    for (let n = 1; n <= LAST_STAGE; n++) { const s2 = bounce((t - n * .28) / .5); if (s2 > 0) STAGE[n].treasure.draw(c, 60 + (n - 1) * 100, 70 - Math.sin(t * 2.4 + n) * 4, 1.25 * s2); }   // たからものが じゅんに とびだす
+    drawGirl(c, 220, 284, 3.4, 'down', calm ? 0 : Math.abs(Math.sin(t * 5)) * 5); drawCatDir(c, 318, 286, 2.7, 'down', calm ? 0 : Math.abs(Math.sin(t * 5 + 1)) * 4, Math.sin(t * 4));
+    for (let i = 0; i < 12; i++) { const a = t * .8 + i * PI / 6; starShape(c, 260 + Math.cos(a) * 230, 160 + Math.sin(a) * 120, 3 + 3 * Math.abs(Math.sin(t * 4 + i)), i % 2 ? '#FFFFFF' : '#FFC83D', '#FFC83D'); }
+    if (!calm) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  p.querySelector('.btn').onclick = goTitle;
 }
 
 /* ---------- タイトル ---------- */
