@@ -961,28 +961,51 @@ function mechBooks() {          // ほんだな: 3しょくの ほんを カー�
     p.querySelector('#ch').appendChild(b);
   });
 }
-function mechBoxes() {          // 3つの はこ: 2つを えらぶと いれかわる。ヒント 2まいに あう ならびに する
+function mechBoxes() {          // 3つの はこ: ゆびで つかんで よこに うごかし、ならべかえる。ヒント 2まいに あう ならびに する
   const s = data.seed, p = mechShell('ヒントの カードに あう ように、はこを ならべかえよう');
-  let cur = s.cur.slice(), sel = -1;
+  let cur = s.cur.slice(), drag = null;
   const rowEl = document.createElement('div'); rowEl.className = 'boxrow'; p.querySelector('#pic').appendChild(rowEl);
-  const paint = () => {
-    rowEl.replaceChildren();
-    cur.forEach((col, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'boxbtn' + (i === sel ? ' sel' : ''); b.setAttribute('aria-label', COLORS[col].name + 'の はこ');
-      b.appendChild(mk(120, 110, x => drawBox5(x, col, 60, 66, 3)));
-      b.onclick = () => {
-        if (sel < 0) { sel = i; tone(620, .06, 0, 'triangle', .08); } else { if (sel !== i) { [cur[sel], cur[i]] = [cur[i], cur[sel]]; tone(820, .08, 0, 'triangle', .1); } sel = -1; }
-        paint();
-      };
-      rowEl.appendChild(b); });
-  };
+  const els = {};
+  cur.forEach(col => {
+    const b = document.createElement('div'); b.className = 'boxbtn'; b.setAttribute('role', 'img'); b.setAttribute('aria-label', COLORS[col].name + 'の はこ');
+    b.appendChild(mk(120, 110, x => drawBox5(x, col, 60, 66, 3)));
+    els[col] = b; rowEl.appendChild(b);
+  });
+  const slotW = () => els[cur[0]].offsetWidth + 10;
+  // order の ならびに はこを おく。つかんでいる はこ(skip)は ゆびに ついて いくので うごかさない
+  const layout = (order, skip) => order.forEach((col, i) => { if (col !== skip) els[col].style.transform = 'translateX(' + i * slotW() + 'px)'; });
+  const size = () => { rowEl.style.width = (slotW() * 3 - 10) + 'px'; rowEl.style.height = els[cur[0]].offsetHeight + 'px'; layout(cur); };
+  size();
+  const previewOf = (col, x) => { const rest = cur.filter(c2 => c2 !== col), at = Math.max(0, Math.min(2, Math.round(x / slotW()))); rest.splice(at, 0, col); return rest; };
+  Object.keys(els).forEach(col => {
+    const b = els[col];
+    b.addEventListener('pointerdown', ev => {
+      if (drag || ev.button > 0) return;
+      ev.preventDefault(); b.setPointerCapture(ev.pointerId);
+      drag = { col, id: ev.pointerId, x0: ev.clientX, base: cur.indexOf(col) * slotW(), order: cur.slice() };
+      b.classList.add('drag'); tone(620, .06, 0, 'triangle', .08);
+    });
+    b.addEventListener('pointermove', ev => {
+      if (!drag || drag.col !== col || ev.pointerId !== drag.id) return;
+      const x = Math.max(-slotW() * .4, Math.min(slotW() * 2.4, drag.base + ev.clientX - drag.x0));
+      b.style.transform = 'translateX(' + x + 'px) translateY(-12px) scale(1.08)';
+      const next = previewOf(col, x);
+      if (next.join() !== drag.order.join()) { drag.order = next; layout(next, col); tone(760, .05, 0, 'triangle', .06); }   // ほかの はこが よけて、ばしょを あける
+    });
+    const drop = ev => {
+      if (!drag || drag.col !== col || ev.pointerId !== drag.id) return;
+      cur = drag.order; drag = null; b.classList.remove('drag'); layout(cur); tone(880, .08, 0, 'triangle', .1);
+    };
+    b.addEventListener('pointerup', drop); b.addEventListener('pointercancel', drop);
+  });
   const ok = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', textContent: 'これで きまり' });
   ok.onclick = () => {
     const [a2, b2] = boxCheck(s, cur);
     cardMarks = { h1: a2, h2: b2 }; buildCards(p.querySelector('#cr'));   // カードごとに ○×
-    if (a2 && b2) { data.seed.cur = cur; mechDone(p, 'ぴったり! はこが ひらいた!'); return; }
+    if (a2 && b2) { data.seed.cur = cur; rowEl.classList.add('done'); mechDone(p, 'ぴったり! はこが ひらいた!'); return; }
     sfx.ng(); p.miss++; p.querySelector('#fb').textContent = 'ヒント1は ' + (a2 ? '○' : '×') + '、ヒント2は ' + (b2 ? '○' : '×') + (p.miss >= 2 ? '。×の ヒントを もういちど みよう' : '');
   };
-  p.querySelector('#ch').appendChild(ok); p.querySelector('#fb').textContent = 'はこを 2つ タッチすると、いれかわるよ'; paint();
+  p.querySelector('#ch').appendChild(ok); p.querySelector('#fb').textContent = 'はこを ゆびで つかんで、よこに うごかそう';
 }
 function lookCookies(cb) {      // クッキーの ワゴン: ひきざん
   const s = data.seed, p = lookShell('クッキーが ' + s.t + 'まい。' + s.d + 'まい うれたよ。のこりは なんまい?');

@@ -389,3 +389,11 @@ h1,h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-w
 .hint figcaption{font-size:15px;line-height:1.5}
 @media (max-width:420px){.bookbtn{width:64px;height:128px}.boxbtn canvas{width:72px}.hint canvas{width:170px}}
 @media (max-height:480px){.bookbtn{width:56px;height:84px}.boxbtn canvas{width:60px}.hint canvas{width:130px}.hint figcaption{font-size:13px}.panel.mech canvas.pic{max-height:30vh}}
+
+/* はこの ならびかえ: ゆびで つかんで うごかす */
+.boxrow{position:relative;display:block;padding:0;margin:12px auto 4px;box-sizing:content-box;border-width:10px;touch-action:none}
+.boxbtn{position:absolute;left:0;top:0;border:0;padding:0;cursor:grab;touch-action:none;transition:transform .18s ease-out;-webkit-user-select:none;user-select:none}
+.boxbtn.drag{transition:none;cursor:grabbing;z-index:2;filter:drop-shadow(0 10px 6px rgba(58,45,88,.35))}
+.boxbtn canvas{pointer-events:none}
+.boxrow.done .boxbtn{pointer-events:none}
+@media (prefers-reduced-motion:reduce){.boxbtn{transition:none}}
