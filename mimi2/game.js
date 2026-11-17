@@ -267,7 +267,7 @@ function newSeed() {
 function say(t, who = 'pen') {
   $('say').textContent = t;
   const f = $('face').getContext('2d'); f.clearRect(0, 0, 120, 120);
-  if (who === 'pen') drawPenguin(f, 60, 110, 3.3); else drawCat(f, 58, 128, 5.2);
+  if (who === 'pen') drawPenguin(f, 60, 110, 3.3); else if (who === 'girl') drawGirl(f, 60, 150, 3.2, 'down'); else drawCat(f, 58, 128, 5.2);
 }
 const HINT = ['いま なんじかな? ひかっている とけいを タッチして みてね', 'じこくひょうで、その じかんの でんしゃを さがして ほしいな', 'カードの ばんせんの ホームを タッチしてね'];
 function drawTray() {
@@ -284,12 +284,41 @@ function drawPieces() {
 }
 const PIECE_COL = ['#FF7E8A', '#FFA63D', '#FFD25E', '#8FD6A6', '#7FB6F0', '#8C9BEA', '#B79CED'];
 
+/* はなしの プロローグ: コマ0 は かけらが おちてくる(じどう)。コマ1〜3 は かいわで、タッチで すすむ */
+const INTRO = [
+  null,
+  ['pen', 'たいへん! とけいが くるって、でんしゃの ばんせんが わからないの'],
+  ['pen', 'でんしゃが こないと、ひろった おとしものも とどけられないよ'],
+  ['girl', 'まかせて! たんていミミが しらべるよ'],
+];
+let intro = null;   // { k: コマ, t: その コマに なってからの じかん, walked: ミミが ついたか }
+function introLine() {
+  const [who, text] = INTRO[intro.k]; intro.t = 0; say(text, who); $('talk').classList.add('big');
+  if (who === 'pen') { tone(660, .07, 0, 'square', .04); tone(740, .07, .09, 'square', .04); } else tone(988, .12, 0, 'triangle', .07);
+}
+function nextIntro() {
+  if (!intro || intro.k === 0 || !intro.walked || intro.t < .5) return;   // よみおわる まえの れんだで とばない ように
+  if (intro.k < INTRO.length - 1) { intro.k++; introLine(); return; }
+  endIntro();
+}
+function endIntro() {
+  if (!intro) return;
+  intro = null; busy = false; path = []; $('talk').classList.remove('big'); $('btnSkip2').hidden = true;
+  if (!store.introSeen.includes(1)) { store.introSeen.push(1); saveAll(); }
+  m.x = m.fx = 8; m.y = m.fy = 3; m.p = 1; m.dir = 'right'; cat.x = cat.fx = 7; cat.y = cat.fy = 3; cat.dir = 'right';
+  say('ひかっている とけいを みてみよう', 'cat');
+}
 function startStage() {
   seed = newSeed(); step = 0; miss = 0; path = []; pending = null; dest = null; train = null; win = null; busy = false;
   m = { x: 5, y: 4, fx: 5, fy: 4, p: 1, dir: 'down' }; cat = { x: 4, y: 4, fx: 4, fy: 4, dir: 'right' };
   $('title').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('game').hidden = false; $('btnAgain').hidden = true;
   refreshSound(); drawPieces(); drawTray(); fit(); running = true; playMusic('station');
-  say('でんしゃが なんばんせんに くるか、わからなく なっちゃった!');
+  if (!store.introSeen) store.introSeen = [];
+  if (store.introSeen.includes(1)) { intro = null; m.x = m.fx = 8; m.y = m.fy = 3; m.dir = 'right'; cat.x = cat.fx = 7; cat.y = cat.fy = 3; say('ひかっている とけいを みてみよう', 'cat'); return; }
+  // はじめての ときは プロローグ: ミミは ひだりの いりぐちから くる
+  intro = { k: 0, t: 0, walked: false }; m.x = m.fx = 0; m.y = m.fy = 4; m.dir = 'right'; cat.x = cat.fx = 0; cat.y = cat.fy = 5; cat.dir = 'up';
+  $('btnSkip2').hidden = false; $('talk').classList.add('big'); say('あれ? そらから ひかる ものが…', 'cat');
+  tone(1568, .25, .3, 'triangle', .08); tone(1319, .25, .5, 'triangle', .08); tone(1047, .4, .7, 'triangle', .08);
 }
 function goTitle() { running = false; pro = null; closeModal(); playMusic('title'); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; }
 function refreshSound() { $('btnSound').setAttribute('aria-pressed', String(store.sound)); $('btnSound').setAttribute('aria-label', store.sound ? 'おとを けす' : 'おとを だす'); }
@@ -300,13 +329,19 @@ function startStep(nx, ny) {
   m.fx = m.x; m.fy = m.y; m.dir = nx > m.x ? 'right' : nx < m.x ? 'left' : ny > m.y ? 'down' : 'up'; m.x = nx; m.y = ny; m.p = 0; sfx.step();
 }
 function update(dt) {
+  if (intro) {
+    intro.t += dt;
+    if (intro.k === 0 && intro.t > 2.2) { intro.k = 1; intro.t = 0; path = findPath(m.x, m.y, 8, 3); }
+    if (intro.k >= 1 && !intro.walked && !path.length && m.p >= 1) { intro.walked = true; m.dir = 'right'; introLine(); }
+  }
   if (m.p < 1) { m.p = Math.min(1, m.p + dt * 5.5); return; }
-  if (busy) return;
+  if (busy && !intro) return;
   if (path.length) { const [nx, ny] = path.shift(); startStep(nx, ny); return; }
   dest = null;
   if (pending) { const o = pending; pending = null; act(o); }
 }
 function goTo(tx, ty) {
+  if (intro) { nextIntro(); return; }
   if (busy || win) return;
   const o = OBJS.find(q => q.hit(tx, ty));
   if (!o) { pending = null; path = findPath(m.x, m.y, tx, ty); dest = path.length ? path[path.length - 1] : null; return; }
@@ -513,7 +548,7 @@ function render(t) {
   drawClock(c, 2 * T + 20, 38, 30, seed.h, seed.half, false);
   rr(c, 6 * T + 4, 8, 4 * T - 8, 58, 6, '#3F4A7A', '#3A2D58', 2.5);
   seed.rows.forEach((r, i) => { rr(c, 6 * T + 10, 14 + i * 16, 4 * T - 20, 13, 3, '#FFFFFF'); num(c, timeText(r.h, r.half), 6 * T + 44, 21 + i * 16, 9.5, '#3A2D58'); ci(c, 9 * T + 12, 20.5 + i * 16, 5.5, step >= 1 ? PLATS[r.plat - 1].col : '#DCD3F0'); });
-  if (step === 0) glowRect(c, t, 2 * T - 12, 6, 64, 64, 32);
+  if (step === 0 && !intro) glowRect(c, t, 2 * T - 12, 6, 64, 64, 32);
   if (step === 1) glowRect(c, t, 6 * T + 4, 8, 4 * T - 8, 58, 6);
   if (dest) ci(c, dest[0] * T + 20, dest[1] * T + 22, 9 + Math.sin(t * 6) * 2, null, 'rgba(217,71,138,.7)', 3);
 
@@ -525,11 +560,21 @@ function render(t) {
   } }));
   if (train) { const p = PLATS[train.n - 1], k = 1 - Math.pow(1 - Math.min(1, train.t / 1.5), 3); items.push({ y: 20, f: () => drawTrain(c, p.tx * T, (ROWS + 1) * T - k * (ROWS + 1 - 6.7) * T, p.col) }); }
   const sx = shake > 0 ? Math.sin(shake * 40) * 3 : 0;
-  items.push({ y: PEN.y + .9, f: () => drawPenguin(c, PEN.x * T + 20 + sx, PEN.y * T + 37, 1.5, win ? Math.abs(Math.sin(t * 7)) * 7 : Math.sin(t * 2) * .6 + .6, !!win) });
+  const flap = intro && intro.k === 1 && intro.walked ? Math.sin(t * 14) > 0 : false;   // こまって てを ばたばた
+  items.push({ y: PEN.y + .9, f: () => drawPenguin(c, PEN.x * T + 20 + sx, PEN.y * T + 37, 1.5, win ? Math.abs(Math.sin(t * 7)) * 7 : flap ? 2 : Math.sin(t * 2) * .6 + .6, !!win || flap) });
   const e = m.p, mx = m.fx + (m.x - m.fx) * e, my = m.fy + (m.y - m.fy) * e, cx = cat.fx + (cat.x - cat.fx) * e, cy = cat.fy + (cat.y - cat.fy) * e, walking = m.p < 1;
-  items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 37, 1.6, m.dir, win ? Math.abs(Math.sin(t * 8)) * 8 : walking ? Math.abs(Math.sin(e * PI)) * 3 : Math.sin(t * 2.4) * .6 + .6) });
+  const proud = intro && intro.k === 3 && intro.t < 1.2;   // 「まかせて!」で ぴょんと はねる
+  items.push({ y: my + .95, f: () => drawGirl(c, mx * T + 20, my * T + 37, 1.6, proud ? 'down' : m.dir, proud ? Math.abs(Math.sin(intro.t * 8)) * 9 : win ? Math.abs(Math.sin(t * 8)) * 8 : walking ? Math.abs(Math.sin(e * PI)) * 3 : Math.sin(t * 2.4) * .6 + .6) });
   items.push({ y: cy + .94, f: () => drawCatDir(c, cx * T + 20, cy * T + 37, 1.35, cat.dir, walking ? Math.abs(Math.sin(e * PI + 1)) * 2 : 0, walking ? Math.sin(t * 8) * .5 : Math.sin(t * 1.2) * .4) });
   items.sort((a, b) => a.y - b.y).forEach(o => o.f());
+  if (intro && intro.k === 0) {   // かけらが そらから おちてきて、ペンギンの ところで きえる
+    const k = Math.min(1, intro.t / 1.6), x = PEN.x * T + 20 - (1 - k) * 60, y = -30 + k * (PEN.y * T + 10);
+    if (k < 1) { for (let j = 1; j <= 4; j++) starShape(c, x + j * 9, y - j * 14, 5 - j, '#FFC83D'); drawPiece(c, x, y, 1, PIECE_COL[0]); }
+    else { const r = (intro.t - 1.6) / .5; if (r < 1) { ci(c, PEN.x * T + 20, PEN.y * T + 10, 10 + r * 40, null, 'rgba(255,200,61,' + (1 - r) + ')', 5); } }
+  }
+  if (intro && intro.k === 2 && intro.walked) {   // ペンギンが じこくひょうを ゆびさす
+    const bob = Math.sin(t * 5) * 3, ax = 10 * T + 6 - bob, ay = 2 * T + 22 - bob; poly(c, [[ax - 12, ay - 12], [ax + 4, ay - 8], [ax - 8, ay + 4]], '#FFC83D', '#3A2D58', 2); ln(c, ax - 3, ay - 3, ax + 8, ay + 8, '#3A2D58', 3);   // じこくひょうの ほうへ ななめうえ
+  }
 
   if (win) {   // ちずの かけらが ひかりの なかから でてくる
     const k = win.t, cx2 = COLS * T / 2, cy2 = 4 * T, out = 1 - Math.pow(1 - Math.min(1, k / .9), 3);
@@ -604,7 +649,8 @@ cv.addEventListener('pointerdown', ev => {
 });
 const KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 window.addEventListener('keydown', ev => {   // パソコンでは やじるしキーでも あるける
-  if (!running || busy || win || !KEYS[ev.key] || m.p < 1) return;
+  if (intro && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); nextIntro(); return; }
+  if (!running || busy || win || intro || !KEYS[ev.key] || m.p < 1) return;
   ev.preventDefault(); const [dx, dy] = KEYS[ev.key];
   const o = OBJS.find(q => q.hit(m.x + dx, m.y + dy) && q.stand.some(s => s[0] === m.x && s[1] === m.y));
   if (o) { path = []; act(o); } else if (!blocked(m.x + dx, m.y + dy)) { path = []; pending = null; startStep(m.x + dx, m.y + dy); }
@@ -619,6 +665,8 @@ $('mapCv').addEventListener('pointerdown', ev => {   // ちずの ばしょを �
 $('mapHome').onclick = goTitle;
 $('btnHome').onclick = goTitle;
 $('btnAgain').onclick = showMap;
+$('btnSkip2').onclick = endIntro;
+$('talk').addEventListener('click', ev => { if (intro && ev.target.id !== 'btnSkip2') nextIntro(); });
 $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshSound(); sfx.open(); if (store.sound) playMusic(wantTrack); else stopMusic(); };
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
