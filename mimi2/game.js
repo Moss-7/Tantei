@@ -50,6 +50,14 @@ const sfx = {
   fanfare() { [523, 523, 523, 659, 784].forEach((f, i) => tone(f, .22, [0, .16, .32, .48, .72][i], 'triangle', .14)); [1047, 1319, 1568].forEach(f => tone(f, 1.3, .98, 'triangle', .09)); },
 };
 const TRACKS = {
+  // タイトル(1さくめと おなじ きょく)
+  title: { beat: .27, gate: .5, bassGate: .45, wave: 'square', vol: .028,
+    mel: [[69,.5],[0,.5],[72,.5],[0,.5],[76,.5],[0,.5],[75,.5],[76,.5],  [81,1],[0,1],[79,.5],[76,.5],[72,1],
+          [74,.5],[0,.5],[77,.5],[0,.5],[81,.5],[0,.5],[80,.5],[81,.5],  [83,1],[0,1],[76,2],
+          [84,.5],[83,.5],[81,.5],[79,.5],[81,1],[76,1],  [77,.5],[76,.5],[74,.5],[72,.5],[74,1],[71,1],
+          [72,.5],[0,.5],[76,.5],[0,.5],[81,.5],[0,.5],[80,.5],[83,.5],  [81,1.5],[0,.5],[81,.5],[0,1.5]],
+    bass: [[45,1],[52,1],[45,1],[52,1], [45,1],[52,1],[45,1],[52,1], [50,1],[57,1],[50,1],[57,1], [52,1],[59,1],[52,1],[56,1],
+           [45,1],[52,1],[45,1],[52,1], [50,1],[57,1],[43,1],[50,1], [45,1],[52,1],[45,1],[52,1], [45,1],[52,1],[45,1],[0,1]] },
   // えき: でんしゃの リズムで はずむ ハ長調
   station: { beat: .3, gate: .7,
     mel: [[72,.5],[72,.5],[76,1],[79,1],[76,1], [77,.5],[77,.5],[81,1],[79,2], [76,.5],[76,.5],[79,1],[84,1],[79,1], [81,.5],[79,.5],[77,1],[76,2],
@@ -75,8 +83,8 @@ function musicTick() {
   if (!music) return;
   const tr = TRACKS[music.name], now = actx.currentTime, until = now + .5;
   if (music.tm < now - .2) { music.tm = music.tb = now + .05; music.i = music.j = 0; }
-  while (music.tm < until) { const [n, d] = tr.mel[music.i]; if (n) note(midi(n), d * tr.beat * (tr.gate || .95), music.tm, 'triangle', .055, music.gain); music.tm += d * tr.beat; music.i = (music.i + 1) % tr.mel.length; }
-  while (music.tb < until) { const [n, d] = tr.bass[music.j]; if (n) note(midi(n), d * tr.beat * .8, music.tb, 'triangle', .07, music.gain); music.tb += d * tr.beat; music.j = (music.j + 1) % tr.bass.length; }
+  while (music.tm < until) { const [n, d] = tr.mel[music.i]; if (n) note(midi(n), d * tr.beat * (tr.gate || .95), music.tm, tr.wave || 'triangle', tr.vol || .055, music.gain); music.tm += d * tr.beat; music.i = (music.i + 1) % tr.mel.length; }
+  while (music.tb < until) { const [n, d] = tr.bass[music.j]; if (n) note(midi(n), d * tr.beat * (tr.bassGate || .8), music.tb, 'triangle', tr.bassGate ? .09 : .07, music.gain); music.tb += d * tr.beat; music.j = (music.j + 1) % tr.bass.length; }
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopMusic(); else if (wantTrack && !music) playMusic(wantTrack); });
 
@@ -283,7 +291,7 @@ function startStage() {
   refreshSound(); drawPieces(); drawTray(); fit(); running = true; playMusic('station');
   say('でんしゃが なんばんせんに くるか、わからなく なっちゃった!');
 }
-function goTitle() { running = false; pro = null; closeModal(); playMusic(null); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; }
+function goTitle() { running = false; pro = null; closeModal(); playMusic('title'); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; }
 function refreshSound() { $('btnSound').setAttribute('aria-pressed', String(store.sound)); $('btnSound').setAttribute('aria-label', store.sound ? 'おとを けす' : 'おとを だす'); }
 
 /* ---------- いどう ---------- */
@@ -560,6 +568,34 @@ function drawTitle(t) {
   drawCat(a, 300, 286, 3.5, -1, (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * 1.1), ((t + 2.5) % 5.7) < .14);
 }
 
+/* ---------- いりぐち(むしめがね): 1さくめと おなじ ---------- */
+function setupGate() {
+  const gate = $('gate'), lens = $('lens'), c = $('lensArt').getContext('2d');
+  // レンズの なかに ミミの かげを ぼんやり うつす
+  drawGirl(c, 112, 214, 4.6); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#A9B9E8'; c.fillRect(0, 0, 240, 240); c.globalCompositeOperation = 'source-over';
+  num(c, '?', 196, 62, 44, '#D9478A');
+  let opening = false;
+  gate.onclick = () => {
+    if (opening) return; opening = true;
+    playMusic('title');
+    [784, 988, 1175, 1568].forEach((f, i) => tone(f, .25, i * .07, 'triangle', .08));   // きらりん
+    if (calm) { gate.hidden = true; return; }
+    const r = lens.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, r0 = lens.clientWidth / 2;
+    const far = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy)) + 40, S = far / r0;
+    gate.style.setProperty('--cx', cx + 'px'); gate.style.setProperty('--cy', cy + 'px');
+    gate.classList.add('open');
+    let t0 = null;
+    const tick = ts => {
+      if (t0 === null) t0 = ts;
+      const p = Math.min(1, (ts - t0) / 950), k = p < .25 ? 1 - .12 * Math.sin(p / .25 * PI) : 1 + (S - 1) * Math.pow((p - .25) / .75, 2.2);
+      lens.style.transform = 'scale(' + k + ')';
+      gate.style.setProperty('--r', Math.max(0, r0 * k - 1) + 'px');
+      if (p < 1) requestAnimationFrame(tick); else gate.hidden = true;
+    };
+    requestAnimationFrame(tick);
+  };
+}
+
 /* ---------- にゅうりょく: いきたい ばしょや ものを タッチするだけ ---------- */
 cv.addEventListener('pointerdown', ev => {
   if (!running) return;
@@ -587,7 +623,7 @@ $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshSo
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
-let booted = false; const go = () => { if (booted) return; booted = true; drawTitle(0); requestAnimationFrame(frame); };
+let booted = false; const go = () => { if (booted) return; booted = true; drawTitle(0); setupGate(); requestAnimationFrame(frame); };
 if (document.fonts && document.fonts.load) document.fonts.load('400 13px "Mochiy Pop One"', '123えき').then(go, go);
 setTimeout(go, 1500);
 })();
