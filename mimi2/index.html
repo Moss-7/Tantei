@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>たんていミミ2 なないろの ちず</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!--APP-->
+<div id="app">
+  <button id="title" class="title" type="button" aria-label="はじめる">
+    <canvas id="titleArt" width="480" height="300" aria-hidden="true"></canvas>
+    <span class="logo">たんていミミ<b>2</b></span>
+    <span class="sub">なないろの ちず</span>
+    <span class="start">タッチして はじめる</span>
+  </button>
+
+  <section id="game" class="game" hidden>
+    <div class="hud">
+      <button id="btnHome" class="sys" type="button" aria-label="タイトルに もどる">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7M6.5 10v9h11v-9M10.5 19v-5h3v5"/></svg>
+      </button>
+      <b id="stageName">1話 えき</b>
+      <span id="pieces" class="pieces" aria-label="ちずの かけら"></span>
+      <button id="btnSound" class="sys" type="button" aria-label="おと" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5l4.5 4v-13l-4.5 4z"/><path class="on" d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11"/><path class="off" d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></svg>
+      </button>
+    </div>
+    <div class="field" id="field"><canvas id="cv" aria-label="えきの マップ"></canvas></div>
+    <div class="talk">
+      <canvas id="face" width="120" height="120" aria-hidden="true"></canvas>
+      <p id="say" aria-live="polite"></p>
+      <div id="tray" class="tray"></div>
+      <button id="btnAgain" class="btn" type="button" hidden>もういちど あそぶ</button>
+    </div>
+  </section>
+
+  <div id="modal" class="modal" hidden><div class="panel" id="panel" role="dialog" aria-modal="true"></div></div>
+</div>
+<!--/APP-->
+<script src="game.js"></script>
+</body>
+</html>
