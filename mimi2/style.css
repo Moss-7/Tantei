@@ -136,3 +136,7 @@ h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-wrap
 .talk.big .tray{display:none}
 .talk.big::after{content:"▼";position:absolute;right:14px;bottom:6px;font-size:13px;color:var(--ink-soft);animation:bob 1s ease-in-out infinite}
 .skip2{position:absolute;right:8px;top:-34px;font-size:13px;padding:3px 12px;border-radius:999px;border:2px solid var(--line);background:var(--surface);color:var(--ink-soft);z-index:1}
+
+/* いろを えらぶ ボタン(2話の たな) */
+.choice.col{flex-direction:column;gap:2px;min-width:84px;padding:6px 10px}
+.choice .sw{width:34px;height:22px;border-radius:6px;border:2.5px solid var(--ink)}
