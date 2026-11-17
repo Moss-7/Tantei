@@ -92,3 +92,18 @@ h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-wrap
   .choice{min-height:48px;font-size:21px}
 }
 @media (prefers-reduced-motion:reduce){.start,.choice.no,.card.new,.pieces i.got{animation:none}}
+
+/* ---- プロローグと ちず ---- */
+.story{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:#2B2452}
+#mapScreen{background:var(--bg)}
+.story canvas{width:auto;height:auto;max-width:100%;max-height:calc(100% - 90px);border-radius:18px;border:3px solid var(--ink);touch-action:manipulation}
+#mapCv{cursor:pointer}
+.story-say{margin:0;min-height:2.8em;max-width:30em;display:grid;place-items:center;text-align:center;font-family:var(--display);font-weight:400;font-size:clamp(17px,4.6vw,23px);line-height:1.4;
+  background:var(--surface);border:3px solid var(--ink);border-radius:18px;padding:6px 18px}
+.skip{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:12px;font-size:14px;padding:4px 14px;border-radius:999px;border:2px solid rgba(255,255,255,.5);background:transparent;color:#fff;opacity:.8}
+#mapHome{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:8px}
+
+/* プロローグと ちずの えは、がめんに あわせて おおきく */
+#proCv{width:min(100%,760px,calc((100dvh - 150px) * 1.333));max-height:none}
+#mapCv{width:min(100%,820px,calc((100dvh - 150px) * 1.6));max-height:none}

@@ -279,11 +279,11 @@ const PIECE_COL = ['#FF7E8A', '#FFA63D', '#FFD25E', '#8FD6A6', '#7FB6F0', '#8C9B
 function startStage() {
   seed = newSeed(); step = 0; miss = 0; path = []; pending = null; dest = null; train = null; win = null; busy = false;
   m = { x: 5, y: 4, fx: 5, fy: 4, p: 1, dir: 'down' }; cat = { x: 4, y: 4, fx: 4, fy: 4, dir: 'right' };
-  $('title').hidden = true; $('game').hidden = false; $('btnAgain').hidden = true;
+  $('title').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('game').hidden = false; $('btnAgain').hidden = true;
   refreshSound(); drawPieces(); drawTray(); fit(); running = true; playMusic('station');
   say('でんしゃが なんばんせんに くるか、わからなく なっちゃった!');
 }
-function goTitle() { running = false; closeModal(); playMusic(null); $('game').hidden = true; $('title').hidden = false; }
+function goTitle() { running = false; pro = null; closeModal(); playMusic(null); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; }
 function refreshSound() { $('btnSound').setAttribute('aria-pressed', String(store.sound)); $('btnSound').setAttribute('aria-label', store.sound ? 'おとを けす' : 'おとを だす'); }
 
 /* ---------- いどう ---------- */
@@ -326,7 +326,7 @@ function choosePlat(n) {
   step = 3; busy = true; stopMusic(); sfx.train();
   train = { n, t: 0 }; say('でんしゃが きた!');
   setTimeout(() => { win = { t: 0 }; sfx.fanfare(); playMusic('clear', 2.2); if (!store.pieces.includes(1)) store.pieces.push(1); saveAll(); drawPieces(); say('ありがとう! おれいに、ちずの かけらを あげるね'); }, 1900);
-  setTimeout(() => { say('つぎの ばしょは じゅんびちゅうだよ', 'cat'); $('btnAgain').hidden = false; }, 6200);
+  setTimeout(() => { say('ちずに もどって、つぎの ばしょへ いこう', 'cat'); $('btnAgain').hidden = false; }, 6200);
 }
 
 /* ---------- ちかくで みる がめん(1話に 2かいだけ) ---------- */
@@ -378,6 +378,104 @@ function lookTable() {
       : wrong(p, b, 'カードと おなじ じかんの ぎょうを さがそう', 'きいろの ぎょうが ' + timeText(seed.h, seed.half) + 'だよ。みぎの ばんごうを みよう', () => paint(true));
     p.querySelector('#ch').appendChild(b);
   });
+}
+
+
+/* ---------- プロローグ(はじめての 1かいだけ) ----------
+   ミミの へやで ほうせきが ひかり、7いろの かけらに わかれて まどから まちへ とんでいく。ぜんぶで 6びょう、ことばは 3つ */
+const PLACES = [
+  { id: 'eki', name: 'えき', x: 120, y: 236, open: true },
+  { id: 'lib', name: 'としょかん', x: 236, y: 220 },
+  { id: 'zoo', name: 'どうぶつえん', x: 372, y: 246 },
+  { id: 'sea', name: 'うみべ', x: 414, y: 116 },
+  { id: 'park', name: 'ゆうえんち', x: 290, y: 104 },
+  { id: 'forest', name: 'もり', x: 76, y: 104 },
+  { id: 'tower', name: 'とけいとう', x: 190, y: 64 },
+];
+const PROLOGUE_LINES = [[0, 'たからものの ほうせきが ひかりだした…', 'cat'], [1.7, 'かけらが まちへ とんでいっちゃった!', 'girl'], [3.9, 'かけらを あつめに いこう!', 'cat']];
+let pro = null, mapT0 = 0;
+function drawMoonGem(c, x, y, s, glow = 0) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  ci(c, 0, 0, 30 + glow * 14, 'rgba(255,220,110,' + (.3 + glow * .35) + ')');
+  ci(c, -2, 0, 20, '#FFE38A', '#B58A1F', 1.8);
+  c.save(); c.beginPath(); c.arc(7, -5, 16, 0, PI * 2); c.clip(); ci(c, 0, 0, 40, '#FFF8E1'); c.restore();
+  ci(c, -2, 0, 20, null, '#B58A1F', 1.8);
+  poly(c, [[6, -2], [14, 6], [6, 16], [-2, 6]], '#B79CED', '#6B4FB0', 1.5); poly(c, [[6, -2], [10, 6], [6, 16], [2, 6]], '#D7C6F8');
+  c.restore();
+}
+function drawRoom(c) {
+  c.fillStyle = '#FBE9F0'; c.fillRect(0, 0, 480, 360);
+  for (let x = 0; x < 480; x += 40) { c.fillStyle = x % 80 ? '#F7DDE8' : '#FBE9F0'; c.fillRect(x, 0, 40, 250); }   // かべの しまもよう
+  c.fillStyle = '#E8B07E'; c.fillRect(0, 250, 480, 110); c.fillStyle = '#D89B6A'; for (let y = 262; y < 360; y += 24) c.fillRect(0, y, 480, 2);
+  // まど: よるの まち
+  rr(c, 286, 30, 160, 130, 10, '#2B2452', '#FFFFFF', 8);
+  for (let i = 0; i < 9; i++) starShape(c, 300 + hash(i, 3) * 132, 44 + hash(i, 5) * 50, 2 + hash(i, 7) * 2, '#FFFFFF');
+  for (let i = 0; i < 6; i++) { const bx = 296 + i * 24, bh = 24 + hash(i, 9) * 30; c.fillStyle = '#4B3C74'; c.fillRect(bx, 152 - bh, 22, bh); c.fillStyle = '#FFE38A'; c.fillRect(bx + 8, 160 - bh + 6, 5, 5); }
+  ln(c, 366, 34, 366, 156, '#FFFFFF', 5); ln(c, 290, 96, 442, 96, '#FFFFFF', 5);
+  // つくえ
+  rr(c, 40, 190, 230, 22, 6, '#C98A5E', '#8C5A3C', 3); rr(c, 56, 210, 14, 70, 3, '#8C5A3C'); rr(c, 240, 210, 14, 70, 3, '#8C5A3C');
+  el(c, 155, 190, 46, 9, '#FFFFFF', '#CFC4E2', 2);   // ざぶとん(ほうせきの だい)
+}
+function drawProlog(t) {
+  const c = $('proCv').getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0);
+  drawRoom(c);
+  const glow = t < 1.5 ? (Math.sin(t * 9) + 1) / 2 * Math.min(1, t / .6) : 0;
+  if (t < 1.5) drawMoonGem(c, 155, 160 + Math.sin(t * 3) * 2, 2, glow);
+  if (t >= 1.4 && t < 1.9) { c.fillStyle = 'rgba(255,255,255,' + (1 - (t - 1.4) / .5) + ')'; c.fillRect(0, 0, 480, 360); }   // パッと ひかる
+  // 7いろの かけらが まどから そとへ とんでいく
+  if (t >= 1.5) for (let i = 0; i < 7; i++) {
+    const k = Math.min(1, Math.max(0, (t - 1.5 - i * .14) / 1.3)), e = k * k * (3 - 2 * k);
+    const sx = 155, sy = 160, ex = 300 + i * 20, ey = 40 + (i % 3) * 26, mx2 = 200 + i * 18, my2 = 30 - (i % 2) * 20;
+    const x = (1 - e) * (1 - e) * sx + 2 * (1 - e) * e * mx2 + e * e * ex, y = (1 - e) * (1 - e) * sy + 2 * (1 - e) * e * my2 + e * e * ey;
+    if (k < 1) { for (let j = 1; j <= 3; j++) starShape(c, x - j * 8, y + j * 4, 4 - j, PIECE_COL[i]); drawPiece(c, x, y, .9, PIECE_COL[i]); }
+    else ci(c, ex + Math.sin(t * 6 + i) * 2, ey, 3, PIECE_COL[i]);   // まどの そとで きらっと ひかって きえる
+  }
+  // ミミと シロ
+  const jump = t > 1.5 && t < 2.4 ? Math.abs(Math.sin((t - 1.5) * 9)) * 10 : 0;
+  drawGirl(c, 110, 330, 3, t > 1.6 && t < 3.9 ? 'right' : 'down', jump, false);
+  drawCat(c, 220, 334, 2.4, -1, t > 3.9 ? Math.abs(Math.sin(t * 6)) * 3 : 0, false, Math.sin(t * 3));
+}
+function playPrologue() {
+  $('title').hidden = true; $('prologue').hidden = false; $('mapScreen').hidden = true;
+  pro = { t: 0, line: -1 }; playMusic('station');
+}
+function prologueTick(dt) {
+  pro.t += dt; drawProlog(pro.t);
+  const li = PROLOGUE_LINES.reduce((a, l, i) => pro.t >= l[0] ? i : a, -1);
+  if (li !== pro.line) { pro.line = li; $('proSay').textContent = PROLOGUE_LINES[li][1]; if (li === 1) { tone(1568, .3, 0, 'triangle', .1); scrape(0, .5, 3000, 5000, .08); } else tone(880, .1, 0, 'sine', .07); }
+  if (pro.t > 6) endPrologue();
+}
+function endPrologue() { if (!pro) return; pro = null; store.seenPrologue = true; saveAll(); showMap(); }
+
+/* ---------- まちの ちず: かけらが おちた 7かしょ。ひかっている ばしょを タッチして いく ---------- */
+function showMap() {
+  running = false; closeModal(); pro = null;
+  $('title').hidden = true; $('prologue').hidden = true; $('game').hidden = true; $('mapScreen').hidden = false;
+  mapT0 = tNow; drawPieces(); playMusic('station');
+  $('mapSay').textContent = store.pieces.includes(1) ? 'つぎの ばしょは じゅんびちゅうだよ。えきは なんどでも あそべるよ' : 'ひかっている ばしょを タッチしてね';
+}
+function drawMap(t) {
+  const c = $('mapCv').getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0);
+  // やぶれた ちずの かみ
+  c.fillStyle = '#F3EFFB'; c.fillRect(0, 0, 480, 300);
+  poly(c, [[14, 20], [120, 10], [230, 22], [350, 8], [466, 18], [470, 140], [460, 282], [330, 292], [210, 280], [90, 294], [12, 284], [20, 150]], '#FFF3D6', '#B58A1F', 3);
+  c.save(); c.globalAlpha = .55;
+  el(c, 430, 150, 60, 110, '#9FD9F0');                                   // うみ
+  for (let i = 0; i < 6; i++) ci(c, 40 + i * 20, 110 + (i % 2) * 14, 18, '#8FD6A6');   // もり
+  c.restore();
+  c.setLineDash([8, 7]); c.strokeStyle = '#C98A5E'; c.lineWidth = 4; c.beginPath();      // みち
+  c.moveTo(120, 236); c.lineTo(236, 220); c.lineTo(372, 246); c.moveTo(236, 220); c.lineTo(290, 104); c.lineTo(414, 116); c.moveTo(290, 104); c.lineTo(190, 64); c.lineTo(76, 104); c.stroke(); c.setLineDash([]);
+  PLACES.forEach((pl, i) => {
+    const got = store.pieces.includes(i + 1), on = pl.open && !got, p = (Math.sin(t * 4) + 1) / 2;
+    if (on) { ci(c, pl.x, pl.y, 30 + p * 5, null, 'rgba(255,200,61,' + (.6 + .4 * p) + ')', 6); for (let j = 0; j < 4; j++) { const a = t * .9 + j * PI / 2; starShape(c, pl.x + Math.cos(a) * 36, pl.y + Math.sin(a) * 36, 3 + 3 * Math.abs(Math.sin(t * 3 + j)), '#FFFFFF', '#FFC83D'); } }
+    ci(c, pl.x, pl.y, 24, pl.open ? '#FFFFFF' : '#E4DDF0', '#3A2D58', 3);
+    if (got) drawPiece(c, pl.x, pl.y, .95, PIECE_COL[i]);
+    else if (pl.open) { rr(c, pl.x - 13, pl.y - 6, 26, 16, 3, '#D9478A', '#3A2D58', 2); poly(c, [[pl.x - 15, pl.y - 6], [pl.x + 15, pl.y - 6], [pl.x, pl.y - 17]], '#7FB6F0', '#3A2D58', 2); }   // えきの たてもの
+    else num(c, '?', pl.x, pl.y + 1, 22, '#9A90B8');
+    rr(c, pl.x - 38, pl.y + 27, 76, 22, 8, pl.open ? '#FFFFFF' : 'rgba(255,255,255,.6)', pl.open ? '#3A2D58' : '#CFC4E2', 2);
+    num(c, pl.name, pl.x, pl.y + 38.5, pl.name.length > 4 ? 10 : 12.5, pl.open ? '#3A2D58' : '#9A90B8');
+  });
+  drawGirl(c, 120 - 34, 236 + 30, 1.3, 'right', Math.abs(Math.sin(t * 3)) * 2);   // ミミは えきの となり
 }
 
 /* ---------- えがく ---------- */
@@ -443,7 +541,9 @@ function frame(ts) {
   if (running) {
     if (train) train.t += dt; if (win) win.t += dt; if (shake > 0) shake = Math.max(0, shake - dt);
     update(dt); render(tNow);
-  } else if (!$('title').hidden && !calm) drawTitle(tNow);
+  } else if (pro) prologueTick(dt);
+  else if (!$('mapScreen').hidden) drawMap(calm ? 0 : tNow - mapT0);
+  else if (!$('title').hidden && !calm) drawTitle(tNow);
   requestAnimationFrame(frame);
 }
 function fit() {
@@ -473,9 +573,16 @@ window.addEventListener('keydown', ev => {   // パソコンでは やじるし�
   const o = OBJS.find(q => q.hit(m.x + dx, m.y + dy) && q.stand.some(s => s[0] === m.x && s[1] === m.y));
   if (o) { path = []; act(o); } else if (!blocked(m.x + dx, m.y + dy)) { path = []; pending = null; startStep(m.x + dx, m.y + dy); }
 });
-$('title').onclick = () => { sfx.open(); startStage(); };
+$('title').onclick = () => { sfx.open(); if (store.seenPrologue) showMap(); else playPrologue(); };   // プロローグは はじめての 1かいだけ
+$('btnSkip').onclick = ev => { ev.stopPropagation(); endPrologue(); };
+$('mapCv').addEventListener('pointerdown', ev => {   // ちずの ばしょを タッチ
+  const r = $('mapCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * 480, y = (ev.clientY - r.top) / r.height * 300;
+  const pl = PLACES.find(q => Math.hypot(q.x - x, q.y - y) < 34); if (!pl) return;
+  if (pl.open) { sfx.open(); startStage(); } else { sfx.miss(); $('mapSay').textContent = pl.name + 'は、まだ いけないよ'; }
+});
+$('mapHome').onclick = goTitle;
 $('btnHome').onclick = goTitle;
-$('btnAgain').onclick = startStage;
+$('btnAgain').onclick = showMap;
 $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshSound(); sfx.open(); if (store.sound) playMusic(wantTrack); else stopMusic(); };
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));

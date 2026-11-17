@@ -17,6 +17,20 @@
     <span class="start">タッチして はじめる</span>
   </button>
 
+  <section id="prologue" class="story" hidden>
+    <canvas id="proCv" width="480" height="360" aria-hidden="true"></canvas>
+    <p id="proSay" class="story-say" aria-live="polite"></p>
+    <button id="btnSkip" class="skip" type="button">とばす ▶</button>
+  </section>
+
+  <section id="mapScreen" class="story" hidden>
+    <button id="mapHome" class="sys" type="button" aria-label="タイトルに もどる">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7M6.5 10v9h11v-9M10.5 19v-5h3v5"/></svg>
+    </button>
+    <canvas id="mapCv" width="480" height="300" aria-label="まちの ちず"></canvas>
+    <p id="mapSay" class="story-say" aria-live="polite"></p>
+  </section>
+
   <section id="game" class="game" hidden>
     <div class="hud">
       <button id="btnHome" class="sys" type="button" aria-label="タイトルに もどる">
@@ -33,7 +47,7 @@
       <canvas id="face" width="120" height="120" aria-hidden="true"></canvas>
       <p id="say" aria-live="polite"></p>
       <div id="tray" class="tray"></div>
-      <button id="btnAgain" class="btn" type="button" hidden>もういちど あそぶ</button>
+      <button id="btnAgain" class="btn" type="button" hidden>ちずに もどる</button>
     </div>
   </section>
 
