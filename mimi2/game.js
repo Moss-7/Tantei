@@ -1465,10 +1465,45 @@ function fitTitle() {
   tbg = { W, H, dpr, hz: a.top - s.top + sec.scrollTop + a.height * .87 };
   drawTitleBg(0);
 }
+const TITLE_BG = /bg=map/.test(location.search) ? 'map' : 'sunset';   // ためしに みくらべる ための きりかえ
+// はいけい(ちず): ふるい たからの ちずの かみ。みち・もり・うみ・ばしょの しるしを うすく えがく
+function drawTitleMap(c, W, H, hz, t) {
+  c.fillStyle = '#F6E6C2'; c.fillRect(0, 0, W, H);
+  const vg = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75);
+  vg.addColorStop(0, 'rgba(255,248,225,0)'); vg.addColorStop(1, 'rgba(181,138,31,.35)'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(181,138,31,.18)'; c.lineWidth = 1.5;   // おりめ
+  for (let i = 1; i < 3; i++) { c.beginPath(); c.moveTo(W * i / 3, 0); c.lineTo(W * i / 3, H); c.stroke(); }
+  c.beginPath(); c.moveTo(0, H / 2); c.lineTo(W, H / 2); c.stroke();
+  c.save(); c.globalAlpha = .5;
+  el(c, W * .96, H * .36, W * .16, H * .26, '#9FD9F0');                                         // うみ
+  for (let i = 0; i < 4; i++) ln(c, W * .9 + (i % 2) * 14, H * .26 + i * 26, W * .9 + (i % 2) * 14 + 16, H * .26 + i * 26, '#FFFFFF', 2);
+  for (let i = 0; i < 7; i++) ci(c, W * .04 + (i % 4) * 22, H * .12 + Math.floor(i / 4) * 20 + (i % 2) * 8, 16, '#8FD6A6');   // もり
+  for (let i = 0; i < 5; i++) ci(c, W * .06 + i * 20, H * .82 + (i % 2) * 10, 14, '#8FD6A6');
+  c.restore();
+  // てんてんの みち
+  c.setLineDash([9, 8]); c.strokeStyle = 'rgba(201,138,94,.75)'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(-10, H * .22); c.bezierCurveTo(W * .25, H * .05, W * .5, H * .3, W + 10, H * .12); c.stroke();
+  c.beginPath(); c.moveTo(-10, hz + 4); c.bezierCurveTo(W * .3, hz - 6, W * .7, hz + 14, W + 10, hz); c.stroke();   // ミミが あるく みち
+  c.beginPath(); c.moveTo(W * .12, H + 10); c.bezierCurveTo(W * .2, H * .7, W * .05, H * .55, W * .1, hz + 4); c.stroke();
+  c.beginPath(); c.moveTo(W * .88, H + 10); c.bezierCurveTo(W * .8, H * .75, W * .95, H * .6, W * .9, hz); c.stroke();
+  c.setLineDash([]);
+  // ばしょの しるし(はしの ほうに 7つ)。かけらの いろで ゆっくり またたく
+  const spots = [[.07, .3], [.93, .14], [.05, .6], [.95, .62], [.1, .93], [.9, .9], [.5, .05]];
+  spots.forEach(([fx, fy], i) => {
+    const x = W * fx, y = H * fy, tw = .5 + .5 * Math.sin(t * 1.3 + i * 1.7);
+    ci(c, x, y, 15, 'rgba(255,255,255,.7)', 'rgba(58,45,88,.35)', 2);
+    c.save(); c.globalAlpha = .5 + .4 * tw; starShape(c, x, y, 6 + tw * 2, PIECE_COL[i], '#FFFFFF'); c.restore();
+  });
+  // ほうい じしゃく と ばつじるし
+  const cx = W - 40, cy = H - 44;
+  if (W > 500) { ci(c, cx, cy, 24, 'rgba(255,255,255,.6)', 'rgba(58,45,88,.4)', 2); poly(c, [[cx, cy - 22], [cx + 6, cy], [cx, cy + 22], [cx - 6, cy]], 'rgba(217,71,138,.7)'); num(c, 'N', cx, cy - 32, 12, 'rgba(58,45,88,.6)'); }
+  ln(c, W * .7 - 8, H * .08 - 8, W * .7 + 8, H * .08 + 8, 'rgba(217,71,138,.6)', 4); ln(c, W * .7 + 8, H * .08 - 8, W * .7 - 8, H * .08 + 8, 'rgba(217,71,138,.6)', 4);
+}
 function drawTitleBg(t) {
   if (!tbg) return;
   const { W, H, dpr, hz } = tbg, c = $('titleBg').getContext('2d');
   c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (TITLE_BG === 'map') { drawTitleMap(c, W, H, hz, t); return; }
   const sky = c.createLinearGradient(0, 0, 0, hz);
   sky.addColorStop(0, '#B7A2E6'); sky.addColorStop(.55, '#F4A9C8'); sky.addColorStop(1, '#FFD9A8');
   c.fillStyle = sky; c.fillRect(0, 0, W, hz + 1);
