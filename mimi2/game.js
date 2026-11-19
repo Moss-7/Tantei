@@ -1521,8 +1521,8 @@ function buildOldMap(W, H, hz, dpr) {
   const road = (pts) => { c.setLineDash([7, 7]); c.strokeStyle = sep(.6); c.lineWidth = 2.6; c.beginPath(); pts.forEach((p, i) => { if (!i) c.moveTo(p[0], p[1]); else { const q = pts[i - 1]; c.bezierCurveTo(q[0] + (p[0] - q[0]) * .3, q[1] + 34 * s, q[0] + (p[0] - q[0]) * .7, p[1] - 34 * s, p[0], p[1]); } }); c.stroke(); c.setLineDash([]); };
   road([S.forest, S.tower, S.park, S.sea]); road([S.eki, S.lib, S.zoo]);
   // にじ(いろあせた すいさい): ミミたちの うしろから、ななめに かかる アーチ
-  { const R = Math.max(210, Math.min(W * .42, H * .5)); c.save(); c.translate(W * .5, hz + 6); c.rotate(-.32);
-    for (let k = 0; k < 7; k++) { c.beginPath(); c.arc(0, 0, R + (3 - k) * 4.2, PI * 1.02, PI * 1.98); c.strokeStyle = PIECE_COL[k]; c.globalAlpha = .4; c.lineWidth = 4.4; c.stroke(); }
+  { const R = Math.max(300, W * .62); c.save(); c.translate(W * .55, H * .09 + R); c.rotate(-.32);   // はんけいを おおきく。てっぺんが がめんの うえの ほうに くる ように まんなかを さげる
+    for (let k = 0; k < 7; k++) { c.beginPath(); c.arc(0, 0, R + (3 - k) * 4.6, PI, PI * 2); c.strokeStyle = PIECE_COL[k]; c.globalAlpha = .4; c.lineWidth = 4.8; c.stroke(); }
     c.restore(); c.globalAlpha = 1; }
   // 7つの ばしょ: かけらの いろの にじみ と、セピアの わく
   PLACES.forEach((pl, i) => {
