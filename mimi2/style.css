@@ -17,14 +17,40 @@ h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-wrap
 #app{height:100%;display:flex;flex-direction:column}
 
 /* ---- タイトル ---- */
-.title{flex:1;border:0;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));
-  background:linear-gradient(#AEDCF7,#EAF7FD 60%,#A9DB9A 60%)}
-.title canvas{width:min(360px,86%);height:auto}
-.logo{font-family:var(--display);font-size:clamp(32px,9vw,54px);color:var(--berry);-webkit-text-stroke:7px #fff;paint-order:stroke fill;line-height:1.2}
+.title{flex:1;min-height:0;position:relative;overflow:auto;display:flex;background:#FFD9A8;
+  padding:12px max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px))}
+.title-bg{position:absolute;left:0;top:0;width:100%;height:100%}
+.title-inner{position:relative;margin:auto;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:680px;width:100%}
+#titleArt{width:min(430px,100%);height:auto}
+h1.logo{margin:0}
+.logo{font-family:var(--display);font-weight:400;font-size:clamp(32px,9vw,54px);color:var(--berry);-webkit-text-stroke:7px #fff;paint-order:stroke fill;line-height:1.2}
 .logo b{font-weight:400;color:var(--star);-webkit-text-stroke:7px var(--ink);margin-left:.1em}
 .sub{font-family:var(--display);font-size:clamp(18px,5vw,26px);background:rgba(255,255,255,.85);border-radius:999px;padding:2px 20px}
-.start{margin-top:14px;font-family:var(--display);font-size:clamp(18px,5vw,22px);padding:10px 26px;border-radius:18px;border:3px solid var(--ink);background:var(--star);box-shadow:0 4px 0 var(--ink);animation:bob 1.6s ease-in-out infinite}
+.pick{margin:0;color:var(--ink);background:rgba(255,255,255,.85);border-radius:999px;padding:2px 18px}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
+.slot{display:flex;flex-direction:column;align-items:center;gap:8px}
+.slot-main{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px 12px;
+  background:var(--surface);border:3px solid var(--ink);border-radius:22px;box-shadow:0 5px 0 var(--ink)}
+.slot-main:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+.slot-main canvas{width:min(84px,100%);height:auto}
+.slot-main .who{font-family:var(--display);font-weight:400;font-size:clamp(16px,4vw,20px)}
+.slot-main .state{font-size:clamp(11px,3vw,14px);color:var(--ink-soft);min-height:1.6em}
+.slot-del{position:relative;overflow:hidden;font-size:13px;padding:3px 14px;border-radius:999px;border:2px solid var(--line);background:rgba(255,255,255,.7);color:var(--ink-soft)}
+.slot-del i{position:absolute;inset:0;background:var(--berry);opacity:.3;transform:scaleX(0);transform-origin:left}
+.slot-del.hold i{transform:scaleX(1);transition:transform 1.4s linear}
+.slot-del span{position:relative}
+.who-icon{width:32px;height:32px;flex:none}
+.story canvas.map-who{border:0;border-radius:0;max-width:none;max-height:none;width:32px;height:32px}
+.map-who{position:absolute;left:calc(max(10px,env(safe-area-inset-left,0px)) + 40px);top:9px}
+@media (max-height:480px){
+  #titleArt{width:auto;max-height:26vh}
+  .logo{font-size:28px}.sub{font-size:16px}
+  .title-inner{gap:6px}
+  .slot-main{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:0 10px;padding:6px 8px}
+  .slot-main .who,.slot-main .state{white-space:nowrap}
+  .slot-main canvas{width:48px}
+  .slot-main .state{min-height:0}
+}
 @keyframes bob{50%{transform:translateY(-5px)}}
 
 /* ---- ゲーム ---- */
@@ -91,7 +117,7 @@ h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-wrap
   .panel canvas.pic{max-height:38vh}
   .choice{min-height:48px;font-size:21px}
 }
-@media (prefers-reduced-motion:reduce){.start,.choice.no,.card.new,.pieces i.got{animation:none}}
+@media (prefers-reduced-motion:reduce){.choice.no,.card.new,.pieces i.got{animation:none}}
 
 /* ---- プロローグと ちず ---- */
 .story{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;

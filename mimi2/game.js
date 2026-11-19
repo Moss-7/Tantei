@@ -11,11 +11,16 @@ const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: re
 
 /* ---------- セーブ(あつめた かけらと、おとの せってい) ---------- */
 function loadAll() {
-  try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (d && Array.isArray(d.pieces)) return d; } catch (e) {}
-  return { pieces: [], sound: true };
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (d && Array.isArray(d.slots)) return d;
+    if (d && Array.isArray(d.pieces)) return { slots: [{ pieces: d.pieces, seenPrologue: !!d.seenPrologue, introSeen: d.introSeen || [] }, null, null], sound: d.sound !== false };
+  } catch (e) {}
+  return { slots: [null, null, null], sound: true };
 }
 function saveAll() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(store)); } catch (e) {} }
 const store = loadAll();
+let slotIx = 0, data = { pieces: [], seenPrologue: false, introSeen: [] };   // data: いま あそんでいる ひとの データ
 
 /* ---------- おと ---------- */
 let stepAlt = false, actx = null, music = null, wantTrack = null, noiseBuf = null;
@@ -331,13 +336,13 @@ function drawTray() {
 const PIECE_COL = ['#FF7E8A', '#FFA63D', '#FFD25E', '#8FD6A6', '#7FB6F0', '#8C9BEA', '#B79CED'];
 function drawPieces() {
   let h = '', got = 0;
-  for (let i = 0; i < 7; i++) { const g = store.pieces.includes(i + 1); if (g) got++; h += '<i class="' + (g ? 'got' : '') + '" style="' + (g ? 'background:' + PIECE_COL[i] : '') + '"></i>'; }
+  for (let i = 0; i < 7; i++) { const g = data.pieces.includes(i + 1); if (g) got++; h += '<i class="' + (g ? 'got' : '') + '" style="' + (g ? 'background:' + PIECE_COL[i] : '') + '"></i>'; }
   $('pieces').innerHTML = h; $('pieces').setAttribute('aria-label', 'ちずの かけら ' + got + 'まい');
 }
 // こたえが わかって、さいごに あたった とき: ちずの かけらが でてくる
 function winPiece(delay) {
   const id = runId;
-  setTimeout(() => { if (id !== runId) return; win = { t: 0 }; sfx.fanfare(); playMusic('clear', 2.2); if (!store.pieces.includes(S.n)) store.pieces.push(S.n); saveAll(); drawPieces(); say(S.thanks); }, delay);
+  setTimeout(() => { if (id !== runId) return; win = { t: 0 }; sfx.fanfare(); playMusic('clear', 2.2); if (!data.pieces.includes(S.n)) data.pieces.push(S.n); saveAll(); drawPieces(); say(S.thanks); }, delay);
   setTimeout(() => { if (id !== runId) return; say('ちずに もどって、つぎの ばしょへ いこう', 'cat'); $('btnAgain').hidden = false; }, delay + 4300);
 }
 function wrongPlace(text, hintText) {   // つかう ばしょを まちがえた: いらいにんが くびを ふる。なんどでも やりなおせる
@@ -677,7 +682,7 @@ function drawSym(c, k, x, y, r, bg = '#FFFBEA') {
   else if (k === 7) { rr(c, x - r * .25, y - r * .8, r * .5, r * 1.6, 2, col); rr(c, x - r * .8, y - r * .25, r * 1.6, r * .5, 2, col); }   // じゅうじ
   else { for (let i = 0; i < 5; i++) { const a = i * PI * 2 / 5 - PI / 2; ci(c, x + Math.cos(a) * r * .5, y + Math.sin(a) * r * .5, r * .38, col); } ci(c, x, y, r * .3, '#FFE38A'); }   // はな
 }
-const ANIMALS = ['usagi', 'kirin', 'panda', 'raion', 'kaba', 'kuma'];
+const ZOO_ANIMALS = ['usagi', 'kirin', 'panda', 'raion', 'kaba', 'kuma'];
 const HOUSE_COL = ['#FFD6E4', '#FFF0B8', '#DDF3E4', '#FFE0C2', '#E4DDF7', '#D9ECFB'];
 const DIRS = { left: 'ひだり', right: 'みぎ' };
 const KANA = ['み', 'ぎ', 'ひ', 'だ', 'り', 'う', 'え', 'し', 'た'];
@@ -712,7 +717,7 @@ const ZOO = {
     { id: 'npc', hit: (x, y) => x === 2 && (y === 6 || y === 5), stand: [[3, 6], [2, 7], [1, 6]] },
     { id: 'letter', hit: (x, y) => y === 5 && (x === 9 || x === 10), stand: [[9, 6], [10, 6], [8, 5], [11, 5], [9, 4], [10, 4]] },
     { id: 'bag', hit: (x, y) => x === 7 && y === 7, stand: [[7, 8], [6, 7], [8, 7], [7, 6]] },
-    ...ANIMALS.map((a, i) => ({ id: 'house', i, hit: (x, y) => y < 2 && (x === i * 2 || x === i * 2 + 1), stand: [[i * 2, 2], [i * 2 + 1, 2]] })),
+    ...ZOO_ANIMALS.map((a, i) => ({ id: 'house', i, hit: (x, y) => y < 2 && (x === i * 2 || x === i * 2 + 1), stand: [[i * 2, 2], [i * 2 + 1, 2]] })),
   ],
   newSeed() {
     const dir = Math.random() < .5 ? 'left' : 'right', n = 2 + Math.floor(Math.random() * 4), eat = 3 + Math.floor(Math.random() * 3);
@@ -810,7 +815,7 @@ const ZOO = {
     for (let i = 0; i < 3; i++) ln(c, 10 + i * 22, 7.6 * T + i * 14, 26 + i * 22, 7.6 * T + i * 14, '#FFFFFF', 2);
     rr(c, 4.6 * T, 9.35 * T, 2.8 * T, .6 * T, 8, '#4CC3A6', '#3A2D58', 2);               // いりぐち
     // どうぶつの へや 6つ
-    ANIMALS.forEach((a, i) => {
+    ZOO_ANIMALS.forEach((a, i) => {
       const x0 = i * 2 * T;
       rr(c, x0 + 3, 12, 2 * T - 6, 2 * T - 10, 6, HOUSE_COL[i], '#3A2D58', 2.5);
       poly(c, [[x0 - 1, 16], [x0 + T, -2], [x0 + 2 * T + 1, 16]], '#D9478A', '#3A2D58', 2.5);
@@ -1084,7 +1089,7 @@ const place = (o, [x, y, dir]) => { o.x = o.fx = x; o.y = o.fy = y; o.dir = dir;
 function endIntro() {
   if (!intro) return;
   intro = null; busy = false; path = []; $('talk').classList.remove('big'); $('btnSkip2').hidden = true;
-  if (!store.introSeen.includes(S.n)) { store.introSeen.push(S.n); saveAll(); }
+  if (!data.introSeen.includes(S.n)) { data.introSeen.push(S.n); saveAll(); }
   m.p = 1; place(m, S.intro.after.m); place(cat, S.intro.after.cat);
   say(S.intro.first, 'cat');
 }
@@ -1095,14 +1100,14 @@ function startStage(n) {
   $('stageName').textContent = n + '話 ' + S.name; cv.setAttribute('aria-label', S.name + 'の マップ');
   $('title').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('game').hidden = false; $('btnAgain').hidden = true;
   refreshSound(); drawPieces(); drawTray(); fit(); running = true; playMusic(S.track);
-  if (!store.introSeen) store.introSeen = [];
-  if (store.introSeen.includes(n)) { intro = null; place(m, S.intro.after.m); place(cat, S.intro.after.cat); $('talk').classList.remove('big'); $('btnSkip2').hidden = true; say(S.intro.first, 'cat'); return; }
+  if (!data.introSeen) data.introSeen = [];
+  if (data.introSeen.includes(n)) { intro = null; place(m, S.intro.after.m); place(cat, S.intro.after.cat); $('talk').classList.remove('big'); $('btnSkip2').hidden = true; say(S.intro.first, 'cat'); return; }
   // はじめての ときは プロローグ: ミミは いりぐちから くる
   intro = { k: 0, t: 0, walked: false }; place(m, S.intro.from.m); place(cat, S.intro.from.cat);
   $('btnSkip2').hidden = false; $('talk').classList.add('big'); say('あれ? そらから ひかる ものが…', 'cat');
   tone(1568, .25, .3, 'triangle', .08); tone(1319, .25, .5, 'triangle', .08); tone(1047, .4, .7, 'triangle', .08);
 }
-function goTitle() { running = false; runId++; pro = null; closeModal(); playMusic('title'); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; }
+function goTitle() { running = false; runId++; pro = null; closeModal(); playMusic('title'); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; buildSlots(); }
 function refreshSound() { $('btnSound').setAttribute('aria-pressed', String(store.sound)); $('btnSound').setAttribute('aria-label', store.sound ? 'おとを けす' : 'おとを だす'); }
 
 /* ---------- いどう ---------- */
@@ -1158,8 +1163,8 @@ const PLACES = [
   { id: 'tower', name: 'とけいとう', x: 190, y: 64 },
 ];
 // いける ばしょ: できている はなしで、まえの はなしの かけらを もっている ところ
-const isOpen = i => i < STAGES.length && (i === 0 || store.pieces.includes(i));
-const nextPlace = () => PLACES.findIndex((pl, i) => isOpen(i) && !store.pieces.includes(i + 1));
+const isOpen = i => i < STAGES.length && (i === 0 || data.pieces.includes(i));
+const nextPlace = () => PLACES.findIndex((pl, i) => isOpen(i) && !data.pieces.includes(i + 1));
 const PROLOGUE_LINES = [[0, 'たからものの ほうせきが ひかりだした…', 'cat'], [1.7, 'かけらが まちへ とんでいっちゃった!', 'girl'], [3.9, 'かけらを あつめに いこう!', 'cat']];
 let pro = null, mapT0 = 0;
 function drawMoonGem(c, x, y, s, glow = 0) {
@@ -1213,7 +1218,7 @@ function prologueTick(dt) {
   if (li !== pro.line) { pro.line = li; $('proSay').textContent = PROLOGUE_LINES[li][1]; if (li === 1) { tone(1568, .3, 0, 'triangle', .1); scrape(0, .5, 3000, 5000, .08); } else tone(880, .1, 0, 'sine', .07); }
   if (pro.t > 6) endPrologue();
 }
-function endPrologue() { if (!pro) return; pro = null; store.seenPrologue = true; saveAll(); showMap(); }
+function endPrologue() { if (!pro) return; pro = null; data.seenPrologue = true; saveAll(); showMap(); }
 
 /* ---------- まちの ちず: かけらが おちた 7かしょ。ひかっている ばしょを タッチして いく ---------- */
 /* ちずの うえで ミミが あるく: みちで つながった ばしょを たどって、えらんだ ばしょへ */
@@ -1301,7 +1306,7 @@ function mapWalkTick(dt) {
 function showMap() {
   // ミミの いる ばしょ: はなしから もどったら その ばしょ。タイトルからなら、さいごに かけらを とった ばしょ
   if (!$('game').hidden && S) mapAt = S.n - 1;
-  else { mapAt = 0; for (let i = 0; i < STAGES.length; i++) if (store.pieces.includes(i + 1)) mapAt = i; }
+  else { mapAt = 0; for (let i = 0; i < STAGES.length; i++) if (data.pieces.includes(i + 1)) mapAt = i; }
   mapWalk = null;
   running = false; runId++; closeModal(); pro = null;
   $('title').hidden = true; $('prologue').hidden = true; $('game').hidden = true; $('mapScreen').hidden = false;
@@ -1327,7 +1332,7 @@ function drawMap(t) {
   c.moveTo(120, 236); c.lineTo(236, 220); c.lineTo(372, 246); c.moveTo(236, 220); c.lineTo(290, 104); c.lineTo(414, 116); c.moveTo(290, 104); c.lineTo(190, 64); c.lineTo(76, 104); c.stroke(); c.setLineDash([]);
   const nx = nextPlace();
   PLACES.forEach((pl, i) => {
-    const got = store.pieces.includes(i + 1), open = isOpen(i), on = i === nx, p = (Math.sin(t * 4) + 1) / 2;
+    const got = data.pieces.includes(i + 1), open = isOpen(i), on = i === nx, p = (Math.sin(t * 4) + 1) / 2;
     if (on) { ci(c, pl.x, pl.y, 30 + p * 5, null, 'rgba(255,200,61,' + (.6 + .4 * p) + ')', 6); for (let j = 0; j < 4; j++) { const a = t * .9 + j * PI / 2; starShape(c, pl.x + Math.cos(a) * 36, pl.y + Math.sin(a) * 36, 3 + 3 * Math.abs(Math.sin(t * 3 + j)), '#FFFFFF', '#FFC83D'); } }
     ci(c, pl.x, pl.y, 24, open ? '#FFFFFF' : '#E4DDF0', '#3A2D58', 3);
     if (got) drawPiece(c, pl.x, pl.y, .95, PIECE_COL[i]);
@@ -1394,7 +1399,7 @@ function frame(ts) {
     if (!freeze) update(dt); render(tNow);
   } else if (pro) prologueTick(dt);
   else if (!$('mapScreen').hidden) { if (mapWalk) mapWalkTick(dt); drawMap(calm ? 0 : tNow - mapT0); }
-  else if (!$('title').hidden && !calm) drawTitle(tNow);
+  else if (!$('title').hidden && !calm) { drawTitle(tNow); drawTitleBg(tNow); }
   requestAnimationFrame(frame);
 }
 function fit() {
@@ -1404,11 +1409,125 @@ function fit() {
   const bw = Math.round(Math.min(1440, Math.max(480, w * (window.devicePixelRatio || 1))));
   if (cv.width !== bw) { cv.width = bw; cv.height = Math.round(bw * ROWS / COLS); }
 }
+/* ---------- タイトル: 1さくめと おなじ かたち(ミミと シロが あるいて さがす / 3にんぶんの セーブ)。はいけいは ゆうやけの まち ---------- */
+const ANIMALS = [{ id: 'rabbit', name: 'うさぎ' }, { id: 'cat', name: 'ねこ' }, { id: 'bear', name: 'くま' }];
+function drawAnimal(c, kind, cx, cy, s) {
+  c.save(); c.translate(cx, cy); c.scale(s, s);
+  if (kind === 'rabbit') { el(c, -5, -13, 3.2, 9, '#FFFFFF', '#D9CFE8', 1); el(c, 5, -13, 3.2, 9, '#FFFFFF', '#D9CFE8', 1); el(c, -5, -13, 1.4, 6, '#FFB7CF'); el(c, 5, -13, 1.4, 6, '#FFB7CF'); ci(c, 0, 0, 10, '#FFFFFF', '#D9CFE8', 1); }
+  else if (kind === 'bear') { ci(c, -8, -7, 4.5, '#B98058'); ci(c, 8, -7, 4.5, '#B98058'); ci(c, -8, -7, 2.2, '#E3B58F'); ci(c, 8, -7, 2.2, '#E3B58F'); ci(c, 0, 0, 10, '#B98058'); el(c, 0, 3.5, 4.5, 3.5, '#E3B58F'); }
+  else { poly(c, [[-10, -3], [-9, -14], [-2, -8]], '#FFE2A8', '#E6BF7A', 1); poly(c, [[10, -3], [9, -14], [2, -8]], '#FFE2A8', '#E6BF7A', 1); ci(c, 0, 0, 10, '#FFE2A8', '#E6BF7A', 1); }
+  ci(c, -3.5, -1, 1.3, '#3A2D58'); ci(c, 3.5, -1, 1.3, '#3A2D58'); ci(c, 0, 2.6, 1.3, '#FF8FB3');
+  ci(c, -6.5, 2.5, 2, 'rgba(255,120,160,.4)'); ci(c, 6.5, 2.5, 2, 'rgba(255,120,160,.4)');
+  c.restore();
+}
+const TITLE = { home: 290, left: 130, right: 500, speed: 100, idle: 9, look: .9 };
+const titleCat = { x: TITLE.home + 140, last: 0 };
+function titlePose(t) {
+  const T_ = TITLE, legs = [[T_.home, T_.left], [T_.left, T_.right], [T_.right, T_.home]];
+  let u = t % (T_.idle + legs.reduce((s, l) => s + Math.abs(l[1] - l[0]) / T_.speed + T_.look, 0));
+  if (u < T_.idle) return { x: T_.home, dir: 'down', walk: false, look: false };
+  u -= T_.idle;
+  for (const [from, to] of legs) {
+    const d = Math.abs(to - from) / T_.speed, dir = to > from ? 'right' : 'left';
+    if (u < d) return { x: from + (to - from) * (u / d), dir, walk: true, look: false };
+    u -= d;
+    if (u < T_.look) return { x: to, dir, walk: false, look: true };   // たちどまって のぞきこむ
+    u -= T_.look;
+  }
+  return { x: T_.home, dir: 'down', walk: false, look: false };
+}
 function drawTitle(t) {
-  const a = $('titleArt').getContext('2d'); a.clearRect(0, 0, 480, 300);
-  drawPiece(a, 240, 78 - Math.sin(t * 1.6) * 4, 3.4, PIECE_COL[Math.floor(t / 1.5) % 7]);
-  drawGirl(a, 170, 284, 5, 'down', (Math.sin(t * 1.5) + 1) * .3, (t % 4.3) < .14);
-  drawCat(a, 300, 286, 3.5, -1, (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * 1.1), ((t + 2.5) % 5.7) < .14);
+  const a = $('titleArt').getContext('2d');
+  a.clearRect(0, 0, 640, 240);
+  const blinkAt = (period, off) => ((t + off) % period) < .14;
+  const p = titlePose(t), sgn = p.dir === 'left' ? -1 : 1;
+  // シロは ミミの うしろを すこし おくれて ついていく
+  const dt = Math.min(.1, Math.max(0, t - titleCat.last)); titleCat.last = t;
+  const want = p.dir === 'down' ? TITLE.home + 140 : p.x - sgn * 125;
+  const st = Math.sign(want - titleCat.x) * Math.min(Math.abs(want - titleCat.x), 150 * dt);
+  titleCat.x += st;
+  if (Math.abs(st) > .01) drawCatDir(a, titleCat.x, 226, 3.6, st > 0 ? 'right' : 'left', Math.abs(Math.sin(t * 11)) * .9, Math.sin(t * 6) * .6);
+  else if (p.dir === 'down') drawCat(a, titleCat.x, 226, 3.6, -1, (Math.sin(t * 1.5 + 1.2) + 1) * .25, false, Math.sin(t * 1.1), blinkAt(5.7, 2.5));
+  else drawCatDir(a, titleCat.x, 226, 3.6, p.dir, (Math.sin(t * 1.5 + 1.2) + 1) * .25, Math.sin(t * 1.1), blinkAt(5.7, 2.5));
+  const bob = p.walk ? Math.abs(Math.sin(t * 10)) * 1.1 : p.look ? .2 : (Math.sin(t * 1.5) + 1) * .3;
+  drawGirl(a, p.x, 224, 5.2, p.dir, bob, p.dir === 'down' && blinkAt(4.3, 0));
+  // むしめがねが きらり(ふだんは ときどき、のぞきこんだ ときは そのつど)
+  const g = p.look ? (t * 1.4) % 1 : p.dir === 'down' ? (t % 6) / .9 : 2;
+  if (g < 1) starShape(a, p.dir === 'down' ? p.x + 86 : p.x + sgn * 80, 142, 9 * Math.sin(g * PI), '#FFFFFF');
+}
+// はいけい: ゆうやけの そらと まちの シルエット。そらには 7いろの かけらが ゆっくり またたく
+let tbg = null;
+function fitTitle() {
+  const sec = $('title'); if (sec.hidden || !sec.clientWidth) return;
+  const s = sec.getBoundingClientRect(), a = $('titleArt').getBoundingClientRect(), cv2 = $('titleBg');
+  const W = sec.clientWidth, H = Math.max(sec.clientHeight, sec.scrollHeight), dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv2.style.height = H + 'px'; cv2.width = Math.round(W * dpr); cv2.height = Math.round(H * dpr);
+  tbg = { W, H, dpr, hz: a.top - s.top + sec.scrollTop + a.height * .87 };
+  drawTitleBg(0);
+}
+function drawTitleBg(t) {
+  if (!tbg) return;
+  const { W, H, dpr, hz } = tbg, c = $('titleBg').getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const sky = c.createLinearGradient(0, 0, 0, hz);
+  sky.addColorStop(0, '#B7A2E6'); sky.addColorStop(.55, '#F4A9C8'); sky.addColorStop(1, '#FFD9A8');
+  c.fillStyle = sky; c.fillRect(0, 0, W, hz + 1);
+  ci(c, W * .8, hz - 70, 70, 'rgba(255,236,170,.35)'); ci(c, W * .8, hz - 70, 44, 'rgba(255,240,190,.95)');   // しずむ おひさま
+  // そらの かけら(7いろ)
+  for (let i = 0; i < 7; i++) {
+    const x = W * (.08 + i * .14), y = Math.max(18, hz * (.12 + .1 * Math.sin(i * 1.3 + 1))), tw = .55 + .45 * Math.sin(t * 1.4 + i * 1.7);
+    c.save(); c.globalAlpha = .45 + .45 * tw; starShape(c, x, y, 4 + tw * 3, PIECE_COL[i], 'rgba(255,255,255,.9)'); c.restore();
+  }
+  // まちの シルエット(とおく)。まどに あかり
+  const base = hz + 2, unit = Math.max(26, W / 26);
+  for (let i = 0, x = -10; x < W + 10; i++) {
+    const w = unit * (.9 + hash(i, 2) * .8), h = unit * (1.1 + hash(i, 4) * 1.6);
+    const tower = i === 5;   // とけいとう
+    const bh = tower ? unit * 3.6 : h;
+    rr(c, x, base - bh, w - 3, bh, tower ? [w / 2, w / 2, 0, 0] : [4, 4, 0, 0], '#A58CD6');
+    if (tower) { ci(c, x + w / 2 - 1.5, base - bh + w * .55, w * .26, '#FFF3D6'); ln(c, x + w / 2 - 1.5, base - bh + w * .55, x + w / 2 - 1.5, base - bh + w * .4, '#A58CD6', 2); }
+    else for (let r = 0; r < 2; r++) for (let q = 0; q < 2; q++) if (hash(i * 3 + r, q) > .45) rr(c, x + 5 + q * (w / 2 - 3), base - h + 7 + r * 13, 5, 6, 1, '#FFE38A');
+    x += w;
+  }
+  // じめん: ゆうやけ いろの のはらと、ちずと おなじ てんてんの みち
+  const gr = c.createLinearGradient(0, base, 0, H);
+  gr.addColorStop(0, '#C7DFA4'); gr.addColorStop(1, '#ABD08E');
+  c.fillStyle = gr; c.fillRect(0, base, W, H - base);
+  c.setLineDash([10, 9]); c.strokeStyle = 'rgba(201,138,94,.8)'; c.lineWidth = 5; c.beginPath(); c.moveTo(0, base + 26); c.bezierCurveTo(W * .3, base + 12, W * .6, base + 44, W, base + 22); c.stroke(); c.setLineDash([]);
+}
+function slotState(d) {
+  if (!d) return 'はじめから';
+  return d.pieces.length ? 'かけら ' + d.pieces.length + 'まい' : 'つづきから';
+}
+function buildSlots() {
+  const host = $('slots'); host.replaceChildren();
+  ANIMALS.forEach((a, i) => {
+    const d = store.slots[i];
+    const wrap = document.createElement('div'); wrap.className = 'slot';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'slot-main';
+    b.appendChild(mk(168, 168, x => drawAnimal(x, a.id, 84, 100, 5.4)));
+    b.insertAdjacentHTML('beforeend', '<span class="who">' + a.name + '</span><span class="state">' + slotState(d) + '</span>');
+    b.onclick = () => { sfx.open(); startSlot(i); };
+    wrap.appendChild(b);
+    if (d) {
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'slot-del';
+      del.innerHTML = '<i></i><span>ながおしで けす</span>';
+      let timer = null;
+      const stop = () => { clearTimeout(timer); timer = null; del.classList.remove('hold'); };
+      del.onpointerdown = () => { del.classList.add('hold'); timer = setTimeout(() => { store.slots[i] = null; saveAll(); buildSlots(); }, 1400); };
+      del.onpointerup = del.onpointerleave = del.onpointercancel = stop;
+      wrap.appendChild(del);
+    }
+    host.appendChild(wrap);
+  });
+  fitTitle();
+}
+function startSlot(i) {   // えらんだ ひとの データで はじめる。プロローグは その ひとが はじめての ときだけ
+  slotIx = i;
+  if (!store.slots[i]) { store.slots[i] = { pieces: [], seenPrologue: false, introSeen: [] }; saveAll(); }
+  data = store.slots[i];
+  for (const id of ['who', 'mapWho']) { const w = $(id), c = w.getContext('2d'); c.clearRect(0, 0, 72, 72); drawAnimal(c, ANIMALS[i].id, 36, 42, 2.5); w.setAttribute('aria-label', ANIMALS[i].name + 'の データ'); }
+  if (data.seenPrologue) showMap(); else playPrologue();
 }
 
 /* ---------- いりぐち(むしめがね): 1さくめと おなじ ---------- */
@@ -1454,7 +1573,6 @@ window.addEventListener('keydown', ev => {   // パソコンでは やじるし�
   const o = S.objs.find(q => q.id !== 'dig' && q.hit(m.x + dx, m.y + dy) && q.stand.some(s => s[0] === m.x && s[1] === m.y));
   if (o) { path = []; S.act(o); } else if (!blocked(m.x + dx, m.y + dy)) { path = []; pending = null; startStep(m.x + dx, m.y + dy); }
 });
-$('title').onclick = () => { sfx.open(); if (store.seenPrologue) showMap(); else playPrologue(); };   // プロローグは はじめての 1かいだけ
 $('btnSkip').onclick = ev => { ev.stopPropagation(); endPrologue(); };
 $('mapCv').addEventListener('pointerdown', ev => {   // ちずの ばしょを タッチ
   const r = $('mapCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * 480, y = (ev.clientY - r.top) / r.height * 300;
@@ -1473,7 +1591,8 @@ $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshSo
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
-let booted = false; const go = () => { if (booted) return; booted = true; drawTitle(0); setupGate(); requestAnimationFrame(frame); };
+let booted = false; const go = () => { if (booted) return; booted = true; buildSlots(); drawTitle(0); setupGate(); requestAnimationFrame(frame); };
+window.addEventListener('resize', fitTitle);
 if (document.fonts && document.fonts.load) document.fonts.load('400 13px "Mochiy Pop One"', '123えき').then(go, go);
 setTimeout(go, 1500);
 })();

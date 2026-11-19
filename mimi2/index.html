@@ -10,12 +10,16 @@
 <body>
 <!--APP-->
 <div id="app">
-  <button id="title" class="title" type="button" aria-label="はじめる">
-    <canvas id="titleArt" width="480" height="300" aria-hidden="true"></canvas>
-    <span class="logo">たんていミミ<b>2</b></span>
-    <span class="sub">なないろの ちず</span>
-    <span class="start">タッチして はじめる</span>
-  </button>
+  <section id="title" class="title">
+    <canvas id="titleBg" class="title-bg" aria-hidden="true"></canvas>
+    <div class="title-inner">
+      <h1 class="logo">たんていミミ<b>2</b></h1>
+      <span class="sub">なないろの ちず</span>
+      <canvas id="titleArt" width="640" height="240" aria-hidden="true"></canvas>
+      <p class="pick">あそぶ ひとの マークを えらんでね</p>
+      <div id="slots" class="slots"></div>
+    </div>
+  </section>
 
   <section id="prologue" class="story" hidden>
     <canvas id="proCv" width="480" height="360" aria-hidden="true"></canvas>
@@ -27,6 +31,7 @@
     <button id="mapHome" class="sys" type="button" aria-label="タイトルに もどる">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7M6.5 10v9h11v-9M10.5 19v-5h3v5"/></svg>
     </button>
+    <canvas id="mapWho" class="who-icon map-who" width="72" height="72" role="img"></canvas>
     <canvas id="mapCv" width="480" height="300" aria-label="まちの ちず"></canvas>
     <p id="mapSay" class="story-say" aria-live="polite"></p>
   </section>
@@ -36,6 +41,7 @@
       <button id="btnHome" class="sys" type="button" aria-label="ちずに もどる">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7M6.5 10v9h11v-9M10.5 19v-5h3v5"/></svg>
       </button>
+      <canvas id="who" class="who-icon" width="72" height="72" role="img"></canvas>
       <b id="stageName">1話 えき</b>
       <span id="pieces" class="pieces" aria-label="ちずの かけら"></span>
       <button id="btnSound" class="sys" type="button" aria-label="おと" aria-pressed="true">
