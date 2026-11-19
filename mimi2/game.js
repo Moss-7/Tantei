@@ -1520,9 +1520,10 @@ function buildOldMap(W, H, hz, dpr) {
   // くねくね みち(うえの 4つ と したの 3つ を それぞれ つなぐ)
   const road = (pts) => { c.setLineDash([7, 7]); c.strokeStyle = sep(.6); c.lineWidth = 2.6; c.beginPath(); pts.forEach((p, i) => { if (!i) c.moveTo(p[0], p[1]); else { const q = pts[i - 1]; c.bezierCurveTo(q[0] + (p[0] - q[0]) * .3, q[1] + 34 * s, q[0] + (p[0] - q[0]) * .7, p[1] - 34 * s, p[0], p[1]); } }); c.stroke(); c.setLineDash([]); };
   road([S.forest, S.tower, S.park, S.sea]); road([S.eki, S.lib, S.zoo]);
-  // にじの みち(いろあせた すいさい)
-  for (let k = 0; k < 7; k++) { const off = (k - 3) * 2.6; c.beginPath(); c.moveTo(-10, hz + 2 + off); c.bezierCurveTo(W * .3, hz - 8 + off, W * .7, hz + 12 + off, W + 10, hz - 2 + off); c.strokeStyle = PIECE_COL[k]; c.globalAlpha = .38; c.lineWidth = 3.2; c.stroke(); }
-  c.globalAlpha = 1;
+  // にじ(いろあせた すいさい): ミミたちの うしろから、ななめに かかる アーチ
+  { const R = Math.max(210, Math.min(W * .42, H * .5)); c.save(); c.translate(W * .5, hz + 6); c.rotate(-.32);
+    for (let k = 0; k < 7; k++) { c.beginPath(); c.arc(0, 0, R + (3 - k) * 4.2, PI * 1.02, PI * 1.98); c.strokeStyle = PIECE_COL[k]; c.globalAlpha = .4; c.lineWidth = 4.4; c.stroke(); }
+    c.restore(); c.globalAlpha = 1; }
   // 7つの ばしょ: かけらの いろの にじみ と、セピアの わく
   PLACES.forEach((pl, i) => {
     const [x, y] = S[pl.id];
