@@ -1215,7 +1215,44 @@ function prologueTick(dt) {
 function endPrologue() { if (!pro) return; pro = null; store.seenPrologue = true; saveAll(); showMap(); }
 
 /* ---------- まちの ちず: かけらが おちた 7かしょ。ひかっている ばしょを タッチして いく ---------- */
+/* ちずの うえで ミミが あるく: みちで つながった ばしょを たどって、えらんだ ばしょへ */
+const ROADS = [[0, 1], [1, 2], [1, 4], [4, 3], [4, 6], [6, 5]];
+let mapAt = 0, mapWalk = null;   // mapAt: ミミが いる ばしょ。mapWalk: { pts, seg, len, d, speed, to, rest }
+const mapSpot = i => [PLACES[i].x - 34, PLACES[i].y + 30];
+function mapRoute(a, b) {
+  const prev = { [a]: -1 }, q = [a];
+  while (q.length) { const v = q.shift(); if (v === b) break; ROADS.forEach(([p, r]) => { const w = p === v ? r : r === v ? p : -1; if (w >= 0 && !(w in prev)) { prev[w] = v; q.push(w); } }); }
+  const out = []; for (let v = b; v !== -1 && v !== undefined; v = prev[v]) out.unshift(v);
+  return out[0] === a ? out : [a, b];
+}
+function walkOnMap(i) {
+  if (calm) { mapAt = i; startStage(i + 1); return; }
+  const pts = mapRoute(mapAt, i).map(mapSpot); if (pts.length < 2) pts.push(pts[0]);
+  const seg = pts.slice(1).map((p, k) => Math.hypot(p[0] - pts[k][0], p[1] - pts[k][1])), len = seg.reduce((s, v) => s + v, 0);
+  mapWalk = { pts, seg, len, d: 0, speed: Math.max(140, len / 2.2), to: i, rest: 0, step: 0 };
+  $('mapSay').textContent = PLACES[i].name + 'へ しゅっぱつ!';
+}
+function mapWalkPos() {   // いまの いちと むき
+  const w = mapWalk; let d = w.d;
+  for (let k = 0; k < w.seg.length; k++) {
+    const [x0, y0] = w.pts[k], [x1, y1] = w.pts[k + 1];
+    if (d <= w.seg[k] || k === w.seg.length - 1) { const f = w.seg[k] ? Math.min(1, d / w.seg[k]) : 1, dx = x1 - x0, dy = y1 - y0; return [x0 + dx * f, y0 + dy * f, Math.abs(dy) > Math.abs(dx) * 1.5 ? (dy > 0 ? 'down' : 'up') : dx < 0 ? 'left' : 'right']; }
+    d -= w.seg[k];
+  }
+  return [...w.pts[w.pts.length - 1], 'right'];
+}
+function mapWalkTick(dt) {
+  const w = mapWalk;
+  if (w.d < w.len) { w.d = Math.min(w.len, w.d + w.speed * dt); w.step -= dt; if (w.step <= 0) { w.step = .22; sfx.step(); } return; }
+  if (w.rest === 0) tone(988, .12, 0, 'triangle', .07);
+  w.rest += dt;   // ついたら ぴょんと はねて、すこし まってから はじまる
+  if (w.rest > .55) { mapWalk = null; mapAt = w.to; startStage(w.to + 1); }
+}
 function showMap() {
+  // ミミの いる ばしょ: はなしから もどったら その ばしょ。タイトルからなら、さいごに かけらを とった ばしょ
+  if (!$('game').hidden && S) mapAt = S.n - 1;
+  else { mapAt = 0; for (let i = 0; i < STAGES.length; i++) if (store.pieces.includes(i + 1)) mapAt = i; }
+  mapWalk = null;
   running = false; runId++; closeModal(); pro = null;
   $('title').hidden = true; $('prologue').hidden = true; $('game').hidden = true; $('mapScreen').hidden = false;
   mapT0 = tNow; drawPieces(); playMusic('station');
@@ -1249,8 +1286,10 @@ function drawMap(t) {
     rr(c, pl.x - 38, pl.y + 27, 76, 22, 8, open ? '#FFFFFF' : 'rgba(255,255,255,.6)', open ? '#3A2D58' : '#CFC4E2', 2);
     num(c, pl.name, pl.x, pl.y + 38.5, pl.name.length > 4 ? 10 : 12.5, open ? '#3A2D58' : '#9A90B8');
   });
-  const at = PLACES[nx >= 0 ? nx : STAGES.length - 1];
-  drawGirl(c, at.x - 34, at.y + 30, 1.3, 'right', Math.abs(Math.sin(t * 3)) * 2);   // ミミは つぎに いく ばしょの となり
+  if (mapWalk) {   // あるいている
+    const [x, y, dir] = mapWalkPos(), r = mapWalk.rest;
+    drawGirl(c, x, y, 1.3, r > 0 ? 'down' : dir, r > 0 ? Math.abs(Math.sin(r * 9)) * 8 : Math.abs(Math.sin(mapWalk.d / 9)) * 3);
+  } else { const [x, y] = mapSpot(mapAt); drawGirl(c, x, y, 1.3, 'right', Math.abs(Math.sin(t * 3)) * 2); }
 }
 
 /* ---------- えがく ---------- */
@@ -1304,7 +1343,7 @@ function frame(ts) {
     if (anim) anim.t += dt; if (win) win.t += dt; if (shake > 0) shake = Math.max(0, shake - dt);
     update(dt); render(tNow);
   } else if (pro) prologueTick(dt);
-  else if (!$('mapScreen').hidden) drawMap(calm ? 0 : tNow - mapT0);
+  else if (!$('mapScreen').hidden) { if (mapWalk) mapWalkTick(dt); drawMap(calm ? 0 : tNow - mapT0); }
   else if (!$('title').hidden && !calm) drawTitle(tNow);
   requestAnimationFrame(frame);
 }
@@ -1369,7 +1408,8 @@ $('btnSkip').onclick = ev => { ev.stopPropagation(); endPrologue(); };
 $('mapCv').addEventListener('pointerdown', ev => {   // ちずの ばしょを タッチ
   const r = $('mapCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * 480, y = (ev.clientY - r.top) / r.height * 300;
   const i = PLACES.findIndex(q => Math.hypot(q.x - x, q.y - y) < 34); if (i < 0) return;
-  if (isOpen(i)) { sfx.open(); startStage(i + 1); return; }
+  if (mapWalk) return;
+  if (isOpen(i)) { sfx.open(); walkOnMap(i); return; }
   sfx.miss();
   $('mapSay').textContent = i < STAGES.length ? 'さきに ' + PLACES[i - 1].name + 'の かけらを みつけよう' : PLACES[i].name + 'は、まだ いけないよ';
 });
