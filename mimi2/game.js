@@ -1315,6 +1315,9 @@ function showMap() {
 }
 const MAP_ICON = {
   eki(c, x, y) { rr(c, x - 13, y - 6, 26, 16, 3, '#D9478A', '#3A2D58', 2); poly(c, [[x - 15, y - 6], [x + 15, y - 6], [x, y - 17]], '#7FB6F0', '#3A2D58', 2); },   // えきの たてもの
+  park(c, x, y) { ln(c, x - 9, y + 13, x, y - 2, '#3A2D58', 2); ln(c, x + 9, y + 13, x, y - 2, '#3A2D58', 2); ci(c, x, y - 2, 12, null, '#B79CED', 3); for (let k = 0; k < 6; k++) { const a = k * PI / 3; ln(c, x, y - 2, x + Math.cos(a) * 12, y - 2 + Math.sin(a) * 12, '#B79CED', 1.5); ci(c, x + Math.cos(a) * 12, y - 2 + Math.sin(a) * 12, 3, PIECE_COL[k], '#3A2D58', 1); } },   // かんらんしゃ
+  forest(c, x, y) { for (const [dx, sc] of [[-7, .85], [6, 1]]) { rr(c, x + dx - 2, y + 4, 4, 8, 1, '#8C5A3C'); poly(c, [[x + dx, y - 14 * sc], [x + dx + 9 * sc, y + 5], [x + dx - 9 * sc, y + 5]], '#4CC38A', '#3A2D58', 1.5); } },   // もり
+  tower(c, x, y) { rr(c, x - 7, y - 6, 14, 20, 2, '#E4DDF7', '#3A2D58', 1.8); poly(c, [[x - 9, y - 6], [x + 9, y - 6], [x, y - 18]], '#D9478A', '#3A2D58', 1.8); ci(c, x, y + 1, 4.5, '#FFFFFF', '#3A2D58', 1.2); ln(c, x, y + 1, x, y - 2, '#3A2D58', 1); ln(c, x, y + 1, x + 2, y + 1, '#3A2D58', 1); },   // とけいとう
   sea(c, x, y) { ln(c, x - 2, y + 12, x + 2, y - 8, '#8C5A3C', 2.5); c.beginPath(); c.arc(x + 2, y - 7, 15, PI, 0); c.closePath(); c.fillStyle = '#FF9DB5'; c.fill(); c.strokeStyle = '#3A2D58'; c.lineWidth = 2; c.stroke(); drawShell(c, x + 9, y + 6, 6); },   // パラソルと かいがら
   zoo(c, x, y) { ln(c, x - 12, y + 10, x - 12, y - 6, '#3A2D58', 3); ln(c, x + 12, y + 10, x + 12, y - 6, '#3A2D58', 3); c.beginPath(); c.arc(x, y - 6, 12, PI, 0); c.strokeStyle = '#4CC3A6'; c.lineWidth = 5; c.stroke(); drawElephant(c, x, y + 11, .55); },   // どうぶつえんの もん
   lib(c, x, y) { rr(c, x - 13, y - 5, 26, 16, 3, '#8FD6A6', '#3A2D58', 2); poly(c, [[x - 16, y - 5], [x + 16, y - 5], [x, y - 17]], '#B07A4E', '#3A2D58', 2); drawBook(c, x, y + 3, .38, '#FFFFFF', 1); },   // としょかん
@@ -1465,7 +1468,7 @@ function fitTitle() {
   tbg = { W, H, dpr, hz: a.top - s.top + sec.scrollTop + a.height * .87 };
   drawTitleBg(0);
 }
-const TITLE_BG = /bg=map/.test(location.search) ? 'map' : 'sunset';   // ためしに みくらべる ための きりかえ
+const TITLE_BG = /bg=sunset/.test(location.search) ? 'sunset' : 'map';   // ゆうやけの まちは べつの きかいに つかう ため のこしておく
 // はいけい(ちず): ふるい たからの ちずの かみ。みち・もり・うみ・ばしょの しるしを うすく えがく
 function drawTitleMap(c, W, H, hz, t) {
   c.fillStyle = '#F6E6C2'; c.fillRect(0, 0, W, H);
@@ -1478,21 +1481,26 @@ function drawTitleMap(c, W, H, hz, t) {
   el(c, W * .96, H * .36, W * .16, H * .26, '#9FD9F0');                                         // うみ
   for (let i = 0; i < 4; i++) ln(c, W * .9 + (i % 2) * 14, H * .26 + i * 26, W * .9 + (i % 2) * 14 + 16, H * .26 + i * 26, '#FFFFFF', 2);
   for (let i = 0; i < 7; i++) ci(c, W * .04 + (i % 4) * 22, H * .12 + Math.floor(i / 4) * 20 + (i % 2) * 8, 16, '#8FD6A6');   // もり
-  for (let i = 0; i < 5; i++) ci(c, W * .06 + i * 20, H * .82 + (i % 2) * 10, 14, '#8FD6A6');
   c.restore();
-  // てんてんの みち
-  c.setLineDash([9, 8]); c.strokeStyle = 'rgba(201,138,94,.75)'; c.lineWidth = 4;
-  c.beginPath(); c.moveTo(-10, H * .22); c.bezierCurveTo(W * .25, H * .05, W * .5, H * .3, W + 10, H * .12); c.stroke();
-  c.beginPath(); c.moveTo(-10, hz + 4); c.bezierCurveTo(W * .3, hz - 6, W * .7, hz + 14, W + 10, hz); c.stroke();   // ミミが あるく みち
-  c.beginPath(); c.moveTo(W * .12, H + 10); c.bezierCurveTo(W * .2, H * .7, W * .05, H * .55, W * .1, hz + 4); c.stroke();
-  c.beginPath(); c.moveTo(W * .88, H + 10); c.bezierCurveTo(W * .8, H * .75, W * .95, H * .6, W * .9, hz); c.stroke();
-  c.setLineDash([]);
-  // ばしょの しるし(はしの ほうに 7つ)。かけらの いろで ゆっくり またたく
-  const spots = [[.07, .3], [.93, .14], [.05, .6], [.95, .62], [.1, .93], [.9, .9], [.5, .05]];
-  spots.forEach(([fx, fy], i) => {
-    const x = W * fx, y = H * fy, tw = .5 + .5 * Math.sin(t * 1.3 + i * 1.7);
-    ci(c, x, y, 15, 'rgba(255,255,255,.7)', 'rgba(58,45,88,.35)', 2);
-    c.save(); c.globalAlpha = .5 + .4 * tw; starShape(c, x, y, 6 + tw * 2, PIECE_COL[i], '#FFFFFF'); c.restore();
+  // 7つの ばしょ: はしの ほうを ぐるりと みちで つなぐ(E)。ばしょは かけらの いろの わで かこんだ アイコン(A)
+  const SPOT = [[.1, .86], [.5, .95], [.9, .86], [.92, .46], [.86, .1], [.5, .045], [.08, .14]], ORDER = [0, 1, 2, 3, 4, 6, 5];
+  const at = i => [W * SPOT[ORDER.indexOf(i)][0], H * SPOT[ORDER.indexOf(i)][1]];
+  c.setLineDash([9, 8]); c.strokeStyle = 'rgba(201,138,94,.8)'; c.lineWidth = 4; c.beginPath();
+  ORDER.forEach((pi, k) => { const [x, y] = at(pi); if (!k) c.moveTo(x, y); else { const [px, py] = at(ORDER[k - 1]); c.quadraticCurveTo((px + x) / 2 + (k % 2 ? 18 : -18), (py + y) / 2 + (k % 2 ? -14 : 14), x, y); } });
+  { const [x, y] = at(5), [x0, y0] = at(0); c.quadraticCurveTo(W * .02, (y + y0) / 2, x0, y0); }
+  c.stroke(); c.setLineDash([]);
+  // にじの みち(B): ミミと シロが あるく よこの みち
+  for (let k = 0; k < 7; k++) {
+    const o = (k - 3) * 2.6; c.beginPath(); c.moveTo(-10, hz + 2 + o); c.bezierCurveTo(W * .3, hz - 8 + o, W * .7, hz + 12 + o, W + 10, hz - 2 + o);
+    c.strokeStyle = PIECE_COL[k]; c.globalAlpha = .75; c.lineWidth = 3; c.stroke(); c.globalAlpha = 1;
+  }
+  PLACES.forEach((pl, i) => {
+    const [x, y] = at(i), tw = .5 + .5 * Math.sin(t * 1.3 + i * 1.7), s = Math.min(1, Math.max(.7, W / 700));
+    c.save(); c.translate(x, y); c.scale(s, s);
+    ci(c, 0, 0, 30 + tw * 3, 'rgba(255,255,255,' + (.25 + .2 * tw) + ')');
+    ci(c, 0, 0, 24, '#FFFFFF', PIECE_COL[i], 5); ci(c, 0, 0, 26.5, null, 'rgba(58,45,88,.5)', 1.5);
+    MAP_ICON[pl.id](c, 0, 0);
+    c.restore();
   });
   // ほうい じしゃく と ばつじるし
   const cx = W - 40, cy = H - 44;
