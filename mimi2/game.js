@@ -1123,6 +1123,7 @@ function update(dt) {
   if (pending) { const o = pending; pending = null; S.act(o); }
 }
 function goTo(tx, ty) {
+  if (freeze) return;
   if (intro) { nextIntro(); return; }
   if (busy || win) return;
   const o = S.objs.find(q => q.hit(tx, ty));
@@ -1225,8 +1226,50 @@ function mapRoute(a, b) {
   const out = []; for (let v = b; v !== -1 && v !== undefined; v = prev[v]) out.unshift(v);
   return out[0] === a ? out : [a, b];
 }
+/* ---------- ばめんの きりかえ: はなしへは むしめがねで のぞきこむ。ちずへは みじかい あんてん ---------- */
+let wiping = false, freeze = false;   // wiping: きりかえちゅう。freeze: はなしの じかんを とめる(むしめがねが ひらくまで)
+function lensInto(n, sx, sy, R0) {
+  const w = $('wipe'), L = $('wlens'), far = Math.hypot(innerWidth, innerHeight) + 40, ease = v => 1 - Math.pow(1 - v, 3);
+  wiping = true; w.classList.remove('fade'); w.style.opacity = 1; w.hidden = false;
+  [784, 988, 1175, 1568].forEach((f, i) => tone(f, .25, i * .07, 'triangle', .08));   // きらりん(いりぐちと おなじ)
+  const put = (cx, cy, R, k, r) => {
+    L.style.width = L.style.height = 2 * R + 'px'; L.style.left = cx - R + 'px'; L.style.top = cy - R + 'px'; L.style.borderWidth = R * .18 + 'px'; L.style.transform = 'scale(' + Math.max(0, k) + ')';
+    w.style.setProperty('--cx', cx + 'px'); w.style.setProperty('--cy', cy + 'px'); w.style.setProperty('--r', Math.max(0, r) + 'px');
+  };
+  let t0 = null, sw = null;
+  const tick = ts => {
+    if (t0 === null) t0 = ts;
+    const t = (ts - t0) / 1000;
+    if (t < .7) {   // ちずの うえ: むしめがねが でて、まわりが くらく なり、とじる
+      const inner = R0 * .82 - 2, k = t < .15 ? bounce(t / .15) : t < .55 ? 1 : 1 - (t - .55) / .15;
+      put(sx, sy, R0, k, t < .15 ? far : t < .55 ? far + (inner - far) * ease((t - .15) / .4) : inner * k);
+    } else {        // まっくらな あいだに はなしの がめんへ。まんなかで むしめがねが ひらく
+      if (!sw) { freeze = true; startStage(n); const f = $('field').getBoundingClientRect(), R = Math.max(40, Math.min(f.width, f.height) * .22); const q = cv.getBoundingClientRect(), cl = (v, a, b) => Math.min(b, Math.max(a, v));   // レンズの なかに ミミが みえる ように
+        sw = { cx: cl(q.left + (m.x + .5) / COLS * q.width, R, innerWidth - R), cy: cl(q.top + (m.y + .1) / ROWS * q.height, R, innerHeight - R), R, S: far / (R * .82) }; }
+      const u = t - .7, inner = sw.R * .82 - 2;
+      const k = u < .15 ? bounce(u / .15) : u < .25 ? 1 : 1 + (sw.S - 1) * Math.pow(Math.min(1, (u - .25) / .4), 2.2);
+      put(sw.cx, sw.cy, sw.R, k, inner * k);
+      if (u >= .65) { w.hidden = true; wiping = false; freeze = false; return; }
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+function fadeTo(fn) {   // くらく なって、きりかわって、あかるく なる
+  if (wiping) return;
+  const w = $('wipe'); wiping = true; w.classList.add('fade'); w.style.opacity = 0; w.hidden = false;
+  let t0 = null, done = false;
+  const tick = ts => {
+    if (t0 === null) t0 = ts;
+    const t = (ts - t0) / 1000;
+    if (t >= .25 && !done) { done = true; fn(); }
+    w.style.opacity = t < .25 ? t / .25 : Math.max(0, 1 - (t - .25) / .25);
+    if (t < .5) requestAnimationFrame(tick); else { w.hidden = true; wiping = false; }
+  };
+  requestAnimationFrame(tick);
+}
 function walkOnMap(i) {
-  if (calm) { mapAt = i; startStage(i + 1); return; }
+  if (calm) { mapAt = i; fadeTo(() => startStage(i + 1)); return; }
   const pts = mapRoute(mapAt, i).map(mapSpot); if (pts.length < 2) pts.push(pts[0]);
   const seg = pts.slice(1).map((p, k) => Math.hypot(p[0] - pts[k][0], p[1] - pts[k][1])), len = seg.reduce((s, v) => s + v, 0);
   mapWalk = { pts, seg, len, d: 0, speed: Math.max(140, len / 2.2), to: i, rest: 0, step: 0 };
@@ -1246,7 +1289,11 @@ function mapWalkTick(dt) {
   if (w.d < w.len) { w.d = Math.min(w.len, w.d + w.speed * dt); w.step -= dt; if (w.step <= 0) { w.step = .22; sfx.step(); } return; }
   if (w.rest === 0) tone(988, .12, 0, 'triangle', .07);
   w.rest += dt;   // ついたら ぴょんと はねて、すこし まってから はじまる
-  if (w.rest > .55) { mapWalk = null; mapAt = w.to; startStage(w.to + 1); }
+  if (w.rest > .55) {
+    mapWalk = null; mapAt = w.to;
+    const r = $('mapCv').getBoundingClientRect(), pl = PLACES[w.to];
+    lensInto(w.to + 1, r.left + pl.x / 480 * r.width, r.top + pl.y / 300 * r.height, Math.max(30, 36 / 480 * r.width));
+  }
 }
 function showMap() {
   // ミミの いる ばしょ: はなしから もどったら その ばしょ。タイトルからなら、さいごに かけらを とった ばしょ
@@ -1341,7 +1388,7 @@ function frame(ts) {
   const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; tNow = ts / 1000;
   if (running) {
     if (anim) anim.t += dt; if (win) win.t += dt; if (shake > 0) shake = Math.max(0, shake - dt);
-    update(dt); render(tNow);
+    if (!freeze) update(dt); render(tNow);
   } else if (pro) prologueTick(dt);
   else if (!$('mapScreen').hidden) { if (mapWalk) mapWalkTick(dt); drawMap(calm ? 0 : tNow - mapT0); }
   else if (!$('title').hidden && !calm) drawTitle(tNow);
@@ -1397,6 +1444,7 @@ cv.addEventListener('pointerdown', ev => {
 });
 const KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 window.addEventListener('keydown', ev => {   // パソコンでは やじるしキーでも あるける
+  if (freeze) return;
   if (intro && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); nextIntro(); return; }
   if (!running || busy || win || intro || !KEYS[ev.key] || m.p < 1) return;
   ev.preventDefault(); const [dx, dy] = KEYS[ev.key];
@@ -1408,16 +1456,16 @@ $('btnSkip').onclick = ev => { ev.stopPropagation(); endPrologue(); };
 $('mapCv').addEventListener('pointerdown', ev => {   // ちずの ばしょを タッチ
   const r = $('mapCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * 480, y = (ev.clientY - r.top) / r.height * 300;
   const i = PLACES.findIndex(q => Math.hypot(q.x - x, q.y - y) < 34); if (i < 0) return;
-  if (mapWalk) return;
+  if (mapWalk || wiping) return;
   if (isOpen(i)) { sfx.open(); walkOnMap(i); return; }
   sfx.miss();
   $('mapSay').textContent = i < STAGES.length ? 'さきに ' + PLACES[i - 1].name + 'の かけらを みつけよう' : PLACES[i].name + 'は、まだ いけないよ';
 });
 $('mapHome').onclick = goTitle;
-$('btnHome').onclick = showMap;
-$('btnAgain').onclick = showMap;
+$('btnHome').onclick = () => fadeTo(showMap);
+$('btnAgain').onclick = () => fadeTo(showMap);
 $('btnSkip2').onclick = endIntro;
-$('talk').addEventListener('click', ev => { if (intro && ev.target.id !== 'btnSkip2') nextIntro(); });
+$('talk').addEventListener('click', ev => { if (intro && !freeze && ev.target.id !== 'btnSkip2') nextIntro(); });
 $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshSound(); sfx.open(); if (store.sound) playMusic(wantTrack); else stopMusic(); };
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
