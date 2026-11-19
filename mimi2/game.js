@@ -1469,43 +1469,84 @@ function fitTitle() {
   drawTitleBg(0);
 }
 const TITLE_BG = /bg=sunset/.test(location.search) ? 'sunset' : 'map';   // ゆうやけの まちは べつの きかいに つかう ため のこしておく
-// はいけい(ちず): ふるい たからの ちずの かみ。みち・もり・うみ・ばしょの しるしを うすく えがく
-function drawTitleMap(c, W, H, hz, t) {
-  c.fillStyle = '#F6E6C2'; c.fillRect(0, 0, W, H);
-  const vg = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75);
-  vg.addColorStop(0, 'rgba(255,248,225,0)'); vg.addColorStop(1, 'rgba(181,138,31,.35)'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
-  c.strokeStyle = 'rgba(181,138,31,.18)'; c.lineWidth = 1.5;   // おりめ
-  for (let i = 1; i < 3; i++) { c.beginPath(); c.moveTo(W * i / 3, 0); c.lineTo(W * i / 3, H); c.stroke(); }
-  c.beginPath(); c.moveTo(0, H / 2); c.lineTo(W, H / 2); c.stroke();
-  c.save(); c.globalAlpha = .5;
-  el(c, W * .96, H * .36, W * .16, H * .26, '#9FD9F0');                                         // うみ
-  for (let i = 0; i < 4; i++) ln(c, W * .9 + (i % 2) * 14, H * .26 + i * 26, W * .9 + (i % 2) * 14 + 16, H * .26 + i * 26, '#FFFFFF', 2);
-  for (let i = 0; i < 7; i++) ci(c, W * .04 + (i % 4) * 22, H * .12 + Math.floor(i / 4) * 20 + (i % 2) * 8, 16, '#8FD6A6');   // もり
+// はいけい(ちず): ふるびた たからの ちず。うごかない ぶぶんは いちど だけ かいて とっておき、まいかい きらめきだけ かさねる
+const SEPIA = 'rgba(110,72,36,', sep = a => SEPIA + a + ')';
+function oldMapSpots(W, H) {   // 7つの ばしょ(うえに 4つ、したに 3つ。まんなかは もじと ボタンの ため あけておく)
+  return { tower: [W * .5, H * .05], forest: [W * .1, H * .15], park: [W * .86, H * .1], sea: [W * .9, H * .44], eki: [W * .12, H * .85], lib: [W * .48, H * .94], zoo: [W * .86, H * .87] };
+}
+function paperEdge(W, H, m) {   // やぶれた かみの ふち
+  const pts = [], step = 16, jag = (i, k) => (hash(i, k) - .5) * 7;
+  for (let x = m; x < W - m; x += step) pts.push([x, m + jag(x, 1)]);
+  for (let y = m; y < H - m; y += step) pts.push([W - m + jag(y, 2), y]);
+  for (let x = W - m; x > m; x -= step) pts.push([x, H - m + jag(x, 3)]);
+  for (let y = H - m; y > m; y -= step) pts.push([m + jag(y, 4), y]);
+  return pts;
+}
+function buildOldMap(W, H, hz, dpr) {
+  const o = document.createElement('canvas'); o.width = Math.round(W * dpr); o.height = Math.round(H * dpr);
+  const c = o.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // つくえ
+  c.fillStyle = '#5E4030'; c.fillRect(0, 0, W, H);
+  for (let y = 0; y < H; y += 9) { c.fillStyle = 'rgba(0,0,0,' + (.04 + hash(y, 7) * .06) + ')'; c.fillRect(0, y, W, 3); }
+  // かみ
+  const m = Math.max(8, Math.min(16, W * .02)), edge = paperEdge(W, H, m);
+  c.save(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 12; poly(c, edge, '#EAD3A0'); c.restore();
+  c.save(); c.beginPath(); edge.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.clip();
+  const vg = c.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .72);
+  vg.addColorStop(0, 'rgba(255,246,215,.55)'); vg.addColorStop(.6, 'rgba(214,170,100,.15)'); vg.addColorStop(1, 'rgba(120,70,25,.55)');
+  c.fillStyle = vg; c.fillRect(0, 0, W, H);
+  // しみ と よごれ
+  for (let i = 0; i < 9; i++) { const x = hash(i, 11) * W, y = hash(i, 13) * H, r = 18 + hash(i, 17) * 50; ci(c, x, y, r, sep(.05 + hash(i, 19) * .05)); }
+  for (let i = 0; i < 2; i++) { const x = W * (.2 + .6 * hash(i, 23)), y = H * (.25 + .5 * hash(i, 29)), r = 26 + 10 * i; ci(c, x, y, r, null, sep(.12), 3); ci(c, x + 3, y + 2, r - 4, null, sep(.06), 2); }   // コップの あと
+  for (let i = 0; i < 420; i++) ci(c, hash(i, 31) * W, hash(i, 37) * H, .6 + hash(i, 41) * 1.1, sep(.08 + hash(i, 43) * .12));
+  // うすい ますめ
+  c.strokeStyle = sep(.07); c.lineWidth = 1; for (let x = 40; x < W; x += 56) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); } for (let y = 40; y < H; y += 56) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+  // おりめ(かげと ひかり)
+  for (const fx of [1 / 3, 2 / 3]) { ln(c, W * fx, 0, W * fx, H, 'rgba(120,70,25,.18)', 3); ln(c, W * fx + 2, 0, W * fx + 2, H, 'rgba(255,250,230,.35)', 1.5); }
+  ln(c, 0, H / 2, W, H / 2, 'rgba(120,70,25,.16)', 3); ln(c, 0, H / 2 + 2, W, H / 2 + 2, 'rgba(255,250,230,.3)', 1.5);
+  const S = oldMapSpots(W, H), s = Math.min(1.15, Math.max(.75, W / 640));
+  // うみ: なみの せんと ふね
+  c.save(); c.globalAlpha = .9;
+  const sx = W * .88; el(c, W * 1.02, H * .42, W * .2, H * .2, 'rgba(120,180,190,.18)');
+  for (let i = 0; i < 6; i++) { const y = H * .3 + i * 20 * s, x0 = sx - 30 * s + (i % 2) * 14; c.beginPath(); for (let k = 0; k < 3; k++) c.arc(x0 + k * 12 * s, y, 6 * s, PI, 0); c.strokeStyle = sep(.4); c.lineWidth = 1.6; c.stroke(); }
   c.restore();
-  // 7つの ばしょ: はしの ほうを ぐるりと みちで つなぐ(E)。ばしょは かけらの いろの わで かこんだ アイコン(A)
-  const SPOT = [[.1, .86], [.5, .95], [.9, .86], [.92, .46], [.86, .1], [.5, .045], [.08, .14]], ORDER = [0, 1, 2, 3, 4, 6, 5];
-  const at = i => [W * SPOT[ORDER.indexOf(i)][0], H * SPOT[ORDER.indexOf(i)][1]];
-  c.setLineDash([9, 8]); c.strokeStyle = 'rgba(201,138,94,.8)'; c.lineWidth = 4; c.beginPath();
-  ORDER.forEach((pi, k) => { const [x, y] = at(pi); if (!k) c.moveTo(x, y); else { const [px, py] = at(ORDER[k - 1]); c.quadraticCurveTo((px + x) / 2 + (k % 2 ? 18 : -18), (py + y) / 2 + (k % 2 ? -14 : 14), x, y); } });
-  { const [x, y] = at(5), [x0, y0] = at(0); c.quadraticCurveTo(W * .02, (y + y0) / 2, x0, y0); }
-  c.stroke(); c.setLineDash([]);
-  // にじの みち(B): ミミと シロが あるく よこの みち
-  for (let k = 0; k < 7; k++) {
-    const o = (k - 3) * 2.6; c.beginPath(); c.moveTo(-10, hz + 2 + o); c.bezierCurveTo(W * .3, hz - 8 + o, W * .7, hz + 12 + o, W + 10, hz - 2 + o);
-    c.strokeStyle = PIECE_COL[k]; c.globalAlpha = .75; c.lineWidth = 3; c.stroke(); c.globalAlpha = 1;
-  }
+  const ship = (x, y) => { c.save(); c.translate(x, y); c.scale(s, s); poly(c, [[-16, 0], [16, 0], [10, 8], [-10, 8]], sep(.15), sep(.6), 1.6); ln(c, 0, 0, 0, -24, sep(.6), 1.6); poly(c, [[1, -22], [14, -6], [1, -6]], 'rgba(255,248,225,.6)', sep(.6), 1.4); poly(c, [[-1, -20], [-12, -6], [-1, -6]], 'rgba(255,248,225,.6)', sep(.6), 1.4); c.restore(); };
+  ship(W * .93, H * .62);
+  // やま と き(ペンの せん)
+  const mount = (x, y, k) => { c.save(); c.translate(x, y); c.scale(s * k, s * k); poly(c, [[-18, 0], [0, -26], [18, 0]], 'rgba(255,248,225,.35)', sep(.6), 1.6); for (let j = 0; j < 4; j++) ln(c, 2 + j * 3, -20 + j * 5, 6 + j * 3, -20 + j * 5 + 4, sep(.45), 1.1); c.restore(); };
+  mount(W * .25, H * .1, 1); mount(W * .3, H * .12, .8); mount(W * .7, H * .2, .9); mount(W * .76, H * .21, .7);
+  const tree = (x, y) => { c.save(); c.translate(x, y); c.scale(s, s); ln(c, 0, 0, 0, -6, sep(.6), 1.4); ci(c, 0, -10, 6, 'rgba(120,170,100,.25)', sep(.6), 1.3); c.restore(); };
+  [[.05, .3], [.08, .33], [.04, .38], [.2, .78], [.24, .8], [.7, .78], [.95, .76], [.32, .97], [.65, .96]].forEach(([fx, fy]) => tree(W * fx, H * fy));
+  // くねくね みち(うえの 4つ と したの 3つ を それぞれ つなぐ)
+  const road = (pts) => { c.setLineDash([7, 7]); c.strokeStyle = sep(.6); c.lineWidth = 2.6; c.beginPath(); pts.forEach((p, i) => { if (!i) c.moveTo(p[0], p[1]); else { const q = pts[i - 1]; c.bezierCurveTo(q[0] + (p[0] - q[0]) * .3, q[1] + 34 * s, q[0] + (p[0] - q[0]) * .7, p[1] - 34 * s, p[0], p[1]); } }); c.stroke(); c.setLineDash([]); };
+  road([S.forest, S.tower, S.park, S.sea]); road([S.eki, S.lib, S.zoo]);
+  // にじの みち(いろあせた すいさい)
+  for (let k = 0; k < 7; k++) { const off = (k - 3) * 2.6; c.beginPath(); c.moveTo(-10, hz + 2 + off); c.bezierCurveTo(W * .3, hz - 8 + off, W * .7, hz + 12 + off, W + 10, hz - 2 + off); c.strokeStyle = PIECE_COL[k]; c.globalAlpha = .38; c.lineWidth = 3.2; c.stroke(); }
+  c.globalAlpha = 1;
+  // 7つの ばしょ: かけらの いろの にじみ と、セピアの わく
   PLACES.forEach((pl, i) => {
-    const [x, y] = at(i), tw = .5 + .5 * Math.sin(t * 1.3 + i * 1.7), s = Math.min(1, Math.max(.7, W / 700));
+    const [x, y] = S[pl.id];
     c.save(); c.translate(x, y); c.scale(s, s);
-    ci(c, 0, 0, 30 + tw * 3, 'rgba(255,255,255,' + (.25 + .2 * tw) + ')');
-    ci(c, 0, 0, 24, '#FFFFFF', PIECE_COL[i], 5); ci(c, 0, 0, 26.5, null, 'rgba(58,45,88,.5)', 1.5);
-    MAP_ICON[pl.id](c, 0, 0);
+    c.globalAlpha = .42; for (let k = 0; k < 4; k++) ci(c, (hash(i, k) - .5) * 10, (hash(k, i) - .5) * 8, 20 + hash(i + k, 3) * 6, PIECE_COL[i]); c.globalAlpha = 1;
+    c.beginPath(); for (let k = 0; k <= 24; k++) { const a = k / 24 * PI * 2, r = 22 + (hash(i, k) - .5) * 2.5; k ? c.lineTo(Math.cos(a) * r, Math.sin(a) * r) : c.moveTo(r, 0); } c.strokeStyle = sep(.55); c.lineWidth = 1.6; c.stroke();
+    c.globalAlpha = .88; MAP_ICON[pl.id](c, 0, 0); c.globalAlpha = 1;
     c.restore();
   });
-  // ほうい じしゃく と ばつじるし
-  const cx = W - 40, cy = H - 44;
-  if (W > 500) { ci(c, cx, cy, 24, 'rgba(255,255,255,.6)', 'rgba(58,45,88,.4)', 2); poly(c, [[cx, cy - 22], [cx + 6, cy], [cx, cy + 22], [cx - 6, cy]], 'rgba(217,71,138,.7)'); num(c, 'N', cx, cy - 32, 12, 'rgba(58,45,88,.6)'); }
-  ln(c, W * .7 - 8, H * .08 - 8, W * .7 + 8, H * .08 + 8, 'rgba(217,71,138,.6)', 4); ln(c, W * .7 + 8, H * .08 - 8, W * .7 - 8, H * .08 + 8, 'rgba(217,71,138,.6)', 4);
+  // ばつじるし と ほうい じしゃく
+  const xm = [W * .64, H * .07]; ln(c, xm[0] - 9, xm[1] - 9, xm[0] + 9, xm[1] + 9, 'rgba(180,50,60,.65)', 4); ln(c, xm[0] + 9, xm[1] - 9, xm[0] - 9, xm[1] + 9, 'rgba(180,50,60,.65)', 4);
+  const cx = W - 44 * s - m, cy = H * .7, R = 26 * s;
+  ci(c, cx, cy, R, 'rgba(255,248,225,.45)', sep(.55), 1.5); ci(c, cx, cy, R * .78, null, sep(.35), 1);
+  for (let k = 0; k < 8; k++) { const a = k * PI / 4 - PI / 2, L = k % 2 ? R * .55 : R * .95, w = R * .16; poly(c, [[cx + Math.cos(a) * L, cy + Math.sin(a) * L], [cx + Math.cos(a + PI / 2) * w, cy + Math.sin(a + PI / 2) * w], [cx, cy], [cx + Math.cos(a - PI / 2) * w, cy + Math.sin(a - PI / 2) * w]], k === 0 ? 'rgba(180,50,60,.7)' : k % 2 ? sep(.35) : sep(.55)); }
+  num(c, 'N', cx, cy - R - 9, 12 * s, sep(.7));
+  c.restore();
+  return o;
+}
+function drawTitleMap(c, W, H, hz, t) {
+  if (!tbg.cache) tbg.cache = buildOldMap(W, H, hz, tbg.dpr);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(tbg.cache, 0, 0); c.setTransform(tbg.dpr, 0, 0, tbg.dpr, 0, 0);
+  // ばしょの うえで ときどき きらり
+  const S = oldMapSpots(W, H), s = Math.min(1.15, Math.max(.75, W / 640));
+  PLACES.forEach((pl, i) => { const g = ((t * .35 + i * .37) % 1) / .18; if (g < 1) { const [x, y] = S[pl.id]; starShape(c, x + 16 * s, y - 16 * s, 7 * s * Math.sin(g * PI), '#FFFFFF', 'rgba(255,200,61,.9)'); } });
 }
 function drawTitleBg(t) {
   if (!tbg) return;
