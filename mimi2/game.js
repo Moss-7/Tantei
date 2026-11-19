@@ -1240,16 +1240,18 @@ function lensInto(n, sx, sy, R0) {
   const tick = ts => {
     if (t0 === null) t0 = ts;
     const t = (ts - t0) / 1000;
-    if (t < .7) {   // ちずの うえ: むしめがねが でて、まわりが くらく なり、とじる
-      const inner = R0 * .82 - 2, k = t < .15 ? bounce(t / .15) : t < .55 ? 1 : 1 - (t - .55) / .15;
-      put(sx, sy, R0, k, t < .15 ? far : t < .55 ? far + (inner - far) * ease((t - .15) / .4) : inner * k);
+    // じかんわり(びょう): ちずで ポンと でる → まわりが くらく なる → すこし まつ → とじる / はなしで ポンと でる → まつ → ひろがる
+    const A1 = .35, A2 = 1.15, A3 = 1.35, A4 = 1.65, B1 = .35, B2 = .75, B3 = 1.7;
+    if (t < A4) {   // ちずの うえ: むしめがねが でて、まわりが くらく なり、とじる
+      const inner = R0 * .82 - 2, k = t < A1 ? bounce(t / A1) : t < A3 ? 1 : 1 - (t - A3) / (A4 - A3);
+      put(sx, sy, R0, k, t < A1 ? far : t < A2 ? far + (inner - far) * ease((t - A1) / (A2 - A1)) : inner * k);
     } else {        // まっくらな あいだに はなしの がめんへ。まんなかで むしめがねが ひらく
       if (!sw) { freeze = true; startStage(n); const f = $('field').getBoundingClientRect(), R = Math.max(40, Math.min(f.width, f.height) * .22); const q = cv.getBoundingClientRect(), cl = (v, a, b) => Math.min(b, Math.max(a, v));   // レンズの なかに ミミが みえる ように
         sw = { cx: cl(q.left + (m.x + .5) / COLS * q.width, R, innerWidth - R), cy: cl(q.top + (m.y + .1) / ROWS * q.height, R, innerHeight - R), R, S: far / (R * .82) }; }
-      const u = t - .7, inner = sw.R * .82 - 2;
-      const k = u < .15 ? bounce(u / .15) : u < .25 ? 1 : 1 + (sw.S - 1) * Math.pow(Math.min(1, (u - .25) / .4), 2.2);
+      const u = t - A4, inner = sw.R * .82 - 2;
+      const k = u < B1 ? bounce(u / B1) : u < B2 ? 1 : 1 + (sw.S - 1) * Math.pow(Math.min(1, (u - B2) / (B3 - B2)), 2.2);
       put(sw.cx, sw.cy, sw.R, k, inner * k);
-      if (u >= .65) { w.hidden = true; wiping = false; freeze = false; return; }
+      if (u >= B3) { w.hidden = true; wiping = false; freeze = false; return; }
     }
     requestAnimationFrame(tick);
   };
@@ -1262,9 +1264,10 @@ function fadeTo(fn) {   // くらく なって、きりかわって、あかる�
   const tick = ts => {
     if (t0 === null) t0 = ts;
     const t = (ts - t0) / 1000;
-    if (t >= .25 && !done) { done = true; fn(); }
-    w.style.opacity = t < .25 ? t / .25 : Math.max(0, 1 - (t - .25) / .25);
-    if (t < .5) requestAnimationFrame(tick); else { w.hidden = true; wiping = false; }
+    const D = .45, H2 = .15;   // くらく なる → まっくらで すこし まつ → あかるく なる
+    if (t >= D && !done) { done = true; fn(); }
+    w.style.opacity = t < D ? t / D : t < D + H2 ? 1 : Math.max(0, 1 - (t - D - H2) / D);
+    if (t < D * 2 + H2) requestAnimationFrame(tick); else { w.hidden = true; wiping = false; }
   };
   requestAnimationFrame(tick);
 }
@@ -1303,7 +1306,7 @@ function showMap() {
   running = false; runId++; closeModal(); pro = null;
   $('title').hidden = true; $('prologue').hidden = true; $('game').hidden = true; $('mapScreen').hidden = false;
   mapT0 = tNow; drawPieces(); playMusic('station');
-  $('mapSay').textContent = nextPlace() >= 0 ? 'ひかっている ばしょを タッチしてね' : 'つぎの ばしょは じゅんびちゅうだよ。いままでの ばしょは なんどでも あそべるよ';
+  $('mapSay').textContent = nextPlace() >= 0 ? 'ひかっている ばしょを タッチしてね' : 'つぎの ばしょは じゅんびちゅう。なんどでも あそべるよ';
 }
 const MAP_ICON = {
   eki(c, x, y) { rr(c, x - 13, y - 6, 26, 16, 3, '#D9478A', '#3A2D58', 2); poly(c, [[x - 15, y - 6], [x + 15, y - 6], [x, y - 17]], '#7FB6F0', '#3A2D58', 2); },   // えきの たてもの

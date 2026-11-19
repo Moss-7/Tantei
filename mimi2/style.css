@@ -149,3 +149,6 @@ h2{font-family:var(--display);font-weight:400;margin:0;line-height:1.4;text-wrap
 .wipe.fade .wlens{display:none}
 .wlens{position:absolute;box-sizing:border-box;border-radius:50%;border:10px solid #F2B63C;box-shadow:0 0 0 3px var(--ink),inset 0 0 0 3px var(--ink);transform-origin:50% 50%}
 .wlens::after{content:"";position:absolute;left:84%;top:84%;width:17%;height:52%;border-radius:999px;background:#C98A3C;border:3px solid var(--ink);transform-origin:50% 0;transform:rotate(-45deg)}
+
+/* ちずの ことばは たかさを きめておく(ことばが かわっても ちずが うごかない ように) */
+#mapSay{min-height:0;height:calc(2.8em + 18px);overflow:hidden}
