@@ -870,11 +870,14 @@ function drawGull(c, x, by, s, flap = 0, paper = false) {   // かもめ
   if (paper) { c.save(); c.translate(13, -11); c.rotate(.2); rr(c, -1, -3, 8, 9, 1, '#FFFBEA', '#B58A1F', .8); c.restore(); }
   c.restore();
 }
-function drawPalm(c, x, by) {   // めじるしの ヤシの き
+function drawPalm(c, x, by, s = 1) {   // めじるしの ヤシの き。(x, by) は ねもと
+  c.save(); c.translate(x, by); c.scale(s, s); x = 0; by = 0;
+  el(c, 2, 2, 13, 4, 'rgba(120,90,40,.25)');
   for (let i = 0; i < 6; i++) { const k = i / 6; rr(c, x - 6 + k * 9, by - 8 - i * 10, 12 - k * 3, 11, 3, i % 2 ? '#B07A4E' : '#C98A5E', '#3A2D58', 1.2); }
   const tx = x + 9, ty = by - 66;
   for (let i = 0; i < 6; i++) { c.save(); c.translate(tx, ty); c.rotate(-PI / 2 + (i - 2.5) * .62); el(c, 15, 0, 17, 5.5, i % 2 ? '#4CC38A' : '#3DAF78', '#3A2D58', 1.2); c.restore(); }
   ci(c, tx - 4, ty + 5, 4, '#8C5A3C', '#3A2D58', 1); ci(c, tx + 4, ty + 6, 4, '#8C5A3C', '#3A2D58', 1);
+  c.restore();
 }
 function drawChest(c, x, y, s, open = 0) {   // たからばこ
   c.save(); c.translate(x, y); c.scale(s, s);
@@ -933,13 +936,13 @@ const SEA = {
   },
   cards() {
     const arrow = (x, dx, dy, n) => { ln(x, 32 - dx * 16, 30 - dy * 16, 32 + dx * 8, 30 + dy * 8, '#2E9C82', 6); poly(x, dx ? [[32 + dx * 22, 30], [32 + dx * 6, 17], [32 + dx * 6, 43]] : [[32, 30 + dy * 22], [19, 30 + dy * 6], [45, 30 + dy * 6]], '#2E9C82'); };
-    return [{ label: 'みぎへ ' + seed.r, draw: x => arrow(x, 1, 0, seed.r) }, { label: 'したへ ' + seed.d, draw: x => arrow(x, 0, 1, seed.d) }];
+    return [{ label: 'みぎへ ' + seed.r + 'ます', draw: x => arrow(x, 1, 0, seed.r) }, { label: 'したへ ' + seed.d + 'ます', draw: x => arrow(x, 0, 1, seed.d) }];
   },
   act(o) {
-    const where = 'ヤシのきから みぎへ ' + seed.r + '、したへ ' + seed.d;
-    if (o.id === 'bottle') { face(6, 2); if (step === 0) SEA.lookBottle(); else say('ビンの てがみには「みぎへ ' + seed.r + '」って かいてあったね', 'cat'); }
-    else if (o.id === 'gull') { face(10, 2); tone(1200, .12, 0, 'triangle', .07); tone(1000, .16, .14, 'triangle', .07); if (step === 0) say('さきに ビンの てがみを よもう', 'cat'); else if (step === 1) SEA.lookGull(); else say('カモメの てがみには「したへ ' + seed.d + '」って かいてあったね', 'cat'); }
-    else if (o.id === 'palm') { face(PALM.x, PALM.y); say(step < 2 ? 'おおきな ヤシのき。めじるしに なりそう' : 'ヤシのきの となりが 1つめ。そこから かぞえてね', 'cat'); }
+    const where = 'ヤシのきから みぎへ ' + seed.r + 'ます、したへ ' + seed.d + 'ます';
+    if (o.id === 'bottle') { face(6, 2); if (step === 0) SEA.lookBottle(); else say('ビンの てがみには「みぎへ ' + seed.r + 'ます」って かいてあったね', 'cat'); }
+    else if (o.id === 'gull') { face(10, 2); tone(1200, .12, 0, 'triangle', .07); tone(1000, .16, .14, 'triangle', .07); if (step === 0) say('さきに ビンの てがみを よもう', 'cat'); else if (step === 1) SEA.lookGull(); else say('カモメの てがみには「したへ ' + seed.d + 'ます」って かいてあったね', 'cat'); }
+    else if (o.id === 'palm') { face(PALM.x, PALM.y); say(step < 2 ? 'おおきな ヤシのき。めじるしに なりそう' : 'ヤシのきの となりが 1ます。ここから かぞえてね', 'cat'); }
     else if (o.id === 'npc') { face(0, 8); say(['ひかっている ビンの てがみを よんでみて', 'のこりの はんぶんは、いわの カモメが もっていったの', where + 'の ところを ほってね', 'ありがとう! たすかったよ'][step]); }
     else if (o.id === 'dig') {
       const x = o.tx, y = o.ty, id = runId;
@@ -951,72 +954,75 @@ const SEA = {
         anim = null; busy = false; miss++; sfx.miss(); drawTray();
         const dx = x - PALM.x, dy = y - PALM.y;
         say(dx <= 0 ? 'ここは ヤシのきより ひだりだよ。ヤシのきから みぎへ かぞえよう'
-          : dy === 0 ? 'ここは ヤシのきから みぎへ ' + dx + '。そこから したへ ' + seed.d + ' すすもう'
-          : 'ここは ヤシのきから みぎへ ' + dx + '、したへ ' + dy + ' だよ', 'cat');
+          : dy === 0 ? 'ここは みぎへ ' + dx + 'ます。つぎは したへ ' + seed.d + 'ます'
+          : 'ここは みぎへ ' + dx + 'ます、したへ ' + dy + 'ます だよ', 'cat');
       }, 1000);
     }
   },
-  // ビンの てがみ(ひだりの はんぶん): かいがらを かぞえて たしざん
+  // ビンの てがみ(ひだりの はんぶん): フィールドと おなじ ますの え。かいがら 1こが 1ます
   lookBottle() {
     sfx.open();
-    const { a, b, r } = seed, p = openModal('<h2>ヤシのきから みぎへ いくつ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
+    const { a, b, r } = seed, p = openModal('<h2>ヤシのきから みぎへ なんます?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
     const paint = hint => {
       const c = mk(480, 250, x => {
-        const edge = [[440, 8], [458, 40], [436, 72], [462, 108], [438, 146], [460, 182], [440, 218], [456, 244]];
+        const edge = [[452, 8], [468, 40], [448, 72], [470, 108], [450, 146], [470, 182], [452, 218], [466, 244]];
         poly(x, [[12, 8], ...edge, [12, 244]], '#FFFBEA', '#B58A1F', 3);
-        num(x, 'ビンの てがみ', 220, 32, 17, '#8C5E3C');
-        drawPalm(x, 58, 150);
-        num(x, 'みぎへ', 160, 76, 20, '#3A2D58');
+        num(x, 'ビンの てがみ', 230, 30, 17, '#8C5E3C');
+        num(x, 'ヤシのきから みぎへ', 230, 62, 18, '#3A2D58');
+        const u = 44, x0 = 24, y0 = 112;
+        for (let i = 0; i <= 9; i++) { rr(x, x0 + i * u, y0, u, u, 0, i % 2 ? '#F0DAAA' : '#F7E6BC'); }
+        x.strokeStyle = '#E2C68E'; x.lineWidth = 1.5; x.strokeRect(x0, y0, u * 10, u);
+        drawPalm(x, x0 + u / 2, y0 + 34, .55);
         for (let i = 0; i < r; i++) {
-          const bx = 130 + i * 40 + (i >= a ? 40 : 0);
-          drawShell(x, bx, 132, 15, i < a ? '#FFC3D6' : '#BFE3F7');
-          if (hint) { ci(x, bx, 170, 10, '#FFC83D'); num(x, i + 1, bx, 171, 12, '#3A2D58'); }
+          const bx = x0 + (i + 1) * u + u / 2;
+          drawShell(x, bx, y0 + 18, 15, i < a ? '#FFC3D6' : '#BFE3F7');
+          if (hint) { ci(x, bx, y0 + u + 14, 10, '#FFC83D'); num(x, i + 1, bx, y0 + u + 15, 12, '#3A2D58'); }
         }
-        num(x, '+', 130 + a * 40, 136, 30, '#3A2D58');
-        num(x, 'すすんでね', 230, 212, 18, '#3A2D58');
+        num(x, '+', x0 + (a + 1) * u, y0 - 12, 24, '#3A2D58');
+        num(x, 'かいがら 1こで 1ます すすんでね', 230, 222, 16, '#3A2D58');
       });
       c.className = 'pic'; p.querySelector('#pic').replaceChildren(c);
     };
     paint(false);
     const set = new Set([r - 1, r, r + 1, r + 2]); set.delete(0);
     [...set].sort((u, v) => u - v).forEach(k => {
-      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'choice'; btn.innerHTML = k + '<small>つ</small>';
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'choice'; btn.innerHTML = k + '<small>ます</small>';
       btn.onclick = () => k === r
-        ? right(p, 'せいかい! ' + a + '+' + b + '=' + r, () => { step = 1; cardNew = true; drawTray(); say('のこりの はんぶんは、いわの カモメが もっていったの'); })
+        ? right(p, 'せいかい! ' + a + '+' + b + '=' + r + 'ます', () => { step = 1; cardNew = true; drawTray(); say('のこりの はんぶんは、いわの カモメが もっていったの'); })
         : wrong(p, btn, 'かいがらを ぜんぶ かぞえて みよう', 'かいがらに ばんごうを つけたよ。さいごは いくつ?', () => paint(true));
       p.querySelector('#ch').appendChild(btn);
     });
   },
-  // カモメの てがみ(みぎの はんぶん): ひもの ながさは かいがら いくつぶん?
+  // カモメの てがみ(みぎの はんぶん): たての ますの よこに ひも。ひもは なんます ぶん?
   lookGull() {
     sfx.open();
-    const { d } = seed, p = openModal('<h2>ひもの ながさは かいがら いくつぶん?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
+    const { d } = seed, p = openModal('<h2>ひもは なんます ぶん?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
     const paint = hint => {
-      const c = mk(480, 250, x => {
-        const edge = [[40, 8], [22, 40], [44, 72], [18, 108], [42, 146], [20, 182], [40, 218], [24, 244]];
-        poly(x, [[468, 8], [468, 244], ...edge.slice().reverse()], '#FFFBEA', '#B58A1F', 3);
-        num(x, 'カモメの てがみ', 260, 32, 17, '#8C5E3C');
-        num(x, 'そこから したへ', 260, 66, 19, '#3A2D58');
-        const x0 = 96, u = 52;
-        ci(x, x0, 112, 5, '#D9478A'); ci(x, x0 + d * u, 112, 5, '#D9478A');
-        c2line(x, x0, x0 + d * u, 112);
-        for (let i = 0; i < 6; i++) {
-          const bx = x0 + i * u + u / 2, me = hint && i < d;
-          if (me) rr(x, bx - u / 2 + 2, 128, u - 4, 46, 8, '#FFF4B8', '#FFC83D', 2);
-          drawShell(x, bx, 146, 19, '#FFC3D6');
-          if (me) num(x, i + 1, bx, 190, 15, '#D9478A');
-        }
-        num(x, 'の ながさ ぶん すすんでね', 260, 222, 16, '#3A2D58');
+      const c = mk(480, 260, x => {
+        const edge = [[34, 8], [18, 40], [38, 74], [16, 110], [36, 148], [18, 186], [36, 222], [20, 254]];
+        poly(x, [[468, 8], [468, 254], ...edge.slice().reverse()], '#FFFBEA', '#B58A1F', 3);
+        num(x, 'カモメの てがみ', 150, 34, 16, '#8C5E3C');
+        num(x, 'そこから したへ', 150, 92, 19, '#3A2D58');
+        num(x, 'ひもの ながさ ぶん', 150, 140, 17, '#3A2D58');
+        num(x, 'すすんでね', 150, 168, 17, '#3A2D58');
+        const u = 32, cx = 300, y0 = 16;
+        rr(x, cx - u / 2, y0, u, u, 0, '#F7E6BC'); starShape(x, cx, y0 + u / 2, 9, '#FFC83D', '#3A2D58'); num(x, 'そこ', cx - 40, y0 + u / 2, 13, '#D9478A');
+        for (let i = 1; i <= 6; i++) { const yy = y0 + i * u, me = hint && i <= d; rr(x, cx - u / 2, yy, u, u, 0, me ? '#FFF4B8' : i % 2 ? '#F0DAAA' : '#F7E6BC'); if (me) num(x, i, cx, yy + u / 2 + 1, 15, '#D9478A'); }
+        x.strokeStyle = '#E2C68E'; x.lineWidth = 1.5; x.strokeRect(cx - u / 2, y0, u, u * 7);
+        const rx = cx + 34, r0 = y0 + u, r1 = y0 + u + d * u;
+        x.beginPath(); for (let q = r0; q <= r1; q += 2) { const xx = rx + Math.sin((q - r0) / 9) * 2.5; q === r0 ? x.moveTo(xx, q) : x.lineTo(xx, q); } x.strokeStyle = '#C98A3C'; x.lineWidth = 5; x.lineCap = 'round'; x.stroke();
+        ci(x, rx, r0, 5, '#D9478A'); ci(x, rx, r1, 5, '#D9478A');
+        drawShell(x, 410, 200, 24);
       });
       c.className = 'pic'; p.querySelector('#pic').replaceChildren(c);
     };
     paint(false);
     const set = new Set([d - 1, d, d + 1, d + 2]); set.delete(0);
     [...set].sort((u, v) => u - v).forEach(k => {
-      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'choice'; btn.innerHTML = k + '<small>つぶん</small>';
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'choice'; btn.innerHTML = k + '<small>ます</small>';
       btn.onclick = () => k === d
-        ? right(p, 'せいかい! かいがら ' + d + 'つぶん', () => { step = 2; cardNew = true; drawTray(); say('ヤシのきから みぎへ ' + seed.r + '、したへ ' + d + 'の ところを ほってね'); })
-        : wrong(p, btn, 'ひもの はしから はしまで、かいがらを かぞえよう', 'ひもの したの かいがらを きいろく したよ。いくつ?', () => paint(true));
+        ? right(p, 'せいかい! ' + d + 'ます', () => { step = 2; cardNew = true; seed.demo = tNow; drawTray(); say('ヤシのきの となりが 1ます。ここから かぞえて ほってね', 'cat'); tone(1175, .15, .2, 'triangle', .08); })
+        : wrong(p, btn, 'ひもの はしから はしまで、ますを かぞえよう', 'ひもの よこの ますに ばんごうを つけたよ。いくつ?', () => paint(true));
       p.querySelector('#ch').appendChild(btn);
     });
   },
@@ -1034,17 +1040,19 @@ const SEA = {
     drawGull(c, 10.9 * T, 2 * T + 10, 1.5, step < 2 ? 0 : Math.sin(t * 6) * .3, step < 2);
     // ほった あな
     for (const [hx, hy] of seed.holes) { el(c, hx * T + 20, hy * T + 24, 13, 7, '#C9AE7C', '#A88A58', 1.5); }
-    // ヒント: 2かい まちがえたら、ヤシのきから みぎと したに ものさしの ばんごう。3かいで あしあと
-    if (step === 2 && miss >= 2) {
-      for (let i = 1; PALM.x + i < COLS; i++) { ci(c, (PALM.x + i) * T + 20, PALM.y * T + 20, 9, 'rgba(255,255,255,.85)', '#2E9C82', 2); num(c, i, (PALM.x + i) * T + 20, PALM.y * T + 21, 11, '#2E9C82'); }
+    // ほる だんの はじめ: ヤシのきの となりに「1」が ポンと でる(かぞえかたの おてほん)
+    if (step === 2) { const k = bounce((t - (seed.demo || 0)) / .5), bx = (PALM.x + 1) * T + 20, by2 = PALM.y * T + 20; c.save(); c.translate(bx, by2); c.scale(k, k); ci(c, 0, 0, 13, '#FFC83D', '#3A2D58', 2); num(c, 1, 0, 1, 15, '#3A2D58'); c.restore(); }
+    // ヒント: 5かい はずれたら、ヤシのきから みぎと したに ものさしの ばんごう
+    if (step === 2 && miss >= 5) {
+      for (let i = 2; PALM.x + i < COLS; i++) { ci(c, (PALM.x + i) * T + 20, PALM.y * T + 20, 9, 'rgba(255,255,255,.85)', '#2E9C82', 2); num(c, i, (PALM.x + i) * T + 20, PALM.y * T + 21, 11, '#2E9C82'); }
       for (let j = 1; PALM.y + j < ROWS - 1; j++) { const cx = (PALM.x + seed.r) * T + 20; ci(c, cx, (PALM.y + j) * T + 20, 9, 'rgba(255,255,255,.85)', '#D9478A', 2); num(c, j, cx, (PALM.y + j) * T + 21, 11, '#D9478A'); }
     }
   },
   items(c, t, items) {
     items.push({ y: 2.6, f: () => drawBottle(c, 6 * T + 20, 2 * T + 22, 1.15) });
     items.push({ y: PALM.y + .9, f: () => {
-      if (step === 2 && !anim) { const p = (Math.sin(t * 4) + 1) / 2; ci(c, PALM.x * T + 22, PALM.y * T + 30, 18 + p * 4, null, 'rgba(255,200,61,' + (.5 + .4 * p) + ')', 4); }   // めじるしが ひかる
-      drawPalm(c, PALM.x * T + 18, PALM.y * T + 36);
+      if (step === 2 && !anim) { const p = (Math.sin(t * 4) + 1) / 2; ci(c, PALM.x * T + 20, PALM.y * T + 22, 17 + p * 3, null, 'rgba(255,200,61,' + (.5 + .4 * p) + ')', 4); }   // めじるしが ひかる
+      drawPalm(c, PALM.x * T + 20, PALM.y * T + 25);
     } });
     items.push({ y: 8.2, f: () => { ln(c, 9 * T + 20, 8 * T + 36, 9 * T + 24, 7 * T + 6, '#8C5A3C', 3); c.beginPath(); c.arc(9 * T + 24, 7 * T + 8, 26, PI, 0); c.closePath(); c.fillStyle = '#FF9DB5'; c.fill(); c.strokeStyle = '#3A2D58'; c.lineWidth = 2; c.stroke(); for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(9 * T + 24, 7 * T + 8); c.arc(9 * T + 24, 7 * T + 8, 26, PI + i * PI / 3 + PI / 12, PI + i * PI / 3 + PI / 4); c.closePath(); c.fillStyle = '#FFFFFF'; c.fill(); } } });   // パラソル(かざり)
   },
@@ -1056,9 +1064,6 @@ const SEA = {
     if (anim.ok && t > 1) { const k = Math.min(1, (t - 1) / .5), op = Math.min(1, Math.max(0, (t - 1.5) / .4)); c.save(); if (win) c.globalAlpha = Math.max(0, 1 - win.t / .6); drawChest(c, cx, cy + 4 - k * 4, 1.3, op); c.restore(); }
   },
 };
-function c2line(x, x1, x2, y) {   // なみうつ ひも
-  x.beginPath(); for (let q = x1; q <= x2; q += 2) { const yy = y + Math.sin((q - x1) / 9) * 2.5; q === x1 ? x.moveTo(q, yy) : x.lineTo(q, yy); } x.strokeStyle = '#C98A3C'; x.lineWidth = 5; x.lineCap = 'round'; x.stroke();
-}
 
 const STAGES = [EKI, LIB, ZOO, SEA];
 
