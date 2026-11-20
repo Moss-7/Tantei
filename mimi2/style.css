@@ -178,3 +178,9 @@ h1.logo{margin:0}
 
 /* ちずの ことばは たかさを きめておく(ことばが かわっても ちずが うごかない ように) */
 #mapSay{min-height:0;height:calc(2.8em + 18px);overflow:hidden}
+
+/* うえの おびが ながく なっても、がめんが よこに はみださない ように */
+@media (orientation:portrait){.game{grid-template-columns:minmax(0,1fr)}}   /* よこむきは うえの きまりの まま */
+.hud{min-width:0}
+.hud b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:400px){.hud{gap:5px}.pieces{gap:2px;padding:3px 6px}.pieces i{width:13px;height:13px}}

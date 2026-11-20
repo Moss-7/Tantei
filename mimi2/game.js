@@ -1,4 +1,4 @@
-/* たんていミミ2 なないろの ちず — 1話「えき」 2話「としょかん」 3話「どうぶつえん」 4話「うみべ」
+/* たんていミミ2 なないろの ちず — 1話「えき」 2話「としょかん」 3話「どうぶつえん」 4話「うみべ」 5話「ゆうえんち」
    あそびかたは「みる・とく・つかう」だけ。てがみ、カギ、てちょう、さがすボタン、十字ボタンは ない。
    いきたい ばしょや ものを タッチすると ミミが あるき、ついたら しらべる。 */
 (() => {
@@ -90,6 +90,16 @@ const TRACKS = {
     bass: [[43,1],[50,1],[55,1],[50,1], [38,1],[45,1],[50,1],[45,1], [45,1],[52,1],[57,1],[52,1], [43,1],[50,1],[55,1],[50,1],
            [43,1],[50,1],[55,1],[50,1], [38,1],[45,1],[50,1],[45,1], [48,1],[55,1],[50,1],[45,1], [43,1],[50,1],[43,1],[0,1]] },
   // うみべ: なみの ように ゆったり(ニ長調)
+  // ゆうえんち: くるくる まわる 3びょうし(ハ長調)
+  park: { beat: .28, gate: .7,
+    mel: [[67,1],[72,1],[76,1], [79,2],[76,1], [77,1],[76,1],[74,1], [72,3],
+          [69,1],[72,1],[77,1], [81,2],[77,1], [79,1],[77,1],[76,1], [74,3],
+          [67,1],[72,1],[76,1], [79,2],[84,1], [83,1],[81,1],[79,1], [77,3],
+          [76,1],[74,1],[76,1], [72,3]],
+    bass: [[48,1],[55,1],[60,1], [48,1],[55,1],[60,1], [43,1],[50,1],[55,1], [48,1],[55,1],[60,1],
+           [41,1],[48,1],[53,1], [41,1],[48,1],[53,1], [48,1],[55,1],[60,1], [43,1],[50,1],[55,1],
+           [48,1],[55,1],[60,1], [48,1],[55,1],[60,1], [43,1],[50,1],[55,1], [41,1],[48,1],[53,1],
+           [43,1],[50,1],[55,1], [48,1],[55,1],[0,1]] },
   sea: { beat: .32, gate: .8,
     mel: [[74,1],[76,.5],[78,.5],[81,1],[78,1], [79,1],[78,.5],[76,.5],[74,2], [71,1],[74,.5],[76,.5],[78,1],[76,1], [74,1],[73,.5],[71,.5],[69,2],
           [74,1],[76,.5],[78,.5],[81,1],[83,1], [81,1],[78,.5],[76,.5],[78,2], [79,1],[78,.5],[76,.5],[73,1],[76,1], [74,2],[0,2]],
@@ -311,18 +321,19 @@ function findPath(sx, sy, gx, gy) {
 /* ---------- じょうたい ---------- */
 // step: 0=1つめを みる → 1=2つめを みる → 2=つかう → 3=かいけつ
 const cv = $('cv'), ctx = cv.getContext('2d');
+let tapPx = [0, 0];
 let S = null, seed = null, step = 0, running = false, busy = false, miss = 0, tNow = 0, runId = 0;
 let m, cat, path = [], pending = null, dest = null, anim = null, win = null, shake = 0, cardNew = false;
 const timeText = (h, half) => h + 'じ' + (half ? 'はん' : '');
 const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
 function drawWho(c, who, x, by, s, bob = 0, cheer = false) {
-  if (who === 'pen') drawPenguin(c, x, by, s, bob, cheer); else if (who === 'ele') drawElephant(c, x, by, s * 1.15, bob, cheer); else if (who === 'kame') drawTurtle(c, x, by, s * 1.1, bob, cheer); else drawOwl(c, x, by, s, bob, cheer);
+  if (who === 'pen') drawPenguin(c, x, by, s, bob, cheer); else if (who === 'ele') drawElephant(c, x, by, s * 1.15, bob, cheer); else if (who === 'kame') drawTurtle(c, x, by, s * 1.1, bob, cheer); else if (who === 'ashika') drawSeal(c, x, by, s, bob, cheer); else drawOwl(c, x, by, s, bob, cheer);
 }
 function say(t, who) {
   who = who || S.npc.who;
   $('say').textContent = t;
   const f = $('face').getContext('2d'); f.clearRect(0, 0, 120, 120);
-  if (who === 'pen') drawPenguin(f, 60, 110, 3.3); else if (who === 'owl') drawOwl(f, 60, 112, 3.2); else if (who === 'ele') drawElephant(f, 60, 112, 3.0); else if (who === 'mon') drawMonkey(f, 60, 108, 3.9); else if (who === 'kame') drawTurtle(f, 60, 106, 3.4); else if (who === 'girl') drawGirl(f, 60, 150, 3.2, 'down'); else drawCat(f, 58, 128, 5.2);
+  if (who === 'pen') drawPenguin(f, 60, 110, 3.3); else if (who === 'owl') drawOwl(f, 60, 112, 3.2); else if (who === 'ele') drawElephant(f, 60, 112, 3.0); else if (who === 'mon') drawMonkey(f, 60, 108, 3.9); else if (who === 'kame') drawTurtle(f, 60, 106, 3.4); else if (who === 'ashika') drawSeal(f, 60, 118, 2.8); else if (who === 'girl') drawGirl(f, 60, 150, 3.2, 'down'); else drawCat(f, 58, 128, 5.2);
 }
 function drawTray() {
   const tray = $('tray'); tray.replaceChildren();
@@ -1070,7 +1081,217 @@ const SEA = {
   },
 };
 
-const STAGES = [EKI, LIB, ZOO, SEA];
+
+/* ==================== 5話 ゆうえんち ====================
+   ピエロの アシカの ふうせんに かけらが くっついて とんでいき、かんらんしゃの ゴンドラに ひっかかった。
+   ふうせんの きまり → ゴンドラの いろ / そうがんきょう(はんぶん みえる まど) → まどの かたち / 2まいを あわせて ゴンドラを タッチ */
+function drawSeal(c, x, by, s, bob = 0, cheer = false) {   // ピエロの アシカ
+  c.save(); c.translate(x, by); c.scale(s, s);
+  el(c, 0, 0, 10, 3, 'rgba(40,20,70,.18)');
+  c.translate(0, -bob);
+  el(c, -6, -2, 5, 2.2, '#8E8AA8'); el(c, 6, -2, 5, 2.2, '#8E8AA8');
+  el(c, 0, -10, 8, 10, '#A9A4C4', '#3A2D58', .9); el(c, 0, -8, 5, 6.5, '#D6D2E8');
+  c.save(); c.translate(-7, -10); c.rotate(cheer ? -1.6 : .5); el(c, 0, 5, 2.4, 6, '#8E8AA8'); c.restore();
+  c.save(); c.translate(7, -10); c.rotate(cheer ? 1.6 : -.5); el(c, 0, 5, 2.4, 6, '#8E8AA8'); c.restore();
+  for (let i = 0; i < 5; i++) ci(c, -6 + i * 3, -17.5 + Math.abs(i - 2) * .6, 2.2, i % 2 ? '#FFD25E' : '#FF9DB5', '#3A2D58', .5);   // えりの フリル
+  ci(c, 0, -23, 6.5, '#A9A4C4', '#3A2D58', .9);
+  ci(c, -2.4, -24, 1, '#3A2D58'); ci(c, 2.4, -24, 1, '#3A2D58'); ci(c, 0, -21.4, 1.6, '#E5534B');   // あかい はな
+  ln(c, -4, -21, -8, -20.5, '#3A2D58', .5); ln(c, 4, -21, 8, -20.5, '#3A2D58', .5);
+  poly(c, [[-4, -28.5], [4, -28.5], [1, -37]], '#7FB6F0', '#3A2D58', .8); ci(c, 1, -37.5, 1.6, '#FFC83D');   // とんがり ぼうし
+  c.restore();
+}
+function drawBalloon(c, x, y, r, col, sx = x, sy = y + r * 3) {
+  ln(c, x, y + r, sx, sy, 'rgba(58,45,88,.55)', 1);
+  el(c, x, y, r * .85, r, col, '#3A2D58', 1.2); el(c, x - r * .3, y - r * .35, r * .18, r * .28, 'rgba(255,255,255,.7)');
+  poly(c, [[x - r * .15, y + r * .95], [x + r * .15, y + r * .95], [x, y + r * 1.15]], col);
+}
+function drawShapeIcon(c, sh, x, y, r, fill, stroke = '#3A2D58', lw = 2) {
+  if (sh === 0) ci(c, x, y, r, fill, stroke, lw);
+  else if (sh === 1) poly(c, [[x, y - r], [x + r * 1.05, y + r * .8], [x - r * 1.05, y + r * .8]], fill, stroke, lw);
+  else rr(c, x - r * .9, y - r * .9, r * 1.8, r * 1.8, r * .18, fill, stroke, lw);
+}
+function drawGondola(c, x, y, s, col, sh, door = 0) {   // (x, y) は つりさげる ところ
+  c.save(); c.translate(x, y); c.scale(s, s);
+  ln(c, 0, 0, 0, 5, '#3A2D58', 1.6);
+  rr(c, -14, 5, 28, 24, [10, 10, 5, 5], col, '#3A2D58', 1.8);
+  rr(c, -14, 5, 28, 5, [10, 10, 0, 0], 'rgba(255,255,255,.35)');
+  if (door > 0) { rr(c, -9, 12, 18, 14, 2, '#3A2D58'); c.save(); c.globalAlpha = door; drawShapeIcon(c, sh, 0, 18, 5, '#FFF4B8', '#3A2D58', 1.2); c.restore(); }
+  drawShapeIcon(c, sh, 0, 18 - door * 30, 5.5, '#DFF3FB', '#3A2D58', 1.4);   // まど(とびらと いっしょに うえへ ひらく)
+  c.restore();
+}
+const PK = { cols: [{ n: 'あか', h: '#FF7E8A' }, { n: 'きいろ', h: '#FFD25E' }, { n: 'あお', h: '#6FA8F5' }, { n: 'みどり', h: '#8FD6A6' }],
+  shapes: [{ n: 'まるい まど', b: 'まる' }, { n: 'さんかくの まど', b: 'さんかく' }, { n: 'しかくい まど', b: 'しかく' }],
+  WX: 8.5 * T, WY: 2.9 * T, R: 2.35 * T, rot: 0, sel: -1, spin: null };
+const gondolaPos = i => { const a = PK.rot + i * PI / 4; return [PK.WX + Math.cos(a) * PK.R, PK.WY + Math.sin(a) * PK.R]; };
+const BAL = { x: 1 * T + 2, y: 2 * T + 4, w: 2 * T - 4, h: T + 18 };
+const PARK = {
+  n: 5, name: 'ゆうえんち', track: 'park', npc: { who: 'ashika', x: 3, y: 4 },
+  thanks: 'ありがとう! かけらを どうぞ',
+  intro: {
+    lines: [['ashika', 'たいへん! ふうせんに かけらが くっついて、とんでいっちゃった'], ['ashika', 'ふうせんと おなじ いろの ゴンドラに、ひっかかったみたい'], ['girl', 'まかせて! たんていミミが みつけるよ']],
+    from: { m: [1, 9, 'up'], cat: [2, 9, 'up'] }, to: [3, 5], after: { m: [3, 5, 'up'], cat: [4, 5, 'up'] }, first: 'ひかっている ふうせんを みてみよう',
+    point(c, t) { const bob = Math.sin(t * 5) * 3, ax = 2.6 * T - bob, ay = 3.4 * T; poly(c, [[ax - 12, ay], [ax, ay - 8], [ax, ay + 8]], '#FFC83D', '#3A2D58', 2); ln(c, ax, ay, ax + 12, ay, '#3A2D58', 3); },   // ふうせんを ゆびさす
+  },
+  glow: [[BAL.x, BAL.y - 6, BAL.w, BAL.h + 6, 10], [5 * T + 4, 6 * T + 2, 32, T + 34, 8]],
+  blocked(x, y) {
+    if (y < 2) return true;                                         // さく と はた
+    if (x >= 6 && y <= 6) return true;                              // かんらんしゃ
+    if ((x === 1 || x === 2) && (y === 3 || y === 4)) return true;  // ふうせんの くるま
+    if (x === 3 && y === 4) return true;                            // アシカ
+    if (x === 5 && y === 7) return true;                            // そうがんきょう
+    return false;
+  },
+  objs: [
+    { id: 'npc', hit: (x, y) => x === 3 && (y === 4 || y === 3), stand: [[3, 5], [4, 4]] },
+    { id: 'balloon', hit: (x, y) => (x === 1 || x === 2) && y >= 2 && y <= 4, stand: [[2, 5], [1, 5], [0, 4], [0, 3]] },
+    { id: 'scope', hit: (x, y) => x === 5 && (y === 7 || y === 6), stand: [[4, 7], [5, 8], [4, 8]] },
+    { id: 'wheel', hit(x, y) {   // タッチした ところに いちばん ちかい ゴンドラを えらぶ
+      if (!(x >= 6 && y <= 6)) return false;
+      let best = 0, bd = 1e9; for (let i = 0; i < 8; i++) { const [gx, gy] = gondolaPos(i), d = Math.hypot(gx - tapPx[0], gy + 18 - tapPx[1]); if (d < bd) { bd = d; best = i; } }
+      PK.sel = best; return true; }, stand: [[8, 7], [9, 7], [7, 7], [10, 7], [6, 7], [11, 7]] },
+  ],
+  newSeed() {
+    const pat = shuffle([0, 1, 2, 3]).slice(0, 3), miss = 5 + Math.floor(Math.random() * 3);   // ふうせんは 8こ。ぬけている ばしょ
+    const col = pat[miss % 3];
+    // ゴンドラ: どの いろも 2つ。おなじ いろの 2つは まどの かたちが ちがう
+    const gs = []; for (let ci2 = 0; ci2 < 4; ci2++) { gs.push({ c: ci2, s: ci2 % 3 }); gs.push({ c: ci2, s: (ci2 + 1) % 3 }); }
+    const g = shuffle(gs), mine = g.filter(q => q.c === col), shp = mine[Math.floor(Math.random() * 2)].s;
+    PK.rot = Math.random() * PI * 2; PK.sel = -1; PK.spin = null;
+    return { pat, miss, col, shp, g, ans: g.findIndex(q => q.c === col && q.s === shp) };
+  },
+  cards() {
+    const C = PK.cols[seed.col], Sh = PK.shapes[seed.shp];
+    return [{ label: C.n, draw: x => drawBalloon(x, 32, 24, 15, C.h, 32, 60) },
+            { label: Sh.b, draw: x => drawShapeIcon(x, seed.shp, 32, 34, 18, '#DFF3FB', '#3A2D58', 3) }];
+  },
+  act(o) {
+    const C = PK.cols[seed.col], Sh = PK.shapes[seed.shp];
+    if (o.id === 'balloon') { m.dir = m.y > 4 ? 'up' : 'right'; if (step === 0) PARK.lookBalloon(); else say('とんでいった ふうせんは ' + C.n + 'だったね', 'cat'); }
+    else if (o.id === 'scope') { face(5, 7); if (step === 0) say('さきに ふうせんを しらべよう', 'cat'); else if (step === 1) PARK.lookScope(); else say('まどは ' + Sh.b + 'だったね', 'cat'); }
+    else if (o.id === 'npc') { m.dir = 'up'; say(['ふうせんを みて! とんでいった ふうせんの いろが わかるかも', C.n + 'の ゴンドラは 2つ あるの。そうがんきょうで まどを みてみて', 'カードに あう ゴンドラを タッチしてね', 'ありがとう! たすかったよ'][step]); }
+    else if (o.id === 'wheel') {
+      m.dir = 'up';
+      if (step < 2) { PK.sel = -1; say('どの ゴンドラか、まだ わからないよ。' + (step === 0 ? 'ふうせん' : 'そうがんきょう') + 'を しらべよう', 'cat'); return; }
+      if (step > 2) return;
+      const i = PK.sel; if (i < 0) return;
+      busy = true; tone(784, .1, 0, 'triangle', .08); say('ゴンドラが おりてくるよ', 'cat');
+      PK.spin = { i, door: 0, wait: 0, done: false };
+    }
+  },
+  tick(dt) {   // かんらんしゃを まわす。えらんだ ゴンドラは したまで おりてきて とびらが ひらく
+    const sp = PK.spin;
+    if (!sp) { if (!calm) PK.rot += dt * .09; return; }
+    const target = PI / 2 - sp.i * PI / 4; let d = ((target - PK.rot) % (PI * 2) + PI * 2) % (PI * 2);
+    if (d > .004 && sp.door === 0) { const v = Math.min(d, Math.max(.25, Math.min(1.4, d * 2)) * dt); PK.rot += v; if (Math.random() < dt * 4) sfx.step(); return; }
+    if (sp.door < 1) { if (sp.door === 0) tone(660, .1, 0, 'triangle', .08); sp.door = Math.min(1, sp.door + dt * 2); return; }
+    if (!sp.done) {
+      sp.done = true; const g = seed.g[sp.i], ok = sp.i === seed.ans;
+      if (ok) { step = 3; stopMusic(); sfx.chest(); say('かけらが あった!', 'cat'); anim = { t: 0 }; winPiece(500); return; }
+      miss++; sfx.miss(); drawTray();
+      const cOk = g.c === seed.col, sOk = g.s === seed.shp;
+      say(cOk ? 'いろは あってるけど、まどの かたちが ちがうね' : sOk ? 'まどの かたちは あってるけど、いろが ちがうね' : 'いろも まども ちがうみたい', 'cat');
+    }
+    sp.wait += dt;
+    if (!(step === 3) && sp.wait > 1.6) { PK.spin = null; PK.sel = -1; busy = false; }
+  },
+  // ふうせん: くりかえしの きまり。ぬけた ふうせんの いろは?
+  lookBalloon() {
+    sfx.open();
+    const { pat, miss } = seed, p = openModal('<h2>とんでいった ふうせんは なにいろ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
+    const paint = hint => {
+      const c = mk(480, 250, x => {
+        rr(x, 4, 4, 472, 242, 16, '#FFF3F7', '#3A2D58', 3);
+        num(x, 'ふうせんの ならびの きまりを みつけよう', 240, 28, 15, '#3A2D58');
+        if (hint) for (let k = 0; k < 3; k++) { const x0 = 30 + k * 3 * 54 - 4; rr(x, x0, 52, Math.min(3, 8 - k * 3) * 54, 118, 14, k % 2 ? 'rgba(255,200,61,.18)' : 'rgba(127,182,240,.16)', 'rgba(58,45,88,.25)', 2); }
+        for (let i = 0; i < 8; i++) {
+          const bx = 50 + i * 54;
+          if (i === miss) { ln(x, bx, 120, bx, 180, 'rgba(58,45,88,.55)', 1.5); num(x, '?', bx, 92, 34, '#D9478A'); continue; }
+          drawBalloon(x, bx, 92, 20, PK.cols[pat[i % 3]].h, bx, 180);
+        }
+        rr(x, 24, 180, 432, 22, 8, '#FF9DB5', '#3A2D58', 2); rr(x, 40, 202, 400, 30, 6, '#7FB6F0', '#3A2D58', 2);   // ふうせんやの くるま
+      });
+      c.className = 'pic'; p.querySelector('#pic').replaceChildren(c);
+    };
+    paint(false);
+    PK.cols.forEach((C, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'choice col'; b.innerHTML = '<i class="sw" style="background:' + C.h + '"></i><small>' + C.n + '</small>';
+      b.onclick = () => i === seed.col
+        ? right(p, 'せいかい! ' + C.n + 'の ふうせん', () => { step = 1; cardNew = true; drawTray(); say(C.n + 'の ゴンドラは 2つ あるの。そうがんきょうで まどを みてみて'); })
+        : wrong(p, b, 'おなじ ならびが くりかえして いるよ', 'いろの ならびを 3つずつ かこんだよ。おなじ ならびの つづきは?', () => paint(true));
+      p.querySelector('#ch').appendChild(b);
+    });
+  },
+  // そうがんきょう: くもで はんぶん かくれた まど
+  lookScope() {
+    sfx.open();
+    const p = openModal('<h2>まどの かたちは どれ?</h2><div id="pic"></div><div class="row" id="ch"></div><p class="fb" id="fb"></p>');
+    const paint = hint => {
+      const c = mk(300, 300, x => {
+        ci(x, 150, 150, 146, '#3A2D58');
+        x.save(); x.beginPath(); x.arc(150, 150, 132, 0, PI * 2); x.clip();
+        const g = x.createLinearGradient(0, 0, 0, 300); g.addColorStop(0, '#BFE9F7'); g.addColorStop(1, '#EAF7FD'); x.fillStyle = g; x.fillRect(0, 0, 300, 300);
+        rr(x, 40, 70, 220, 190, 30, '#CFC8DE', '#8E85A8', 4);   // ゴンドラ(とおくて いろは わからない)
+        drawShapeIcon(x, seed.shp, 150, 150, 62, '#DFF3FB', '#3A2D58', 6);
+        starShape(x, 132, 150, 12, '#FFC83D', '#FFFFFF');   // まどの なかで かけらが きらり
+        // くもで したはんぶんが かくれる
+        x.globalAlpha = hint ? .45 : 1;
+        for (const [cx2, cy2, r] of [[70, 200, 50], [130, 190, 56], [200, 196, 52], [255, 205, 46], [100, 250, 60], [190, 250, 62], [150, 285, 60]]) ci(x, cx2, cy2, r, '#FFFFFF');
+        x.restore();
+        ci(x, 150, 150, 132, null, '#3A2D58', 6);
+      });
+      c.className = 'pic'; p.querySelector('#pic').replaceChildren(c);
+    };
+    paint(false);
+    PK.shapes.forEach((Sh, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'choice col';
+      b.appendChild(mk(60, 60, x => drawShapeIcon(x, i, 30, 32, 17, '#DFF3FB', '#3A2D58', 3))); b.lastChild.style.width = '34px';
+      const sm = document.createElement('small'); sm.textContent = Sh.b; b.appendChild(sm);
+      b.onclick = () => i === seed.shp
+        ? right(p, 'せいかい! ' + Sh.n, () => { step = 2; cardNew = true; drawTray(); say('カードに あう ゴンドラを タッチしてね', 'cat'); })
+        : wrong(p, b, 'うえの はんぶんの かたちを よく みよう。とがってる? まるい? たいら?', 'くもを うすく したよ。まどの かたちが みえるかな', () => paint(true));
+      p.querySelector('#ch').appendChild(b);
+    });
+  },
+  floor(c, t) {
+    for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) {
+      const x = q * T, y = r * T;
+      if (r < 2) { c.fillStyle = r ? '#CFEFFC' : '#B9E5FA'; c.fillRect(x, y, T, T); continue; }
+      c.fillStyle = (q + r) % 2 ? '#FFE9EF' : '#FFF6F0'; c.fillRect(x, y, T, T);
+    }
+    // さく と はた
+    for (let q = 0; q < 6; q++) { rr(c, q * T + 2, 1.55 * T, T - 4, 8, 3, '#FFFFFF', '#CFC4E2', 1.5); }
+    c.beginPath(); c.moveTo(0, 14); for (let q = 0; q <= 6; q++) c.quadraticCurveTo(q * T + 20, 30, q * T + 40, 14); c.strokeStyle = '#8C7CA8'; c.lineWidth = 1.5; c.stroke();
+    for (let q = 0; q < 6; q++) poly(c, [[q * T + 10, 19], [q * T + 30, 19], [q * T + 20, 34]], PIECE_COL[q % 7], '#3A2D58', 1);
+    rr(c, .6 * T, 9.35 * T, 2.8 * T, .6 * T, 8, '#FFC83D', '#3A2D58', 2);   // いりぐち
+    // かんらんしゃ
+    const { WX, WY, R } = PK;
+    poly(c, [[WX, WY], [WX - 1.5 * T, 6.4 * T], [WX - 1.2 * T, 6.4 * T]], '#C9BEE0', '#3A2D58', 1.5); poly(c, [[WX, WY], [WX + 1.5 * T, 6.4 * T], [WX + 1.2 * T, 6.4 * T]], '#C9BEE0', '#3A2D58', 1.5);
+    rr(c, 6.4 * T, 6.3 * T, 4.2 * T, .55 * T, 6, '#FFD25E', '#3A2D58', 2);   // のりば
+    ci(c, WX, WY, R, null, '#8C7CA8', 4); ci(c, WX, WY, R * .55, null, '#B7A9CF', 2);
+    for (let i = 0; i < 8; i++) { const [gx, gy] = gondolaPos(i); ln(c, WX, WY, gx, gy, '#B7A9CF', 2); }
+    ci(c, WX, WY, 9, '#FF9DB5', '#3A2D58', 2);
+    for (let i = 0; i < 8; i++) {
+      const [gx, gy] = gondolaPos(i), g = seed.g[i], sp = PK.spin, door = sp && sp.i === i ? sp.door : 0;
+      drawGondola(c, gx, gy, 1, PK.cols[g.c].h, g.s, door);
+      const on = (step === 2 && !PK.spin) && (miss < 3 || i === seed.ans);
+      if (on) { const p = (Math.sin(t * 4 + i) + 1) / 2; c.beginPath(); c.roundRect(gx - 18, gy + 1, 36, 32, 10); c.strokeStyle = 'rgba(255,200,61,' + (.45 + .4 * p) + ')'; c.lineWidth = 3; c.stroke(); }
+      if (PK.sel === i && (pending || PK.spin)) { c.beginPath(); c.roundRect(gx - 19, gy, 38, 34, 10); c.strokeStyle = '#D9478A'; c.lineWidth = 3.5; c.stroke(); }
+    }
+  },
+  items(c, t, items) {
+    items.push({ y: 4.8, f: () => {   // ふうせんやの くるまと ふうせん(きまりの とおりに ならぶ。1つ ぬけている)
+      rr(c, 1 * T + 2, 4 * T + 6, 2 * T - 4, 22, 6, '#FF9DB5', '#3A2D58', 2); ci(c, 1.3 * T, 4 * T + 32, 6, '#8C7CA8', '#3A2D58', 1.5); ci(c, 2.7 * T, 4 * T + 32, 6, '#8C7CA8', '#3A2D58', 1.5);
+      for (let i = 0; i < 8; i++) { if (i === seed.miss) continue; const bx = 1 * T + 8 + i * 9, by = 2.5 * T + (i % 2) * 10 + Math.sin(t * 2 + i) * 1.5; drawBalloon(c, bx, by, 6.5, PK.cols[seed.pat[i % 3]].h, 2 * T, 4 * T + 6); }
+    } });
+    items.push({ y: 7.8, f: () => {   // そうがんきょう
+      rr(c, 5 * T + 17, 7 * T + 10, 6, 26, 2, '#8C7CA8', '#3A2D58', 1.5); el(c, 5 * T + 20, 7 * T + 36, 10, 3, '#8C7CA8');
+      c.save(); c.translate(5 * T + 20, 7 * T + 6); c.rotate(-.5); rr(c, -12, -7, 24, 14, 5, '#7FB6F0', '#3A2D58', 2); ci(c, 12, 0, 6, '#DFF3FB', '#3A2D58', 1.5); c.restore();
+    } });
+  },
+  fx() {},
+};
+
+const STAGES = [EKI, LIB, ZOO, SEA, PARK];
 
 /* はなしの プロローグ: コマ0 は かけらが おちてくる(じどう)。コマ1〜3 は かいわで、タッチで すすむ */
 let intro = null;   // { k: コマ, t: その コマに なってからの じかん, walked: ミミが ついたか }
@@ -1399,7 +1620,7 @@ function frame(ts) {
   const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; tNow = ts / 1000;
   if (running) {
     if (anim) anim.t += dt; if (win) win.t += dt; if (shake > 0) shake = Math.max(0, shake - dt);
-    if (!freeze) update(dt); render(tNow);
+    if (!freeze) { update(dt); if (S.tick) S.tick(dt); } render(tNow);
   } else if (pro) prologueTick(dt);
   else if (!$('mapScreen').hidden) { if (mapWalk) mapWalkTick(dt); drawMap(calm ? 0 : tNow - mapT0); }
   else if (!$('title').hidden && !calm) { drawTitle(tNow); drawTitleBg(tNow); }
@@ -1647,6 +1868,7 @@ function setupGate() {
 cv.addEventListener('pointerdown', ev => {
   if (!running) return;
   const r = cv.getBoundingClientRect();
+  tapPx = [(ev.clientX - r.left) / r.width * COLS * T, (ev.clientY - r.top) / r.height * ROWS * T];   // かんらんしゃの ゴンドラを えらぶ ため
   goTo(Math.floor((ev.clientX - r.left) / r.width * COLS), Math.floor((ev.clientY - r.top) / r.height * ROWS));
 });
 const KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
@@ -1676,6 +1898,7 @@ $('btnSound').onclick = () => { store.sound = !store.sound; saveAll(); refreshSo
 window.addEventListener('resize', fit);
 if (window.ResizeObserver) new ResizeObserver(fit).observe($('field'));
 
+window.__mimi2 = { park: () => ({ pos: [...Array(8)].map((_, i) => gondolaPos(i)), g: seed && seed.g, ans: seed && seed.ans }) };   // じどう テスト よう(ゴンドラの いち)
 let booted = false; const go = () => { if (booted) return; booted = true; buildSlots(); drawTitle(0); setupGate(); requestAnimationFrame(frame); };
 window.addEventListener('resize', fitTitle);
 if (document.fonts && document.fonts.load) document.fonts.load('400 13px "Mochiy Pop One"', '123えき').then(go, go);
