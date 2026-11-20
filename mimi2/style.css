@@ -184,3 +184,7 @@ h1.logo{margin:0}
 .hud{min-width:0}
 .hud b{min-width:0;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:400px){.hud{gap:5px}.pieces{gap:2px;padding:3px 6px}.pieces i{width:13px;height:13px}}
+
+/* 6話: こりすの にっき(おぼえている こと) */
+.clues{margin:0;padding:6px 14px 6px 34px;text-align:left;background:#FFFBEA;border:2px solid #E2C68E;border-radius:12px;font-size:clamp(14px,3.8vw,17px);line-height:1.6}
+.clues li{list-style:"・"}
