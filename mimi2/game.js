@@ -1621,7 +1621,9 @@ const PLACES = [
   { id: 'tower', name: 'とけいとう', x: 190, y: 64 },
 ];
 // いける ばしょ: できている はなしで、まえの はなしの かけらを もっている ところ
-const isOpen = i => i < STAGES.length && (i === 0 || data.pieces.includes(i));
+// テストモード(おとなが たしかめる とき): できている ばしょは ぜんぶ いける。アドレスの うしろに ?test を つけるか、プレビューで つかう
+const TEST = !!window.MIMI_TEST || /[?&]test\b/.test(location.search);
+const isOpen = i => i < STAGES.length && (TEST || i === 0 || data.pieces.includes(i));
 const nextPlace = () => PLACES.findIndex((pl, i) => isOpen(i) && !data.pieces.includes(i + 1));
 const PROLOGUE_LINES = [[0, 'たからものの ほうせきが ひかりだした…', 'cat'], [1.7, 'かけらが まちへ とんでいっちゃった!', 'girl'], [3.9, 'かけらを あつめに いこう!', 'cat']];
 let pro = null, mapT0 = 0;
@@ -1806,6 +1808,7 @@ function drawMap(t) {
     const [x, y, dir] = mapWalkPos(), r = mapWalk.rest;
     drawGirl(c, x, y, 1.3, r > 0 ? 'down' : dir, r > 0 ? Math.abs(Math.sin(r * 9)) * 8 : Math.abs(Math.sin(mapWalk.d / 9)) * 3);
   } else { const [x, y] = mapSpot(mapAt); drawGirl(c, x, y, 1.3, 'right', Math.abs(Math.sin(t * 3)) * 2); }
+  if (TEST) { rr(c, 374, 4, 92, 22, 8, '#3A2D58'); num(c, 'テストモード', 420, 15.5, 11, '#FFFFFF'); }
 }
 
 /* ---------- えがく ---------- */
