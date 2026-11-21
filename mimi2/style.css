@@ -188,3 +188,6 @@ h1.logo{margin:0}
 /* 6話: こりすの にっき(おぼえている こと) */
 .clues{margin:0;padding:6px 14px 6px 34px;text-align:left;background:#FFFBEA;border:2px solid #E2C68E;border-radius:12px;font-size:clamp(14px,3.8vw,17px);line-height:1.6}
 .clues li{list-style:"・"}
+
+/* 7話: かけらを ゆびで つかんで ちずに はめる */
+.panel canvas.pz{max-height:52vh;touch-action:none;cursor:grab}

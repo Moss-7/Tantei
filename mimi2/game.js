@@ -1,4 +1,4 @@
-/* たんていミミ2 なないろの ちず — 1話「えき」 2話「としょかん」 3話「どうぶつえん」 4話「うみべ」 5話「ゆうえんち」 6話「もり」
+/* たんていミミ2 なないろの ちず — 1話「えき」 2話「としょかん」 3話「どうぶつえん」 4話「うみべ」 5話「ゆうえんち」 6話「もり」 7話「とけいとう」
    あそびかたは「みる・とく・つかう」だけ。てがみ、カギ、てちょう、さがすボタン、十字ボタンは ない。
    いきたい ばしょや ものを タッチすると ミミが あるき、ついたら しらべる。 */
 (() => {
@@ -55,6 +55,7 @@ const sfx = {
   book() { scrape(0, .3, 1500, 3500, .09); scrape(.35, .3, 2000, 4200, .08); [1319, 1568, 2093].forEach((f, i) => tone(f, .45, 1.1 + i * .1, 'triangle', .08)); },   // ぱらぱら → きらん
   dig() { for (let i = 0; i < 3; i++) scrape(i * .3, .22, 500, 220, .2); },   // ざっ ざっ ざっ
   chest() { tone(392, .12, 0, 'triangle', .1); tone(523, .12, .12, 'triangle', .1); [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, .4, .55 + i * .08, 'triangle', .08)); },
+  bell() { [[392, 0], [523, .02], [784, .04]].forEach(([f, d]) => tone(f, 2.2, d, 'sine', .16)); tone(196, 2.4, 0, 'sine', .14); [[392, 1.2], [523, 1.22]].forEach(([f, d]) => tone(f, 1.8, d, 'sine', .1)); },   // ゴーン
   monkey() { [988, 1319, 988, 1319].forEach((f, i) => tone(f, .09, i * .11, 'square', .05)); tone(1568, .3, .5, 'triangle', .08); },   // ウキキッ
   fanfare() { [523, 523, 523, 659, 784].forEach((f, i) => tone(f, .22, [0, .16, .32, .48, .72][i], 'triangle', .14)); [1047, 1319, 1568].forEach(f => tone(f, 1.3, .98, 'triangle', .09)); },
 };
@@ -92,6 +93,11 @@ const TRACKS = {
   // うみべ: なみの ように ゆったり(ニ長調)
   // ゆうえんち: くるくる まわる 3びょうし(ハ長調)
   // もり: こもれびの なかを あるく(ハ長調)
+  // とけいとう: チクタク すすむ(ト長調)
+  tower: { beat: .3, gate: .5,
+    mel: [[67,1],[74,1],[71,1],[74,1], [67,1],[74,1],[72,1],[71,1], [69,1],[76,1],[72,1],[76,1], [74,2],[0,2],
+          [71,1],[79,1],[76,1],[79,1], [74,1],[78,1],[76,1],[74,1], [72,1],[76,1],[74,1],[72,1], [71,2],[67,2]],
+    bass: [[43,2],[50,2], [43,2],[50,2], [45,2],[52,2], [50,2],[45,2], [43,2],[50,2], [50,2],[45,2], [48,2],[43,2], [43,2],[0,2]] },
   forest: { beat: .3, gate: .8,
     mel: [[72,1],[74,.5],[76,.5],[79,1],[76,1], [77,1],[76,.5],[74,.5],[72,2], [69,1],[72,.5],[74,.5],[76,1],[74,1], [72,1],[71,.5],[69,.5],[67,2],
           [72,1],[74,.5],[76,.5],[79,1],[81,1], [79,1],[77,.5],[76,.5],[74,2], [72,1],[76,.5],[74,.5],[71,1],[74,1], [72,2],[0,2]],
@@ -332,13 +338,13 @@ let m, cat, path = [], pending = null, dest = null, anim = null, win = null, sha
 const timeText = (h, half) => h + 'じ' + (half ? 'はん' : '');
 const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
 function drawWho(c, who, x, by, s, bob = 0, cheer = false) {
-  if (who === 'pen') drawPenguin(c, x, by, s, bob, cheer); else if (who === 'ele') drawElephant(c, x, by, s * 1.15, bob, cheer); else if (who === 'kame') drawTurtle(c, x, by, s * 1.1, bob, cheer); else if (who === 'ashika') drawSeal(c, x, by, s, bob, cheer); else if (who === 'risu') drawSquirrel(c, x, by, s * 1.1, bob, cheer); else drawOwl(c, x, by, s, bob, cheer);
+  if (who === 'pen') drawPenguin(c, x, by, s, bob, cheer); else if (who === 'ele') drawElephant(c, x, by, s * 1.15, bob, cheer); else if (who === 'kame') drawTurtle(c, x, by, s * 1.1, bob, cheer); else if (who === 'ashika') drawSeal(c, x, by, s, bob, cheer); else if (who === 'risu') drawSquirrel(c, x, by, s * 1.1, bob, cheer); else if (who === 'nezumi') drawMouse(c, x, by, s * 1.1, bob, cheer); else drawOwl(c, x, by, s, bob, cheer);
 }
 function say(t, who) {
   who = who || S.npc.who;
   $('say').textContent = t;
   const f = $('face').getContext('2d'); f.clearRect(0, 0, 120, 120);
-  if (who === 'pen') drawPenguin(f, 60, 110, 3.3); else if (who === 'owl') drawOwl(f, 60, 112, 3.2); else if (who === 'ele') drawElephant(f, 60, 112, 3.0); else if (who === 'mon') drawMonkey(f, 60, 108, 3.9); else if (who === 'kame') drawTurtle(f, 60, 106, 3.4); else if (who === 'ashika') drawSeal(f, 60, 118, 2.8); else if (who === 'risu') drawSquirrel(f, 58, 112, 3.6); else if (who === 'girl') drawGirl(f, 60, 150, 3.2, 'down'); else drawCat(f, 58, 128, 5.2);
+  if (who === 'pen') drawPenguin(f, 60, 110, 3.3); else if (who === 'owl') drawOwl(f, 60, 112, 3.2); else if (who === 'ele') drawElephant(f, 60, 112, 3.0); else if (who === 'mon') drawMonkey(f, 60, 108, 3.9); else if (who === 'kame') drawTurtle(f, 60, 106, 3.4); else if (who === 'ashika') drawSeal(f, 60, 118, 2.8); else if (who === 'risu') drawSquirrel(f, 58, 112, 3.6); else if (who === 'nezumi') drawMouse(f, 60, 116, 3.4); else if (who === 'girl') drawGirl(f, 60, 150, 3.2, 'down'); else drawCat(f, 58, 128, 5.2);
 }
 function drawTray() {
   const tray = $('tray'); tray.replaceChildren();
@@ -359,6 +365,7 @@ function drawPieces() {
 function winPiece(delay) {
   const id = runId;
   setTimeout(() => { if (id !== runId) return; win = { t: 0 }; sfx.fanfare(); playMusic('clear', 2.2); if (!data.pieces.includes(S.n)) data.pieces.push(S.n); saveAll(); drawPieces(); say(S.thanks); }, delay);
+  if (S.finale) { setTimeout(() => { if (id !== runId) return; fadeTo(playEnding); }, delay + 4300); return; }   // さいごの はなしは エンディングへ
   setTimeout(() => { if (id !== runId) return; say('ちずに もどって、つぎの ばしょへ いこう', 'cat'); $('btnAgain').hidden = false; }, delay + 4300);
 }
 function wrongPlace(text, hintText) {   // つかう ばしょを まちがえた: いらいにんが くびを ふる。なんどでも やりなおせる
@@ -1528,7 +1535,282 @@ const FOREST = {
   },
 };
 
-const STAGES = [EKI, LIB, ZOO, SEA, PARK, FOREST];
+
+/* ==================== 7話 とけいとう(さいごの はなし) ====================
+   さいごの かけらが はぐるまに はさまって、おおどけいが とまった。かねを ただしい じかんに ならすと はぐるまが うごく。
+   ちず(あつめた 6この かけらを ゆびで はめる) → ちずに でてきた とけいを よむ(なんじなんぷん) → レバーで はりを あわせて かねを ならす */
+function drawMouse(c, x, by, s, bob = 0, cheer = false) {   // とけいとうの とけいもり、ネズミの おじいさん
+  c.save(); c.translate(x, by); c.scale(s, s);
+  el(c, 0, 0, 9, 2.6, 'rgba(40,20,70,.18)');
+  c.translate(0, -bob);
+  c.beginPath(); c.moveTo(5, -3); c.quadraticCurveTo(15, -2, 13, -12); c.strokeStyle = '#E8A0B4'; c.lineWidth = 1.6; c.lineCap = 'round'; c.stroke();   // しっぽ
+  el(c, 0, -8, 7, 8.5, '#B8B4C8', '#3A2D58', .8); rr(c, -4.5, -12, 9, 11, 2, '#8FB8E8', '#3A2D58', .6);   // エプロン
+  c.save(); c.translate(-6, -11); c.rotate(cheer ? -2 : .4); el(c, 0, 3.5, 1.7, 4, '#B8B4C8'); c.restore();
+  c.save(); c.translate(6, -11); c.rotate(cheer ? 2 : -.4); el(c, 0, 3.5, 1.7, 4, '#B8B4C8'); c.restore();
+  ci(c, -7, -24, 5, '#B8B4C8', '#3A2D58', .8); ci(c, 7, -24, 5, '#B8B4C8', '#3A2D58', .8); ci(c, -7, -24, 3, '#F8C6D4'); ci(c, 7, -24, 3, '#F8C6D4');
+  ci(c, 0, -19, 7, '#C9C5D8', '#3A2D58', .8);
+  ci(c, -2.6, -20, 2.3, 'rgba(255,255,255,.5)', '#3A2D58', .7); ci(c, 2.6, -20, 2.3, 'rgba(255,255,255,.5)', '#3A2D58', .7); ln(c, -.4, -20, .4, -20, '#3A2D58', .7);   // まるい めがね
+  ci(c, -2.6, -20, .8, '#3A2D58'); ci(c, 2.6, -20, .8, '#3A2D58');
+  el(c, 0, -14.6, 3.6, 2.2, '#FFFFFF'); ci(c, 0, -16.6, 1.3, '#FF8FB3');   // しろい ひげ と はな
+  ln(c, -2, -16, -7, -17, '#3A2D58', .4); ln(c, 2, -16, 7, -17, '#3A2D58', .4);
+  c.restore();
+}
+// かけらの かたち: 0まる 1しかく 2さんかく 3ほし 4ハート 5ひしがた 6ろっかっけい
+function drawPieceShape(c, k, x, y, r, fill, stroke, lw = 2) {
+  if (k === 0) ci(c, x, y, r, fill, stroke, lw);
+  else if (k === 1) rr(c, x - r * .88, y - r * .88, r * 1.76, r * 1.76, r * .18, fill, stroke, lw);
+  else if (k === 2) poly(c, [[x, y - r * 1.05], [x + r * 1.1, y + r * .8], [x - r * 1.1, y + r * .8]], fill, stroke, lw);
+  else if (k === 3) { c.beginPath(); for (let i = 0; i < 10; i++) { const rr2 = i % 2 ? r * .55 : r * 1.15, a = -PI / 2 + i * PI / 5; c.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw; c.lineJoin = 'round'; c.stroke(); } }
+  else if (k === 4) { c.beginPath(); c.moveTo(x, y + r * .9); c.bezierCurveTo(x - r * 1.4, y - r * .1, x - r * .65, y - r * 1.2, x, y - r * .45); c.bezierCurveTo(x + r * .65, y - r * 1.2, x + r * 1.4, y - r * .1, x, y + r * .9); c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw; c.stroke(); } }
+  else if (k === 5) poly(c, [[x, y - r * 1.1], [x + r * .85, y], [x, y + r * 1.1], [x - r * .85, y]], fill, stroke, lw);
+  else poly(c, [0, 1, 2, 3, 4, 5].map(i => [x + Math.cos(i * PI / 3) * r, y + Math.sin(i * PI / 3) * r]), fill, stroke, lw);
+}
+function drawToken(c, i, x, y, r) {   // あつめた かけら: いろと かたちと、ばしょの しるし
+  drawPieceShape(c, i, x, y, r, PIECE_COL[i], '#3A2D58', 2.5);
+  c.save(); c.translate(x, y + (i === 2 ? 3 : 0)); c.scale(.5, .5); MAP_ICON[PLACES[i].id](c, 0, 0); c.restore();
+}
+// なんじなんぷん の とけい。mins は 0じ0ふん からの ふん
+function drawClockM(c, x, y, R, mins, hint) {
+  ci(c, x, y, R, '#FFFFFF', '#B79CED', R * .12);
+  if (R > 50) for (let i = 0; i < 60; i++) { if (i % 5) { const a = i * PI / 30 - PI / 2; ln(c, x + Math.cos(a) * R * .86, y + Math.sin(a) * R * .86, x + Math.cos(a) * R * .9, y + Math.sin(a) * R * .9, '#B3A8D3', 1); } }
+  for (let i = 1; i <= 12; i++) { const a = i * PI / 6 - PI / 2; if (R > 36) num(c, i, x + Math.cos(a) * R * .72, y + Math.sin(a) * R * .72 + 1, R * .19, '#3A2D58'); else ci(c, x + Math.cos(a) * R * .76, y + Math.sin(a) * R * .76, R * .06, '#3A2D58'); }
+  if (hint) for (let i = 1; i <= 12; i++) { const a = i * PI / 6 - PI / 2; num(c, (i * 5) % 60 || 60, x + Math.cos(a) * R * 1.2, y + Math.sin(a) * R * 1.2, R * .13, '#2E9C82'); }
+  const mm = mins % 60, hh = (mins / 60) % 12, la = mm * PI / 30 - PI / 2, sa = hh * PI / 6 - PI / 2;
+  ln(c, x, y, x + Math.cos(la) * R * .8, y + Math.sin(la) * R * .8, hint ? '#2E9C82' : '#3A2D58', Math.max(1.6, R * .045));
+  ln(c, x, y, x + Math.cos(sa) * R * .5, y + Math.sin(sa) * R * .5, hint ? '#D9478A' : '#3A2D58', Math.max(2.2, R * (hint ? .09 : .07)));
+  ci(c, x, y, Math.max(1.6, R * .06), '#3A2D58');
+}
+const fun = m => m + ['ぷん', 'ぷん', 'ふん', 'ぷん', 'ぷん', 'ふん', 'ぷん', 'ふん', 'ぷん', 'ふん'][m % 10];
+const hm = mins => { const h = Math.floor(mins / 60) % 12 || 12, m = mins % 60; return h + 'じ' + (m ? fun(m) : ''); };
+function drawGear(c, x, y, r, rot, col) {
+  c.save(); c.translate(x, y); c.rotate(rot);
+  c.beginPath(); for (let i = 0; i < 16; i++) { const a = i * PI / 8, rr2 = i % 2 ? r : r * 1.2; c.lineTo(Math.cos(a - .12) * rr2, Math.sin(a - .12) * rr2); c.lineTo(Math.cos(a + .12) * rr2, Math.sin(a + .12) * rr2); } c.closePath();
+  c.fillStyle = col; c.fill(); c.strokeStyle = 'rgba(58,45,88,.5)'; c.lineWidth = 1.5; c.stroke(); ci(c, 0, 0, r * .35, 'rgba(255,255,255,.5)'); c.restore();
+}
+const TW = { cx: 6 * T, cy: 2 * T + 6, R: 62, lever: [0, 0], rope: 0, gear: 0 };
+const MAPDESK = { x: 1 * T - 2, y: 6 * T - 4, w: 2 * T + 4, h: T + 6 };
+const TOWER = {
+  n: 7, name: 'とけいとう', track: 'tower', npc: { who: 'nezumi', x: 4, y: 7 }, finale: true,
+  thanks: 'ありがとう! これが さいごの かけらじゃ',
+  intro: {
+    lines: [['nezumi', 'たいへんじゃ! さいごの かけらが はぐるまに はさまって、とけいが とまって しもうた'], ['nezumi', 'かねを ただしい じかんに ならせば、はぐるまが うごくはず。ちずを みておくれ'], ['girl', 'まかせて! たんていミミが かねを ならすよ']],
+    from: { m: [10, 9, 'up'], cat: [11, 9, 'up'] }, to: [5, 7], after: { m: [5, 7, 'left'], cat: [6, 7, 'left'] }, first: 'ひかっている ちずを みてみよう',
+    point(c, t) { const bob = Math.sin(t * 5) * 3, ax = 3.4 * T - bob, ay = 6 * T + 14; poly(c, [[ax - 12, ay], [ax, ay - 8], [ax, ay + 8]], '#FFC83D', '#3A2D58', 2); ln(c, ax, ay, ax + 12, ay, '#3A2D58', 3); },
+  },
+  glow: [[MAPDESK.x, MAPDESK.y, MAPDESK.w, MAPDESK.h, 8], [MAPDESK.x, MAPDESK.y, MAPDESK.w, MAPDESK.h, 8]],
+  blocked(x, y) {
+    if (y < 2) return true;
+    if (y <= 3 && x >= 4 && x <= 7) return true;                    // おおどけい
+    if (y === 4 && (x === 4 || x === 7)) return true;               // レバー
+    if (x === 10 && y <= 3) return true;                            // かねの ひも
+    if (y === 6 && (x === 1 || x === 2)) return true;               // ちずの つくえ
+    if (x === 4 && y === 7) return true;                            // ネズミ
+    return false;
+  },
+  objs: [
+    { id: 'npc', hit: (x, y) => x === 4 && (y === 7 || y === 6), stand: [[5, 7], [3, 7], [4, 8]] },
+    { id: 'desk', hit: (x, y) => y === 6 && (x === 1 || x === 2), stand: [[1, 7], [2, 7], [3, 6], [0, 6]] },
+    { id: 'lever', k: 0, hit: (x, y) => x === 4 && y === 4, stand: [[4, 5], [3, 4]] },
+    { id: 'lever', k: 1, hit: (x, y) => x === 7 && y === 4, stand: [[7, 5], [8, 4]] },
+    { id: 'rope', hit: (x, y) => x === 10 && y >= 2 && y <= 3, stand: [[10, 4], [9, 3], [11, 3]] },
+    { id: 'clock', hit: (x, y) => y <= 3 && x >= 4 && x <= 7, stand: [[5, 4], [6, 4]] },
+  ],
+  newSeed() {
+    const h = 1 + Math.floor(Math.random() * 12), m = 5 * (1 + Math.floor(Math.random() * 11)), target = h * 60 + m;
+    const dm = Math.min(Math.floor(m / 5), 1 + Math.floor(Math.random() * 3)), dh = 1 + Math.floor(Math.random() * 2);
+    TW.lever = [0, 0]; TW.rope = 0; TW.gear = 0;
+    return { target, now: ((target - dh * 60 - dm * 5) % 720 + 720) % 720, placed: [false, false, false, false, false, false], tray: shuffle([0, 1, 2, 3, 4, 5]) };
+  },
+  cards() { return [{ label: hm(seed.target), draw: x => drawClockM(x, 32, 32, 27, seed.target, false) }]; },
+  act(o) {
+    const tt = hm(seed.target);
+    if (o.id === 'desk') { m.dir = m.y > 6 ? 'up' : m.x > 2 ? 'left' : 'right'; if (step < 2) TOWER.lookMap(); else say('かねを ならす じかんは ' + tt + 'だよ', 'cat'); }
+    else if (o.id === 'npc') { m.dir = 'left'; say(['ちずを みておくれ。あつめた かけらを はめるんじゃ', 'ちずに でてきた とけいを よんでおくれ', 'レバーで はりを ' + tt + 'に あわせて、かねの ひもを ひいておくれ', 'ありがとう!'][step]); }
+    else if (o.id === 'clock') { m.dir = 'up'; say(step < 2 ? 'おおきな とけい。とまっているみたい' : 'いまは ' + hm(seed.now) + '。' + tt + 'に あわせよう', 'cat'); }
+    else if (o.id === 'lever') {
+      m.dir = 'up';
+      if (step < 2) { say('なんじに あわせるか、まだ わからないよ。ちずを しらべよう', 'cat'); return; }
+      if (step > 2) return;
+      TW.lever[o.k] = 1; seed.now = (seed.now + (o.k === 0 ? 5 : 60)) % 720;   // ながい はりは 5ふん、みじかい はりは 1じかん すすむ
+      tone(o.k === 0 ? 1319 : 784, .06, 0, 'square', .05); tone(o.k === 0 ? 988 : 587, .08, .08, 'square', .05);
+      say((o.k === 0 ? 'ながい はりが 5ふん すすんだ。' : 'みじかい はりが 1じかん すすんだ。') + 'いまは ' + hm(seed.now), 'cat');
+    }
+    else if (o.id === 'rope') {
+      m.dir = 'up';
+      if (step < 2) { say('なんじに ならすか、まだ わからないよ。ちずを しらべよう', 'cat'); return; }
+      if (step > 2) return;
+      TW.rope = 1;
+      if (seed.now % 720 === seed.target % 720) {
+        step = 3; busy = true; stopMusic(); sfx.bell(); say('ゴーン! はぐるまが うごきだした!', 'cat'); anim = { t: 0 }; winPiece(2200); return;
+      }
+      miss++; sfx.miss(); drawTray();
+      const mOk = seed.now % 60 === seed.target % 60, hOk = Math.floor(seed.now / 60) % 12 === Math.floor(seed.target / 60) % 12;
+      say(mOk ? 'みじかい はりが ちがうみたい。いまは ' + hm(seed.now) : hOk ? 'ながい はりが ちがうみたい。いまは ' + hm(seed.now) : 'ながい はりも みじかい はりも ちがうみたい', 'cat');
+    }
+  },
+  // ちず: あつめた かけらを ゆびで つかんで、おなじ かたちの あなへ。ぜんぶ はめると、まんなかに とけいが でてくる
+  lookMap() {
+    sfx.open();
+    const p = openModal('<h2 id="pzh">かけらを ちずに はめよう</h2><canvas id="pz" class="pic pz" width="480" height="340"></canvas><div class="row" id="ch"></div><p class="fb" id="fb">ゆびで つかんで、おなじ かたちの あなへ うごかしてね</p>');
+    const cv2 = p.querySelector('#pz'), c = cv2.getContext('2d'), fb = p.querySelector('#fb');
+    const hole = i => [20 + PLACES[i].x / 480 * 440, 16 + PLACES[i].y / 300 * 210];
+    const trayPos = i => [52 + seed.tray.indexOf(i) * 75, 292];
+    const pcs = [0, 1, 2, 3, 4, 5].map(i => { const [x, y] = seed.placed[i] ? hole(i) : trayPos(i); return { i, x, y }; });
+    const WHO = ['pen', 'owl', 'ele', 'kame', 'ashika', 'risu'];
+    let drag = null, sel = -1, pops = [], phase = seed.placed.every(v => v) ? 2 : 1, alive = true, clockIn = phase === 2 ? 1 : 0, hint = false;
+    const draw = now => {
+      c.clearRect(0, 0, 480, 340);
+      const edge = [[12, 10], [120, 4], [240, 12], [350, 2], [468, 10], [472, 120], [466, 234], [330, 240], [210, 232], [90, 242], [10, 236], [16, 120]];
+      poly(c, edge, '#FFF3D6', '#B58A1F', 3);
+      c.setLineDash([6, 6]); c.strokeStyle = 'rgba(201,138,94,.7)'; c.lineWidth = 3; c.beginPath();
+      const H = hole; for (const [a, b] of ROADS) { const [x1, y1] = H(a), [x2, y2] = H(b); c.moveTo(x1, y1); c.lineTo(x2, y2); } c.stroke(); c.setLineDash([]);
+      for (let h = 0; h < 7; h++) {
+        const [x, y] = hole(h);
+        if (h < 6 && seed.placed[h]) continue;
+        c.setLineDash([5, 4]); drawPieceShape(c, h, x, y, 22, 'rgba(58,45,88,.1)', 'rgba(58,45,88,.6)', 2.5); c.setLineDash([]);
+        if (h === 6) num(c, '?', x, y + 1, 18, 'rgba(58,45,88,.45)');
+        if (sel >= 0 && h === sel && hint) { ci(c, x, y, 30, null, 'rgba(255,200,61,.9)', 4); }
+      }
+      rr(c, 10, 254, 460, 78, 14, 'rgba(255,255,255,.7)', '#CFC4E2', 2);
+      pcs.forEach(q => { if (drag && drag.i === q.i) return; drawToken(c, q.i, q.x, q.y, 22); if (sel === q.i) ci(c, q.x, q.y, 31, null, '#D9478A', 3.5); });
+      if (drag) { const q = pcs[drag.i]; c.save(); c.shadowColor = 'rgba(0,0,0,.3)'; c.shadowBlur = 10; drawToken(c, q.i, q.x, q.y, 25); c.restore(); }
+      pops = pops.filter(pp => now - pp.t0 < 1100);
+      pops.forEach(pp => { const k = Math.min(1, (now - pp.t0) / 250), [x, y] = hole(pp.i); c.save(); c.globalAlpha = Math.min(1, (1100 - (now - pp.t0)) / 300); ci(c, x, y - 44, 22 * k, '#FFFFFF', PIECE_COL[pp.i], 3); c.save(); c.beginPath(); c.arc(x, y - 44, 20 * k, 0, PI * 2); c.clip(); drawWho(c, WHO[pp.i], x, y - 30 + 8, 1.0 * k, 0, true); c.restore(); c.restore(); });
+      if (phase === 2) {   // ちずの まんなかに とけいが あらわれる
+        clockIn = Math.min(1, clockIn + .04);
+        c.save(); c.globalAlpha = clockIn * .55; c.fillStyle = '#FFF8E8'; c.fillRect(10, 4, 462, 238); c.restore();
+        c.save(); c.globalAlpha = clockIn; drawClockM(c, 240, 124, 82 * (.6 + .4 * clockIn), seed.target, hint); c.restore();
+        num(c, 'かねを ならす じかん', 240, 262, 18, '#3A2D58');
+      }
+    };
+    const loop = now => { if (!alive || !cv2.isConnected) { alive = false; return; } draw(now); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+    const at = ev => { const r = cv2.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * 480, (ev.clientY - r.top) / r.height * 340]; };
+    const place = (i, h) => {
+      const [hx, hy] = hole(h), q = pcs[i];
+      if (h === i) {
+        seed.placed[i] = true; q.x = hx; q.y = hy; sel = -1; pops.push({ i, t0: performance.now() });
+        [784, 988, 1319].forEach((f, k) => tone(f, .14, k * .07, 'triangle', .08)); fb.textContent = 'ぴったり!';
+        if (seed.placed.every(v => v)) setTimeout(() => { if (!cv2.isConnected) return; startClock(); }, 1200);
+        return true;
+      }
+      sfx.ng(); fb.textContent = 'かたちが ちがうみたい。おなじ かたちの あなを さがそう';
+      const [tx, ty] = trayPos(i); q.x = tx; q.y = ty; return false;
+    };
+    const nearHole = (x, y) => { let best = -1, bd = 40; for (let h = 0; h < 7; h++) { if (h < 6 && seed.placed[h]) continue; const [hx, hy] = hole(h), d = Math.hypot(hx - x, hy - y); if (d < bd) { bd = d; best = h; } } return best; };
+    cv2.addEventListener('pointerdown', ev => {
+      if (phase !== 1) return;
+      const [x, y] = at(ev);
+      const q = pcs.filter(q2 => !seed.placed[q2.i]).find(q2 => Math.hypot(q2.x - x, q2.y - y) < 30);
+      if (q) { drag = { i: q.i, ox: x - q.x, oy: y - q.y, sx: x, sy: y, moved: false }; cv2.setPointerCapture(ev.pointerId); tone(660, .06, 0, 'triangle', .06); return; }
+      if (sel >= 0) { const h = nearHole(x, y); if (h >= 0) place(sel, h); }   // タッチで えらんで、あなを タッチしても はまる
+    });
+    cv2.addEventListener('pointermove', ev => { if (!drag) return; const [x, y] = at(ev), q = pcs[drag.i]; q.x = x - drag.ox; q.y = y - drag.oy; if (Math.hypot(x - drag.sx, y - drag.sy) > 6) drag.moved = true; });
+    const up = () => {
+      if (!drag) return; const d = drag, q = pcs[d.i]; drag = null;
+      if (!d.moved) { const [tx, ty] = trayPos(d.i); q.x = tx; q.y = ty; sel = sel === d.i ? -1 : d.i; if (sel >= 0) fb.textContent = 'おなじ かたちの あなを タッチしてね'; return; }
+      const h = nearHole(q.x, q.y);
+      if (h >= 0) place(d.i, h); else { const [tx, ty] = trayPos(d.i); q.x = tx; q.y = ty; }
+    };
+    cv2.addEventListener('pointerup', up); cv2.addEventListener('pointercancel', up);
+    function startClock() {
+      phase = 2; if (step === 0) step = 1;
+      p.querySelector('#pzh').textContent = 'ちずに でてきた とけいは なんじなんぷん?'; fb.textContent = ''; fb.classList.remove('good');
+      sfx.open();
+      const T0 = seed.target, h = Math.floor(T0 / 60) % 12 || 12, m = T0 % 60;
+      const opts = [T0, T0 + 60, T0 - 5 > 0 ? T0 - 5 : T0 + 5, h * 60 + (m / 5)];   // ただしい / みじかい はりを つぎの かずと よむ / 5ふん ずれ / ながい はりの すうじを ふんと よむ
+      const seen = new Set();
+      shuffle(opts.filter(v => { const k = hm(v); if (seen.has(k) || v % 720 === 0) return false; seen.add(k); return true; })).forEach(v => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'choice'; const k = hm(v); b.innerHTML = k.replace(/じ/, '<small>じ</small>').replace(/(ぷん|ふん)$/, '<small>$1</small>');
+        b.onclick = () => v % 720 === T0 % 720
+          ? right(p, 'せいかい! ' + hm(T0), () => { step = 2; cardNew = true; drawTray(); say('レバーで はりを ' + hm(T0) + 'に あわせて、かねの ひもを ひいておくれ'); })
+          : wrong(p, b, 'ながい はりが さしている ところを、5、10、15… と かぞえよう', 'まわりに ふんの かずを かいたよ。みどりの ながい はりと、ピンクの みじかい はりを よもう', () => { hint = true; });
+        p.querySelector('#ch').appendChild(b);
+      });
+    }
+    if (phase === 2) startClock();
+  },
+  floor(c, t) {
+    for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) { const x = q * T, y = r * T; c.fillStyle = r < 2 ? '#D8CDEA' : (q + r) % 2 ? '#E9E1F3' : '#F1EBF8'; c.fillRect(x, y, T, T); }
+    for (let q = 0; q < COLS; q++) { c.fillStyle = 'rgba(58,45,88,.08)'; c.fillRect(q * T, 0, 2, 2 * T); }
+    // はぐるま(かざり)。かねが なると いきおいよく まわる
+    const sp = step === 3 ? 4 : .25; TW.gear += 1 / 60 * sp;
+    drawGear(c, 1 * T, 1.2 * T, 26, TW.gear, '#C9BEE0'); drawGear(c, 2.3 * T, 2.4 * T, 18, -TW.gear * 1.4, '#E4DDF7'); drawGear(c, 11 * T + 6, 6 * T, 24, -TW.gear, '#C9BEE0'); drawGear(c, 9.6 * T, 7.2 * T, 16, TW.gear * 1.5, '#E4DDF7');
+    // おおどけい
+    rr(c, 3.6 * T, 4, 4.8 * T, 4 * T - 8, [40, 40, 6, 6], '#B58AD9', '#3A2D58', 2.5);
+    drawClockM(c, TW.cx, TW.cy, TW.R, seed.now, false);
+    if (step === 3) starShape(c, TW.cx, TW.cy, 10 + Math.abs(Math.sin(t * 6)) * 6, '#FFC83D', '#FFFFFF');
+    // レバー(ながい はりは みどり、みじかい はりは ピンク)
+    [[4, '#2E9C82', 'ながい'], [7, '#D9478A', 'みじかい']].forEach(([lx, col, name], k) => {
+      const x = lx * T + 20, y = 4 * T + 30, a = -.6 + TW.lever[k] * 1.2; TW.lever[k] = Math.max(0, TW.lever[k] - 1 / 60 * 4);
+      rr(c, x - 14, y - 4, 28, 12, 4, '#8C7CA8', '#3A2D58', 2);
+      ln(c, x, y, x + Math.sin(a) * 26, y - Math.cos(a) * 26, '#3A2D58', 4); ci(c, x + Math.sin(a) * 26, y - Math.cos(a) * 26, 6, col, '#3A2D58', 2);
+      rr(c, x - 22, y - 46, 44, 14, 5, '#FFFFFF', col, 2); num(c, name, x, y - 38.5, 9, col);
+      if (step === 2) { const p = (Math.sin(t * 4 + k) + 1) / 2; ci(c, x, y - 10, 24 + p * 2, null, 'rgba(255,200,61,' + (.4 + .4 * p) + ')', 3); }
+    });
+    // かねと ひも
+    const sw = step === 3 ? Math.sin(t * 8) * .3 : 0, bx = 10 * T + 20, by = 18 + TW.rope * 8; TW.rope = Math.max(0, TW.rope - 1 / 60 * 3);
+    c.save(); c.translate(bx, 8); c.rotate(sw); poly(c, [[-14, 30], [-10, 6], [0, 0], [10, 6], [14, 30]], '#F2B63C', '#3A2D58', 2); ci(c, 0, 33, 4, '#C98A3C', '#3A2D58', 1.5); c.restore();
+    ln(c, bx, 40, bx, 3.6 * T + TW.rope * 8, '#C98A5E', 3); ci(c, bx, 3.6 * T + 4 + TW.rope * 8, 6, '#D9478A', '#3A2D58', 2);
+    if (step === 2) { const p = (Math.sin(t * 4 + 2) + 1) / 2; ci(c, bx, 3.6 * T + 4, 14 + p * 2, null, 'rgba(255,200,61,' + (.4 + .4 * p) + ')', 3); }
+    // いりぐち
+    rr(c, 9.6 * T, 9.35 * T, 2.2 * T, .6 * T, 8, '#B79CED', '#3A2D58', 2);
+  },
+  items(c, t, items) {
+    items.push({ y: 6.8, f: () => {   // ちずの つくえ
+      rr(c, MAPDESK.x + 2, MAPDESK.y + 6, MAPDESK.w - 4, 22, 5, '#C98A5E', '#3A2D58', 2); rr(c, MAPDESK.x + 6, MAPDESK.y + 26, 6, 14, 2, '#8C5A3C'); rr(c, MAPDESK.x + MAPDESK.w - 12, MAPDESK.y + 26, 6, 14, 2, '#8C5A3C');
+      c.save(); c.translate(MAPDESK.x + MAPDESK.w / 2, MAPDESK.y + 12); c.rotate(-.05); poly(c, [[-30, -10], [-8, -13], [10, -9], [30, -12], [28, 10], [6, 13], [-12, 9], [-30, 12]], '#FFF3D6', '#B58A1F', 1.5);
+      for (let i = 0; i < 6; i++) if (seed.placed[i]) ci(c, -22 + i * 9, (i % 2) * 6 - 3, 3, PIECE_COL[i]); c.restore();
+    } });
+  },
+  fx() {},
+};
+/* ---------- エンディング: ちずが そろい、ほうせきが もどり、いらいにんの みんなが あるいてくる ---------- */
+const ENDING_LINES = [[0, 'ちずが ぜんぶ そろった!', 'cat'], [2.8, 'かけらが ほうせきに もどっていく…', 'girl'], [5, 'ほうせきが もとに もどった!', 'cat'], [7.4, 'みんな、ありがとう!', 'girl'], [12.6, 'おしまい', 'cat']];
+const CLIENTS = ['pen', 'owl', 'ele', 'kame', 'ashika', 'risu', 'nezumi'];
+let ending = null;
+function drawEnding(t) {
+  const c = $('proCv').getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0);
+  drawRoom(c);
+  // そろった ちず → かけらが ほうせきへ
+  const mapA = t < 2.8 ? 1 : Math.max(0, 1 - (t - 2.8) / .6);
+  if (mapA > 0) {
+    c.save(); c.globalAlpha = mapA; c.translate(240, 120); c.scale(.62, .62); c.translate(-240, -125);
+    poly(c, [[12, 10], [120, 4], [240, 12], [350, 2], [468, 10], [472, 120], [466, 234], [330, 240], [210, 232], [90, 242], [10, 236], [16, 120]], '#FFF3D6', '#B58A1F', 3);
+    c.restore();
+  }
+  for (let i = 0; i < 7; i++) {
+    const hx = 240 + ((20 + PLACES[i].x / 480 * 440) - 240) * .62, hy = 120 + ((16 + PLACES[i].y / 300 * 210) - 125) * .62;
+    const k = Math.min(1, Math.max(0, (t - 2.8 - i * .1) / 1.2)), e = k * k * (3 - 2 * k), x = hx + (155 - hx) * e, y = hy + (162 - hy) * e;
+    if (k < 1) { c.save(); c.globalAlpha = t < 1 ? Math.min(1, t * 2) : 1; drawPieceShape(c, i, x, y, 14 * (1 - e * .6), PIECE_COL[i], '#3A2D58', 2); c.restore(); }
+    if (t < 2.8) { const p = (Math.sin(t * 5 + i) + 1) / 2; ci(c, hx, hy, 16 + p * 4, null, 'rgba(255,230,130,' + (.4 + .4 * p) + ')', 3); }
+  }
+  if (t >= 4.2 && t < 4.8) { c.fillStyle = 'rgba(255,255,255,' + (1 - Math.abs(t - 4.5) / .3) + ')'; c.fillRect(0, 0, 480, 360); }   // パッと ひかる
+  if (t >= 4.4) { const g = (Math.sin(t * 4) + 1) / 2; drawMoonGem(c, 155, 160 + Math.sin(t * 2) * 2, 2, .3 + g * .5); for (let i = 0; i < 7; i++) { const a = t * .8 + i * PI * 2 / 7; starShape(c, 155 + Math.cos(a) * 62, 160 + Math.sin(a) * 40, 4 + 2 * Math.sin(t * 3 + i), PIECE_COL[i], '#FFFFFF'); } }
+  // ミミと シロ
+  const jump = (t > 4.6 && t < 6.2) || t > 7.4 ? Math.abs(Math.sin(t * 7)) * 8 : 0;
+  drawGirl(c, 62, 330, 3, t > 7.4 ? 'right' : 'down', jump, false);
+  drawCat(c, 138, 334, 2.2, -1, jump * .4, false, Math.sin(t * 3));
+  // いらいにんの みんなが みぎから あるいてくる
+  if (t > 7.2) CLIENTS.forEach((who, i) => {
+    const x = 520 + i * 42 - Math.min(1, (t - 7.2) / 4.4) * 318, bob = Math.abs(Math.sin(t * 7 + i)) * 4;   // さいごは 200〜450 に ならぶ
+    drawWho(c, who, x, 342, who === 'ele' ? 1.3 : 1.5, bob, Math.sin(t * 4 + i) > .3);
+  });
+  if (t > 12.4) { const a = Math.min(1, (t - 12.4) / .8); c.fillStyle = 'rgba(43,36,82,' + (a * .55) + ')'; c.fillRect(0, 0, 480, 360); c.save(); c.globalAlpha = a; num(c, 'おしまい', 240, 150, 54, '#FFFFFF'); num(c, 'たんていミミ2 なないろの ちず', 240, 206, 18, '#FFE38A'); c.restore(); }
+}
+function playEnding() {
+  running = false; $('game').hidden = true; $('mapScreen').hidden = true; $('title').hidden = true; $('prologue').hidden = false;
+  $('proSay').textContent = ''; ending = { t: 0, line: -1 }; playMusic('title');
+}
+function endingTick(dt) {
+  ending.t += dt; drawEnding(ending.t);
+  const li = ENDING_LINES.reduce((a, l, i) => ending.t >= l[0] ? i : a, -1);
+  if (li !== ending.line) { ending.line = li; $('proSay').textContent = ENDING_LINES[li][1]; tone(li === 2 ? 1568 : 880, .2, 0, 'triangle', .08); if (li === 2) [1047, 1319, 1568, 2093].forEach((f, k) => tone(f, .5, .1 + k * .1, 'triangle', .07)); }
+  if (ending.t > 16) finishEnding();
+}
+function finishEnding() { if (!ending) return; ending = null; data.cleared = true; saveAll(); fadeTo(goTitle); }
+
+const STAGES = [EKI, LIB, ZOO, SEA, PARK, FOREST, TOWER];
 
 /* はなしの プロローグ: コマ0 は かけらが おちてくる(じどう)。コマ1〜3 は かいわで、タッチで すすむ */
 let intro = null;   // { k: コマ, t: その コマに なってからの じかん, walked: ミミが ついたか }
@@ -1565,7 +1847,7 @@ function startStage(n) {
   $('btnSkip2').hidden = false; $('talk').classList.add('big'); say('あれ? そらから ひかる ものが…', 'cat');
   tone(1568, .25, .3, 'triangle', .08); tone(1319, .25, .5, 'triangle', .08); tone(1047, .4, .7, 'triangle', .08);
 }
-function goTitle() { running = false; runId++; pro = null; closeModal(); playMusic('title'); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; buildSlots(); }
+function goTitle() { running = false; runId++; pro = null; ending = null; closeModal(); playMusic('title'); $('game').hidden = true; $('mapScreen').hidden = true; $('prologue').hidden = true; $('title').hidden = false; buildSlots(); }
 function refreshSound() { $('btnSound').setAttribute('aria-pressed', String(store.sound)); $('btnSound').setAttribute('aria-label', store.sound ? 'おとを けす' : 'おとを だす'); }
 
 /* ---------- いどう ---------- */
@@ -1771,7 +2053,7 @@ function showMap() {
   running = false; runId++; closeModal(); pro = null;
   $('title').hidden = true; $('prologue').hidden = true; $('game').hidden = true; $('mapScreen').hidden = false;
   mapT0 = tNow; drawPieces(); playMusic('station');
-  $('mapSay').textContent = nextPlace() >= 0 ? 'ひかっている ばしょを タッチしてね' : 'つぎの ばしょは じゅんびちゅう。なんどでも あそべるよ';
+  $('mapSay').textContent = nextPlace() >= 0 ? 'ひかっている ばしょを タッチしてね' : data.pieces.length >= 7 ? 'かけらが ぜんぶ そろったね! なんどでも あそべるよ' : 'つぎの ばしょは じゅんびちゅう。なんどでも あそべるよ';
 }
 const MAP_ICON = {
   eki(c, x, y) { rr(c, x - 13, y - 6, 26, 16, 3, '#D9478A', '#3A2D58', 2); poly(c, [[x - 15, y - 6], [x + 15, y - 6], [x, y - 17]], '#7FB6F0', '#3A2D58', 2); },   // えきの たてもの
@@ -1861,7 +2143,8 @@ function frame(ts) {
   if (running) {
     if (anim) anim.t += dt; if (win) win.t += dt; if (shake > 0) shake = Math.max(0, shake - dt);
     if (!freeze) { update(dt); if (S.tick) S.tick(dt); } render(tNow);
-  } else if (pro) prologueTick(dt);
+  } else if (ending) endingTick(dt);
+  else if (pro) prologueTick(dt);
   else if (!$('mapScreen').hidden) { if (mapWalk) mapWalkTick(dt); drawMap(calm ? 0 : tNow - mapT0); }
   else if (!$('title').hidden && !calm) { drawTitle(tNow); drawTitleBg(tNow); }
   requestAnimationFrame(frame);
@@ -2043,7 +2326,7 @@ function drawTitleBg(t) {
 }
 function slotState(d) {
   if (!d) return 'はじめから';
-  return d.pieces.length ? 'かけら ' + d.pieces.length + 'まい' : 'つづきから';
+  return d.pieces.length >= 7 ? 'ぜんぶ クリア!' : d.pieces.length ? 'かけら ' + d.pieces.length + 'まい' : 'つづきから';
 }
 function buildSlots() {
   const host = $('slots'); host.replaceChildren();
@@ -2120,7 +2403,7 @@ window.addEventListener('keydown', ev => {   // パソコンでは やじるし�
   const o = S.objs.find(q => q.id !== 'dig' && q.hit(m.x + dx, m.y + dy) && q.stand.some(s => s[0] === m.x && s[1] === m.y));
   if (o) { path = []; S.act(o); } else if (!blocked(m.x + dx, m.y + dy) && !(S.wall && S.wall(m.x, m.y, m.x + dx, m.y + dy))) { path = []; pending = null; startStep(m.x + dx, m.y + dy); }
 });
-$('btnSkip').onclick = ev => { ev.stopPropagation(); endPrologue(); };
+$('btnSkip').onclick = ev => { ev.stopPropagation(); if (ending) finishEnding(); else endPrologue(); };
 $('mapCv').addEventListener('pointerdown', ev => {   // ちずの ばしょを タッチ
   const r = $('mapCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * 480, y = (ev.clientY - r.top) / r.height * 300;
   const i = PLACES.findIndex(q => Math.hypot(q.x - x, q.y - y) < 34); if (i < 0) return;
